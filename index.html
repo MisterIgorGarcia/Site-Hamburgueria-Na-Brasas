@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Na Brasas Hamburgueria - Os melhores hambúrgueres artesanais</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- ===================== META TAGS (preview do link) ===================== -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://misterigorgarcia.github.io/Site-muskel-Fit/">
+    <meta property="og:title" content="Na Brasas Hamburgueria – Sabor, Qualidade e Tradição">
+    <meta property="og:description" content="Venha saborear na Na Brasas em Cruzeiro - SP. Hambúrgueres artesanais na brasa, ingredientes selecionados e um ambiente acolhedor. Peça já o seu!">
+    <meta property="og:image" content="https://misterigorgarcia.github.io/Site-muskel-Fit/imagens/preview.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="Na Brasas Hamburgueria">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Na Brasas Hamburgueria – Sabor, Qualidade e Tradição">
+    <meta name="twitter:description" content="Venha saborear na Na Brasas em Cruzeiro - SP. Hambúrgueres artesanais na brasa, ingredientes selecionados e um ambiente acolhedor.">
+    <meta name="twitter:image" content="https://misterigorgarcia.github.io/Site-muskel-Fit/imagens/preview.jpg">
+</head>
+
+<body>
+
+<!-- ===================== CABEÇALHO ===================== -->
+<header id="cabecalho">
+    <h1><span class="spanm">N</span>A <span class="spanfit">BRASAS</span></h1>
+
+    <!-- Botão hambúrguer (só aparece no celular) -->
+    <button id="btn-menu" class="btn-menu" aria-label="Abrir menu" aria-expanded="false">
+        <span class="linha"></span>
+        <span class="linha"></span>
+        <span class="linha"></span>
+    </button>
+
+    <nav id="menu-nav">
+        <ul>
+            <li><a href="#localizacao">Localização e Contato</a></li>
+            <li><a href="#sobre">Diferenciais</a></li>
+            <li><a href="#planos">Combos</a></li>
+            <li><a href="#horario">Horários</a></li>
+        </ul>
+    </nav>
+</header>
+
+<!-- ===================== SEÇÃO HERO ===================== -->
+<section class="hero">
+    <div class="hero-imagem">
+        <img src="imagens/avatar.png" alt="Hambúrguer artesanal na Na Brasas">
+    </div>
+
+    <div class="hero-texto">
+        <div id="statusatualhtml" class="status-atual">
+            <span class="bolinha"></span>
+            <span id="texto-bolinha">ABERTO AGORA</span>
+        </div>
+
+        <h2>Sabor que conquista. <br>Qualidade que surpreende.</h2>
+
+        <p>Na Na Brasas você saboreia hambúrgueres artesanais feitos na brasa com ingredientes selecionados.</p>
+        <p>A hamburgueria perfeita para você e sua família em Cruzeiro - SP.</p>
+
+        <div class="hero-botoes">
+            <button class="btn-amarelo"
+                    onclick="document.getElementById('planos').scrollIntoView({ behavior: 'smooth' })">
+                <i class="fa-solid fa-burger"></i> Faça já seu pedido.
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== LOCALIZAÇÃO ===================== -->
+<section id="localizacao" class="secao">
+    <div class="mapa-texto">
+        <h2>Onde nós estamos</h2>
+        <ul class="info-localizacao">
+            <!-- Endereço -->
+            <li>
+                <a href="https://www.google.com/maps/place/R.+Francisco+Novaes,+707+-+Centro,+Cruzeiro+-+SP,+12701-220/@-22.5751991,-44.9630548,17z/data=!3m1!4b1!4m6!3m5!1s0x9df5d531af7293:0x89faf7f2989c675d!8m2!3d-22.5751991!4d-44.9630548!16s%2Fg%2F11c1g39rp6?entry=ttu&g_ep=EgoyMDI2MDkyMy4wIKXMDSoASAFQAw%3D%3D"
+                   target="_blank" rel="noopener" class="bloco-info">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <div>
+                        <strong>Endereço</strong>
+                        <span>R. Francisco Novaes, 707 - Centro, Cruzeiro - SP, 12701-230, Brasil</span>
+                    </div>
+                </a>
+            </li>
+            <!-- Instagram -->
+            <li>
+                <a href="https://instagram.com/nabrasashamburgueria" target="_blank" rel="noopener"
+                   class="bloco-info bloco-instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                    <div>
+                        <strong>Instagram</strong>
+                        <span>@nabrasashamburgueria</span>
+                    </div>
+                </a>
+            </li>
+            <!-- WhatsApp -->
+            <li>
+                <a href="https://wa.me/5512982771364" target="_blank" rel="noopener"
+                   class="bloco-info bloco-whatsapp">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    <div>
+                        <strong>WhatsApp</strong>
+                        <span>(12) 98277-1364</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="mapa-container">
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1842.0521896183616!2d-44.96305480000002!3d-22.575199100000006!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9df5d531af7293%3A0x89faf7f2989c675d!2sR.%20Francisco%20Novaes%2C%20707%20-%20Centro%2C%20Cruzeiro%20-%20SP%2C%2012701-220!5e0!3m2!1spt-BR!2sbr!4v1790547511075!5m2!1spt-BR!2sbr"
+                width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+                referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </div>
+</section>
+
+<hr class="separador">
+
+<!-- ===================== SEÇÃO SOBRE ===================== -->
+<section id="sobre" class="secao">
+    <h1>Sobre a <span class="destaque">Na Brasas</span></h1>
+    <p>
+        Fundada com o objetivo de unir sabor artesanal e ambiente acolhedor, a Na Brasas
+        oferece hambúrgueres feitos na brasa, ingredientes selecionados e uma equipe que valoriza a sua experiência.
+    </p>
+    <br>
+    <h2 class="titulo-espacado">Por que escolher <span class="destaque">Na Brasas</span>?</h2>
+    <div class="card-sobre-grupo">
+        <div class="card-sobre">
+            <div class="card-icone"><i class="fas fa-coffee"></i></div>
+            <h3>Cafezinho grátis</h3>
+            <hr class="separador">
+            <p>Todo cliente tem direito a um copinho de café para finalizar a refeição. Aquele toque especial por conta da casa!</p>
+        </div>
+        <div class="card-sobre">
+            <div class="card-icone"><i class="fas fa-mobile-alt"></i></div>
+            <h3>Peça pelo celular</h3>
+            <hr class="separador">
+            <p>Cardápio digital completo com fotos e descrições. Faça seu pedido pelo celular sem sair da mesa, sem complicação e sem espera.</p>
+        </div>
+        <div class="card-sobre">
+            <div class="card-icone"><i class="fas fa-leaf"></i></div>
+            <h3>Ingredientes selecionados</h3>
+            <hr class="separador">
+            <p>Carne de primeira qualidade, pães artesanais e ingredientes frescos selecionados diariamente para garantir o melhor sabor.</p>
+        </div>
+        <div class="card-sobre">
+            <div class="card-icone"><i class="fa-solid fa-fire"></i></div>
+            <h3>Chapa na brasa</h3>
+            <hr class="separador">
+            <p>Sempre estamos investindo em equipamentos novos, de alta tecnologia e de máxima qualidade para o preparo perfeito!</p>
+        </div>
+        <div class="card-sobre">
+            <div class="card-icone"><i class="fas fa-motorcycle"></i></div>
+            <h3>Delivery &amp; iFood</h3>
+            <hr class="separador">
+            <p>Parcerias integradas para você saborear onde estiver. Aceitamos os maiores aplicativos de delivery da região.</p>
+        </div>
+        <div class="card-sobre">
+            <div class="card-icone"><i class="fa-solid fa-clock"></i></div>
+            <h3>Sempre disponível</h3>
+            <hr class="separador">
+            <p>Venha quando quiser. A Na Brasas fica aberta todos os dias da semana, incluindo feriados, de manhã até de noite. Sem desculpa, sem pausa, sem perder o sabor.</p>
+        </div>
+    </div>
+</section>
+
+<hr class="separador">
+
+<!-- ===================== SEÇÃO COMBOS ===================== -->
+<section id="planos" class="secao">
+    <h2>NOSSOS COMBOS</h2>
+
+    <!-- ---- Combos individuais ---- -->
+    <div class="cards-planos">
+        <h3 class="titulo-grupo-planos">Combos Individuais — Para apenas uma pessoa</h3>
+        <div class="card">
+            <h3><i class="fa-solid fa-user"></i> Clássico</h3>
+            <p class="preco">R$ 30,00<span>/unidade</span></p>
+            <ul>
+                <li>✔ Hambúrguer artesanal</li>
+                <li>✔ Batata frita</li>
+                <li>✔ Refrigerante lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20cl%C3%A1ssico.', '_blank')">Escolher</button>
+        </div>
+        <div class="card">
+            <h3><i class="fa-solid fa-user"></i> Bacon</h3>
+            <p class="preco">R$ 35,00<span>/unidade</span></p>
+            <ul>
+                <li>✔ Hambúrguer com bacon</li>
+                <li>✔ Batata frita</li>
+                <li>✔ Refrigerante lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20bacon.', '_blank')">Escolher</button>
+        </div>
+        <div class="card">
+            <h3><i class="fa-solid fa-user"></i> Duplo</h3>
+            <p class="preco">R$ 40,00<span>/unidade</span></p>
+            <ul>
+                <li>✔ Hambúrguer duplo</li>
+                <li>✔ Batata frita grande</li>
+                <li>✔ Refrigerante lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20duplo.', '_blank')">Escolher</button>
+        </div>
+        <div class="card">
+            <h3><i class="fa-solid fa-user"></i> Supremo</h3>
+            <p class="preco">R$ 45,00<span>/unidade</span></p>
+            <ul>
+                <li>✔ Hambúrguer supremo</li>
+                <li>✔ Batata frita especial</li>
+                <li>✔ Refrigerante lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20supremo.', '_blank')">Escolher</button>
+        </div>
+    </div>
+
+    <!-- ---- Combos família ---- -->
+    <div class="cards-planos">
+        <h3 class="titulo-grupo-planos">Combos Família — Para a sua família saborear junto</h3>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><br>2 Pessoas</h3>
+            <p class="preco">R$ 60,00<span>/combo<br>(30 por pessoa)</span></p>
+            <ul>
+                <li><i class="fa-solid fa-triangle-exclamation"></i> O pagamento precisa ser feito de uma vez só</li>
+                <li>✔ 2 Hambúrgueres artesanais</li>
+                <li>✔ Batata frita grande</li>
+                <li>✔ 2 Refrigerantes lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20fam%C3%ADlia%202%20pessoas.', '_blank')">Escolher</button>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><br>3 Pessoas</h3>
+            <p class="preco">R$ 85,00<span>/combo<br>(28 por pessoa)</span></p>
+            <ul>
+                <li><i class="fa-solid fa-triangle-exclamation"></i> O pagamento precisa ser feito de uma vez só</li>
+                <li>✔ 3 Hambúrgueres artesanais</li>
+                <li>✔ Batata frita grande</li>
+                <li>✔ 3 Refrigerantes lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20fam%C3%ADlia%203%20pessoas.', '_blank')">Escolher</button>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><br>4 Pessoas</h3>
+            <p class="preco">R$ 110,00<span>/combo<br>(27 por pessoa)</span></p>
+            <ul>
+                <li><i class="fa-solid fa-triangle-exclamation"></i> O pagamento precisa ser feito de uma vez só</li>
+                <li>✔ 4 Hambúrgueres artesanais</li>
+                <li>✔ 2 Batatas fritas grandes</li>
+                <li>✔ 4 Refrigerantes lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20fam%C3%ADlia%204%20pessoas.', '_blank')">Escolher</button>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><br>5 Pessoas</h3>
+            <p class="preco">R$ 130,00<span>/combo<br>(26 por pessoa)</span></p>
+            <ul>
+                <li><i class="fa-solid fa-triangle-exclamation"></i> O pagamento precisa ser feito de uma vez só</li>
+                <li>✔ 5 Hambúrgueres artesanais</li>
+                <li>✔ 2 Batatas fritas grandes</li>
+                <li>✔ 5 Refrigerantes lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20fam%C3%ADlia%205%20pessoas.', '_blank')">Escolher</button>
+        </div>
+    </div>
+
+    <!-- ---- Combos especiais ---- -->
+    <div class="cards-planos">
+        <h3 class="titulo-grupo-planos">Combos Especiais — Diversos combos extras</h3>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-child"></i> Combo Kids</h3>
+            <p class="preco">R$ 25,00<span>/unidade</span></p>
+            <ul>
+                <li><i class="fa-solid fa-triangle-exclamation"></i> Para crianças até 12 anos</li>
+                <li>✔ Hambúrguer pequeno</li>
+                <li>✔ Batata frita pequena</li>
+                <li>✔ Suco ou refrigerante</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20kids.', '_blank')">Escolher</button>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-person-cane"></i> Combo Sênior</h3>
+            <p class="preco">R$ 28,00<span>/unidade</span></p>
+            <ul>
+                <li><i class="fa-solid fa-triangle-exclamation"></i> Para maiores de 60 anos</li>
+                <li>✔ Hambúrguer artesanal</li>
+                <li>✔ Batata frita</li>
+                <li>✔ Refrigerante lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20s%C3%AAnior.', '_blank')">Escolher</button>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-calendar-days"></i> Combo Executivo</h3>
+            <p class="preco">R$ 32,00<span>/unidade</span></p>
+            <ul>
+                <li><i class="fa-solid fa-triangle-exclamation"></i> Válido de segunda a sexta, até as 14h</li>
+                <li>✔ Hambúrguer artesanal</li>
+                <li>✔ Batata frita</li>
+                <li>✔ Refrigerante lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20executivo.', '_blank')">Escolher</button>
+        </div>
+
+        <div class="card">
+            <h3><i class="fa-solid fa-chalkboard-user"></i> Combo Professor</h3>
+            <p class="preco">R$ 30,00<span>/unidade</span></p>
+            <ul>
+                <li><i class="fa-solid fa-triangle-exclamation"></i> Apresente o comprovante de docência</li>
+                <li>✔ Hambúrguer artesanal</li>
+                <li>✔ Batata frita</li>
+                <li>✔ Refrigerante lata</li>
+            </ul>
+            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%2C%20desejo%20fazer%20um%20pedido%2C%20me%20interessei%20pelo%20combo%20professor.', '_blank')">Escolher</button>
+        </div>
+    </div>
+</section>
+
+<hr class="separador">
+
+<!-- ===================== SEÇÃO HORÁRIOS ===================== -->
+<section id="horario" class="secao">
+    <h2>NOSSOS HORÁRIOS</h2>
+    <p class="subtitulo-horario">Confira quando a <span class="destaque">Na Brasas</span> está aberta pra você saborear.</p>
+
+    <!-- ---------- Card do cronômetro (dinâmico via JS) ---------- -->
+    <div class="horario-status-card" id="horario-status-card">
+        <div class="horario-cronometro">
+            <i class="fa-regular fa-clock"></i>
+            <span id="cronometro">00:00:00</span>
+        </div>
+        <p id="cronometro-texto">Carregando...</p>
+    </div>
+
+    <!-- ---------- Cards dos dias (gerados automaticamente pelo JS) ----------
+         A fonte da verdade é o objeto HORARIOS_FUNCIONAMENTO no script.js.
+         Para fechar/abrir um dia, edite apenas o script.js — os cards,
+         a badge e o cronômetro se atualizam juntos. -->
+    <div class="cards-horario" id="cards-horario"></div>
+</section>
+
+<!-- ===================== RODAPÉ ===================== -->
+<footer id="contato" class="secao-escura">
+    <div class="footer-conteudo">
+
+        <!-- Coluna 1: marca + descrição + redes -->
+        <div class="footer-coluna">
+            <h3 class="footer-logo">
+                <span class="spanm">N</span>A <span class="spanfit">BRASAS</span>
+            </h3>
+            <p class="footer-descricao">
+                Hambúrgueres artesanais feitos na brasa com ingredientes selecionados
+                em Cruzeiro – SP.
+            </p>
+
+            <div class="footer-redes">
+                <a href="https://instagram.com/nabrasashamburgueria" target="_blank" rel="noopener" aria-label="Instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="https://wa.me/5512982771364" target="_blank" rel="noopener" aria-label="WhatsApp">
+                    <i class="fa-brands fa-whatsapp"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Coluna 2: links rápidos -->
+        <div class="footer-coluna">
+            <h4>Navegação</h4>
+            <ul>
+                <li><a href="#localizacao">Localização e Contato</a></li>
+                <li><a href="#sobre">Diferenciais</a></li>
+                <li><a href="#planos">Combos</a></li>
+                <li><a href="#horario">Horários</a></li>
+            </ul>
+        </div>
+
+        <!-- Coluna 3: contato -->
+        <div class="footer-coluna">
+            <h4>Contato</h4>
+            <ul class="footer-contato">
+                <li>
+                    <i class="fa-solid fa-location-dot"></i>
+                    R. Francisco Novaes, 707 – Centro, Cruzeiro – SP
+                </li>
+                <li>
+                    <i class="fa-solid fa-phone"></i>
+                    (12) 98277-1364
+                </li>
+                <li>
+                    <i class="fa-regular fa-clock"></i>
+                    Todos os dias 19h – 04h · Terça fechado
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Faixa inferior: copyright -->
+    <div class="footer-base">
+        <p>&copy; 2026 Na Brasas Hamburgueria — Todos os direitos reservados</p>
+        <p>CNPJ </p>
+        <p>Responsável: Fabricio Garcia</p>
+        <p class="footer-creditos">
+            Desenvolvido por <a href="https://github.com/MisterIgorGarcia/Site-muskel-Fit" target="_blank" rel="noopener">Igor Desing</a>
+        </p>
+    </div>
+</footer>
+
+<!-- Botão flutuante: voltar ao topo -->
+<button id="btn-topo" aria-label="Voltar ao topo">
+    <i class="fa-solid fa-arrow-up"></i>
+</button>
+
+<script src="script.js"></script>
+</body>
+</html>
