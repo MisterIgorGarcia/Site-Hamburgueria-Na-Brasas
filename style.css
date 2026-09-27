@@ -3,7 +3,8 @@
    Assim, se quiser trocar o tom de amarelo depois, muda em um lugar só. */
 :root {
     --cor-primaria: #0d0d0d;     /* preto (fundo principal) */
-    --cor-secundaria: #ffd60a;   /* amarelo (destaques, botões, títulos) */
+    --cor-secundaria: #df8d22;   /* laranja (botões, títulos) */
+    --cor-tercearia: #ffeb7c;   /* amarelo  (alguns apetrechos) */
     --cor-texto-claro: #f5f5f5;  /* branco suave, pra texto em cima do preto */
     --cor-card-fundo: rgb(24, 24, 24);
     --cor-card: #252525;         /* cinza escuro pra diferenciar os cards do fundo */
@@ -41,23 +42,42 @@ iframe {
     border-bottom: 3px solid var(--cor-secundaria);
 }
 
-#cabecalho h1 { /* Cor do "NA BRASAS" */
-    color: var(--cor-secundaria);
-    font-size: 1.8rem;
-    white-space: nowrap;
+#cabecalho h1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1;
 }
 
-#cabecalho h1 .spanfit { /* Estilo do "BRASAS" */
-    color: var(--cor-texto-claro);
-}
-
-#cabecalho h1 .spanm { /* Estilo do "N" */
+#cabecalho h1 .spann {
     color: var(--cor-secundaria);
-    font-size: 1.8em;
+    font-size: 3.2rem;
     font-weight: 900;
-    line-height: 0.8;
-    vertical-align: -0.12em;
-    margin-right: 1px;
+    line-height: 0.85;
+}
+
+#cabecalho h1 .span-texto {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+#cabecalho h1 .spannabrasa {
+    color: var(--cor-secundaria);
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    line-height: 1;
+}
+
+#cabecalho h1 .spanhamburgueria {
+    color: #999999;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    line-height: 1;
 }
 
 #cabecalho nav ul {
@@ -399,14 +419,14 @@ iframe {
 }
 
 .bloco-info:hover {
-    border-color: var(--cor-secundaria);
+    border-color: var(--cor-tercearia);
     background-color: #222222;
     transform: translateX(5px);
 }
 
 .bloco-info i {
     font-size: 1.6rem;
-    color: var(--cor-secundaria);
+    color: var(--cor-tercearia);
     min-width: 32px;
     text-align: center;
     flex-shrink: 0;
@@ -480,6 +500,7 @@ iframe {
 
 /* ===================== CARDS "SOBRE" ===================== */
 .card-sobre {
+    color: var(--cor-tercearia);
     background-color: var(--cor-card);
     border: 2px solid transparent;
     border-radius: 10px;
@@ -505,7 +526,7 @@ iframe {
 }
 
 .card-sobre:hover {
-    border-color: var(--cor-secundaria);
+    border-color: var(--cor-tercearia);
 }
 
 /* ===================== SEÇÕES GERAIS ===================== */

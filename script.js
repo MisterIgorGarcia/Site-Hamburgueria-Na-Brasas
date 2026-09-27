@@ -61,28 +61,34 @@ function formatarCronometro(totalSegundos) {
  * mesmo para horários que atravessam a meia-noite.
  * @returns {Array<{inicio: number, fim: number}>}
  */
+/**
+ * Gera uma lista de intervalos absolutos (em minutos desde o início da semana,
+ * considerando Domingo 00:00 como 0) a partir da configuração.
+ *
+ * Cada período é UM ÚNICO intervalo contínuo — mesmo quando atravessa a
+ * meia-noite. Se "fecha" for menor que "abre", o fim é empurrado para o
+ * dia seguinte (base + 1440 + fim), sem dividir em dois pedaços. Isso
+ * garante que a meia-noite NÃO seja interpretada como fechamento.
+ *
+ * @returns {Array<{inicio: number, fim: number}>}
+ */
 function gerarIntervalosAbsolutos() {
     const intervalos = [];
-    // Para cada dia da semana (0 a 6)
     for (let dia = 0; dia < 7; dia++) {
         const base = dia * 1440; // minutos até o início do dia
         const periodos = HORARIOS_FUNCIONAMENTO[dia] || [];
         periodos.forEach(periodo => {
             const inicio = horaParaMinutos(periodo.abre);
             const fim = horaParaMinutos(periodo.fecha);
-            if (fim > inicio) {
-                // Intervalo normal dentro do mesmo dia
-                intervalos.push({ inicio: base + inicio, fim: base + fim });
-            } else {
-                // Intervalo que atravessa a meia-noite
-                // Parte 1: do início até 24:00 do mesmo dia
-                intervalos.push({ inicio: base + inicio, fim: base + 1440 });
-                // Parte 2: de 00:00 até o fim no dia seguinte
-                intervalos.push({ inicio: base + 1440, fim: base + 1440 + fim });
-            }
+
+            // UM único intervalo contínuo. Se fim <= inicio, significa que
+            // atravessa a meia-noite e o fim cai no dia seguinte.
+            const inicioAbs = base + inicio;
+            const fimAbs = fim > inicio ? base + fim : base + 1440 + fim;
+
+            intervalos.push({ inicio: inicioAbs, fim: fimAbs });
         });
     }
-    // Ordena por início
     intervalos.sort((a, b) => a.inicio - b.inicio);
     return intervalos;
 }
@@ -96,23 +102,35 @@ let INTERVALOS_ABSOLUTOS = gerarIntervalosAbsolutos();
  */
 function obterStatus() {
     const agora = new Date();
-    // Minutos desde o início da semana (Domingo 00:00 = 0)
     const diaSemana = agora.getDay();
     const minutosDoDia = agora.getHours() * 60 + agora.getMinutes() + agora.getSeconds() / 60;
     const minutosAbsolutos = diaSemana * 1440 + minutosDoDia;
 
-    // Verifica se está aberto no momento
+    // Verifica se está aberto. Olha tanto o "agora" quanto a mesma hora
+    // na semana seguinte, pra cobrir intervalos que ultrapassam o fim da
+    // semana (ex: Sábado 19:00 → Domingo 04:00).
+    const SEMANA = 7 * 1440;
     let aberto = false;
     let intervaloAtual = null;
+    let deslocamento = 0; // 0 = agora, -SEMANA = intervalo da semana passada
+
     for (const intervalo of INTERVALOS_ABSOLUTOS) {
-        if (minutosAbsolutos >= intervalo.inicio && minutosAbsolutos < intervalo.fim) {
+        const agoraDentro =
+            minutosAbsolutos >= intervalo.inicio &&
+            minutosAbsolutos < intervalo.fim;
+        const semanaQueVemDentro =
+            (minutosAbsolutos + SEMANA) >= intervalo.inicio &&
+            (minutosAbsolutos + SEMANA) < intervalo.fim;
+
+        if (agoraDentro || semanaQueVemDentro) {
             aberto = true;
             intervaloAtual = intervalo;
+            deslocamento = semanaQueVemDentro && !agoraDentro ? SEMANA : 0;
             break;
         }
     }
 
-    // Prepara lista de eventos (aberturas e fechamentos) para encontrar o próximo
+    // ----- Eventos (aberturas e fechamentos) para achar o próximo -----
     const eventos = [];
     INTERVALOS_ABSOLUTOS.forEach(intervalo => {
         eventos.push({ tempo: intervalo.inicio, tipo: 'abertura' });
@@ -120,30 +138,35 @@ function obterStatus() {
     });
     eventos.sort((a, b) => a.tempo - b.tempo);
 
-    let proximoEvento = eventos.find(e => e.tempo > minutosAbsolutos);
     let mensagem = '';
     let proximoEventoData;
 
     if (aberto) {
-        // Se está aberto, o próximo evento é o fechamento
-        const fechamento = intervaloAtual.fim;
-        const diffSegundos = Math.floor((fechamento - minutosAbsolutos) * 60);
+        // Próximo evento = fim do intervalo atual (já deslocado se preciso)
+        const fechamento = intervaloAtual.fim - deslocamento;
+        const diffSegundos = Math.max(0, Math.floor((fechamento - minutosAbsolutos) * 60));
         proximoEventoData = new Date(agora.getTime() + diffSegundos * 1000);
-        const horaFechamento = minutosParaHora(fechamento % 1440);
+
+        // Mostra a hora real do fechamento (sempre no intervalo 00:00-23:59)
+        const horaFechamento = minutosParaHora(((fechamento % 1440) + 1440) % 1440);
         mensagem = `Hamburgueria <strong>aberta</strong>. Fecharemos às <strong>${horaFechamento}</strong>.`;
+
     } else {
-        // Se está fechado, o próximo evento é uma abertura
+        // Procura o próximo evento > agora OU > agora + 1 semana
+        let proximoEvento = eventos.find(e => e.tempo > minutosAbsolutos);
         if (!proximoEvento) {
             // Não há mais eventos nesta semana, pega o primeiro da próxima
-            proximoEvento = { tempo: eventos[0].tempo + 7 * 1440, tipo: 'abertura' };
+            proximoEvento = { tempo: eventos[0].tempo + SEMANA, tipo: 'abertura' };
         }
+
         const abertura = proximoEvento.tempo;
-        const diffSegundos = Math.floor((abertura - minutosAbsolutos) * 60);
+        const diffSegundos = Math.max(0, Math.floor((abertura - minutosAbsolutos) * 60));
         proximoEventoData = new Date(agora.getTime() + diffSegundos * 1000);
 
         const horaAbertura = minutosParaHora(abertura % 1440);
         const diaEvento = Math.floor(abertura / 1440) % 7;
         const diffDias = Math.floor((abertura - minutosAbsolutos) / 1440);
+
         let quando;
         if (diffDias === 0) quando = 'hoje';
         else if (diffDias === 1) quando = 'amanhã';
