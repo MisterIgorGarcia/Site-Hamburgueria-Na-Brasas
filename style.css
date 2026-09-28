@@ -272,6 +272,7 @@ iframe {
     display: flex;
     justify-content: center;
     position: relative;
+    perspective: 1000px;
 }
 
 /* O glow atrás da imagem */
@@ -300,14 +301,31 @@ iframe {
     max-width: 420px;
     height: auto;
     display: block;
-    animation: flutuar 3s ease-in-out infinite;
+    /* Nova animação: flutuar + girar em 3D */
+    animation: flutuar-girar 8s ease-in-out infinite;
+    transform-style: preserve-3d;
     position: relative;
     z-index: 1;
+    /* Dica: se a imagem sumir de lado e você não quiser, 
+       descomente a linha abaixo para esconder o verso */
+    /* backface-visibility: hidden; */
 }
 
 @keyframes flutuar {
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-15px); }
+}
+
+@keyframes flutuar-girar {
+    0% {
+        transform: translateY(0) rotateX(10deg) rotateY(0deg);
+    }
+    50% {
+        transform: translateY(-15px) rotateX(10deg) rotateY(180deg);
+    }
+    100% {
+        transform: translateY(0) rotateX(10deg) rotateY(360deg);
+    }
 }
 
 .hero h2 {
