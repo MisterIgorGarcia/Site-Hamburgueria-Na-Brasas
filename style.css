@@ -555,7 +555,8 @@ iframe {
     background-color: #111111;
 }
 
-/* ===================== SEÇÃO DE COMBOS ===================== */
+/* ===================== SEÇÃO DE PEDIDOS DE LANCHES ===================== */
+
 .cards-planos {
     display: flex;
     flex-wrap: wrap;
@@ -577,7 +578,9 @@ iframe {
     margin-bottom: 30px;
 }
 
-.card {
+/* Estilo comum dos cards */
+.card,
+.card-premium {
     background-color: var(--cor-card);
     border: 2px solid transparent;
     border-radius: 10px;
@@ -590,41 +593,90 @@ iframe {
     text-align: center;
 }
 
-.card:hover {
+/* Borda ao passar o mouse */
+.card:hover,
+.card-premium:hover {
     border-color: var(--cor-secundaria);
 }
 
-.card-destaque {
-    border-color: var(--cor-secundaria);
+/* Cards em destaque, textura gradiente semi-dourada, com bordas de neon amarelo */
+.card-premium {
+    border-color: #ffd60a;
+    background: linear-gradient(
+        145deg,
+        #2a250f,
+        var(--cor-card),
+        #3a3010
+    );
+    box-shadow: 0 0 15px rgba(255, 214, 10, 0.35);
 }
 
-.card h3 {
+/* Título do card */
+.card h3,
+.card-premium h3 {
     color: var(--cor-secundaria);
     margin-bottom: 15px;
 }
 
-.card .preco {
+/* Preço */
+.card .preco,
+.card-premium .preco {
     font-size: 1.5rem;
     font-weight: bold;
     margin-bottom: 15px;
 }
 
-.card .preco span {
+/* Texto menor dentro do preço */
+.card .preco span,
+.card-premium .preco span {
     font-size: 0.9rem;
     font-weight: normal;
     color: #999999;
 }
 
-.card ul {
+/* Lista */
+.card ul,
+.card-premium ul {
     list-style: none;
     margin-bottom: 20px;
     text-align: left;
     width: 100%;
 }
 
-.card ul li {
+/* Itens da lista */
+.card ul li,
+.card-premium ul li {
     padding: 6px 0;
     color: #cccccc;
+}
+
+.destaqueproduto {
+    color: var(--cor-tercearia);
+    font-weight: bold;
+}
+
+/* ===================== IMAGEM DENTRO DOS CARDS DE LANCHES===================== */
+.card-imagem {
+    width: 100%;
+    aspect-ratio: 4 / 3;        /* mantém sempre a mesma proporção */
+    object-fit: cover;          /* preenche sem distorcer */
+    border-radius: 8px;
+    margin-bottom: 18px;
+    display: block;
+    background-color: #1a1a1a;  /* fundo enquanto a imagem carrega */
+}
+
+/* Opcional: leve zoom ao passar o mouse no card */
+.card {
+    overflow: hidden;           /* evita que o zoom vaze do card */
+}
+
+.card-imagem {
+    transition: transform 0.4s ease;
+}
+
+.card:hover .card-imagem {
+    transform: scale(1.05);
 }
 
 /* ===================== SEÇÃO HORÁRIOS ===================== */
@@ -1238,7 +1290,7 @@ footer {
         gap: 20px;
     }
 
-    .card {
+    .card,.card-premium {
         width: 100%;
         max-width: 320px;
     }
@@ -1260,7 +1312,8 @@ footer {
     }
 
     .card-sobre,
-    .card {
+    .card,
+    .card-premium {
         padding: 22px;
     }
 
@@ -1269,7 +1322,8 @@ footer {
         font-size: 1.25rem;
     }
 
-    .card .preco {
+    .card .preco,
+    .card-premium .preco {
         font-size: 1.3rem;
     }
 }
