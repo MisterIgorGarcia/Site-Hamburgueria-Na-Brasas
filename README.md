@@ -9,7 +9,7 @@
 
 **Site institucional para a hamburgueria Na Brasas, localizada em Cruzeiro - SP.**
 
-[🌐 Visite o site](https://na-brasas.vercel.app/) · [📂 Repositório](https://github.com/MisterIgorGarcia/Site-Na-Brasas) · [🐛 Reportar um problema](https://github.com/MisterIgorGarcia/Site-Na-Brasas/issues)
+[🌐 Visite o site](https://nabrasas-hamburgueria.vercel.app/) · [📂 Repositório](https://github.com/MisterIgorGarcia/Site-Hamburgueria-Na-Brasas) · [🐛 Reportar um problema](https://github.com/MisterIgorGarcia/Site-Hamburgueria-Na-Brasas/issues)
 
 </div>
 
@@ -83,7 +83,7 @@ Todos os botões de pedido enviam uma mensagem pronta para o WhatsApp **(12) 982
 ## 📁 Estrutura do Projeto
 
 ```text
-Site-Na-Brasas/
+Site-Hamburgueria-Na-Brasas/
 ├── index.html
 ├── style.css
 ├── script.js
