@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Status](https://img.shields.io/badge/status-conclu%C3%ADdo-brightgreen?style=for-the-badge)
-![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red?style=for-the-badge)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 ![GitHub repo size](https://img.shields.io/github/repo-size/MisterIgorGarcia/Site-Hamburgueria-Na-Brasas?style=for-the-badge)
 ![GitHub last commit](https://img.shields.io/github/last-commit/MisterIgorGarcia/Site-Hamburgueria-Na-Brasas?style=for-the-badge)
 

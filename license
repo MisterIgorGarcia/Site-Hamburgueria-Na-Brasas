@@ -1,38 +1,21 @@
-Proprietary Software License (SaaS - All Rights Reserved)
+MIT License
 
-Copyright (c) 2026 Igor Garcia. Todos os direitos reservados.
+Copyright (c) 2026 Igor Garcia
 
-Este software, incluindo todo o código-fonte, design, layout, lógica de programação, 
-documentação e quaisquer arquivos associados (o "Software"), é propriedade exclusiva 
-de Igor Garcia.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-É estritamente proibida a cópia, modificação, distribuição, sublicenciamento, 
-venda, aluguel ou qualquer forma de uso comercial deste Software, no todo ou em parte, 
-sem a autorização prévia e por escrito do detentor dos direitos autorais.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-O Software é disponibilizado exclusivamente no modelo Software as a Service (SaaS). 
-Isso significa que o acesso ao Software é fornecido como um serviço hospedado, e não 
-como um produto para download ou instalação local. 
-
-O direito de uso do Software é concedido apenas a clientes que possuam um Contrato de 
-Licenciamento de Uso e Prestação de Serviços devidamente assinado com o detentor dos 
-direitos autorais. Este direito de uso é:
-- Não exclusivo;
-- Não transferível;
-- Revogável;
-- Limitado ao período de vigência do contrato e ao domínio específico autorizado.
-
-O cliente não adquire a propriedade do código-fonte, da infraestrutura ou da lógica 
-do Software, mas apenas o direito de utilizar a aplicação hospedada para fins 
-comerciais internos de sua empresa.
-
-O SOFTWARE É FORNECIDO "COMO ESTÁ", SEM GARANTIA DE QUALQUER TIPO, EXPRESSA OU 
-IMPLÍCITA, INCLUINDO, MAS NÃO SE LIMITANDO A, GARANTIAS DE COMERCIABILIDADE, 
-ADEQUAÇÃO A UM DETERMINADO FIM E NÃO VIOLAÇÃO. EM NENHUM CASO OS AUTORES OU 
-DETENTORES DOS DIREITOS AUTORAIS SERÃO RESPONSÁVEIS POR QUALQUER RECLAMAÇÃO, 
-DANOS OU OUTRA RESPONSABILIDADE, SEJA EM AÇÃO DE CONTRATO, ATO ILÍCITO OU DE 
-OUTRA FORMA, DECORRENTE DE, FORA DE OU EM CONEXÃO COM O SOFTWARE OU O USO OU 
-OUTRAS NEGOCIAÇÕES NO SOFTWARE.
-
-Para obter uma licença de uso ou um contrato de prestação de serviços, entre em 
-contato: igorgarciaoliveiraprofissional@gmail.com
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
