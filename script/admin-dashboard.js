@@ -5,6 +5,74 @@ const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* ===================== TERMINAL VISUAL DE LOGS ===================== */
+// Salva as funções originais do console
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+let logsVisuais = [];
+
+function adicionarLogVisual(tipo, args) {
+  // Converte o que foi passado para string legível
+  const msg = Array.from(args).map(arg => {
+    if (typeof arg === 'object') {
+      try { return JSON.stringify(arg); } catch (e) { return '[Objeto]'; }
+    }
+    return arg;
+  }).join(' ');
+
+  const hora = new Date().toLocaleTimeString('pt-BR');
+  logsVisuais.push({ tipo, texto: `[${hora}] ${msg}` });
+  
+  // Mantém apenas os últimos 10 logs
+  if (logsVisuais.length > 10) {
+    logsVisuais.shift();
+  }
+
+  atualizarInterfaceLogs();
+}
+
+function atualizarInterfaceLogs() {
+  const terminal = document.getElementById('terminal-logs');
+  if (!terminal) return;
+
+  terminal.innerHTML = logsVisuais.map(log => {
+    let classe = 'log-line';
+    if (log.tipo === 'error') classe += ' log-erro';
+    if (log.tipo === 'warn') classe += ' log-aviso';
+    return `<div class="${classe}">${log.texto}</div>`;
+  }).join('');
+
+  // Auto scroll para o final
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+function toggleTerminal() {
+  const term = document.getElementById('terminal-container');
+  if (term.style.display === 'none') {
+    term.style.display = 'block';
+  } else {
+    term.style.display = 'none';
+  }
+}
+
+// Substitui as funções nativas para capturar tudo o que o sistema fizer
+console.log = function(...args) {
+  originalLog.apply(console, args);
+  adicionarLogVisual('log', args);
+};
+
+console.error = function(...args) {
+  originalError.apply(console, args);
+  adicionarLogVisual('error', args);
+};
+
+console.warn = function(...args) {
+  originalWarn.apply(console, args);
+  adicionarLogVisual('warn', args);
+};
+
 let subscriptionPedidos = null;
 const pedidosNaTela = new Map();
 let abaAtiva = 'recentes'; 
@@ -15,6 +83,8 @@ let paginaAtualRecentes = 1;
 let totalPaginasRecentes = 1;
 let paginaAtualHistorico = 1;
 let totalPaginasHistorico = 1;
+
+
 
 document.addEventListener('DOMContentLoaded', () => {
   const sessaoSalva = localStorage.getItem('nabrasas_sessao');

@@ -381,3 +381,42 @@
     color: var(--cor-texto-mutado);
     margin-bottom: 10px;
 }
+
+/* ===================== TERMINAL VISUAL DE LOGS ===================== */
+.terminal-container {
+  background-color: #000;
+  border-bottom: 2px solid var(--cor-secundaria);
+  padding: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: monospace;
+}
+
+.terminal-header {
+  color: #666;
+  font-size: 0.75rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#terminal-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-line {
+  font-size: 0.8rem;
+  color: #22c55e; /* Verde Matrix */
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.log-erro {
+  color: #ef4444; /* Vermelho */
+}
+
+.log-aviso {
+  color: #eab308; /* Amarelo */
+}

@@ -21,6 +21,10 @@
     <div class="header-brand">
       <h1>Painel Admin</h1>
       <div class="user-info" id="user-info">Carregando...</div>
+      <!-- Botão para abrir os logs -->
+      <button class="btn-admin" onclick="toggleTerminal()" style="margin-top: 8px; font-size: 0.75rem; padding: 4px 10px; width: fit-content;">
+        <i class="fa-solid fa-terminal"></i> Ver Logs
+      </button>
     </div>
     
     <div class="botoes">
@@ -41,6 +45,11 @@
     </div>
   </header>
 
+  <div id="terminal-container" class="terminal-container" style="display: none;">
+    <div class="terminal-header">Últimos 10 Logs</div>
+    <div id="terminal-logs" class="terminal-logs"></div>
+  </div>
+  
   <div class="status-impressora" id="status-impressora">
     <span class="bolinha"></span>
     <span id="status-texto">Impressora desconectada</span>
