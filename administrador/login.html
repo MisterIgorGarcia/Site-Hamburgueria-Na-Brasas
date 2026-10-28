@@ -5,31 +5,112 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login — Na Brasas</title>
     
-    <!-- Carrega os estilos -->
+    <!-- Carrega os estilos globais -->
     <link rel="stylesheet" href="../estilos/style.css">
     <link rel="stylesheet" href="../estilos/styleadmin.css">
-    <!-- FontAwesome para o ícone -->
+    <!-- FontAwesome para o ícone de voltar -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
     <script defer src="/_vercel/insights/script.js"></script>
 
+    <!-- ESTILO BLINDADO: Garante que o login nunca fique quebrado -->
     <style>
         body {
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            background-color: var(--cor-primaria);
+            background-color: #0d0d0d;
             margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
         }
         
         #view-login {
             width: 100%;
             display: flex;
             justify-content: center;
+            padding: 20px;
         }
 
-        /* Estilo do botão voltar copiando o botão original */
+        .login-box {
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-top: 3px solid #df8d22;
+            border-radius: 12px;
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .login-box h1 {
+            color: #df8d22;
+            font-size: 1.6rem;
+            margin-bottom: 6px;
+            margin-top: 0;
+        }
+
+        .login-box p {
+            color: #999;
+            font-size: 0.85rem;
+            margin-bottom: 25px;
+        }
+
+        .login-box label {
+            display: block;
+            font-size: 0.8rem;
+            color: #999;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            background-color: #0d0d0d;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            color: #f5f5f5;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .login-box input:focus {
+            outline: none;
+            border-color: #df8d22;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 14px;
+            background-color: #df8d22;
+            color: #0d0d0d;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .login-box button:hover:not(:disabled) {
+            background-color: #ffe066;
+        }
+
+        .login-box button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .erro {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+
         .btn-voltar {
             display: flex;
             align-items: center;
@@ -37,21 +118,23 @@
             gap: 8px;
             width: 100%;
             padding: 14px;
-            background: var(--cor-secundaria);
-            color: var(--cor-primaria);
-            border: none;
+            background: transparent;
+            color: #999;
+            border: 1px solid #333;
             border-radius: 6px;
             font-weight: bold;
             font-size: 1rem;
             text-decoration: none;
-            margin-top: 12px; /* Espaço entre o Entrar e o Voltar */
-            transition: background 0.2s;
+            margin-top: 12px;
+            transition: all 0.2s;
+            box-sizing: border-box;
             cursor: pointer;
         }
         
-        /* Efeito hover idêntico ao do botão de entrar */
         .btn-voltar:hover {
-            background: #ffe066;
+            background: #252525;
+            color: #fff;
+            border-color: #df8d22;
         }
     </style>
 </head>
@@ -72,7 +155,7 @@
       <div class="erro" id="login-erro"></div>
     </form>
 
-    <!-- Botão Voltar com o mesmo estilo do Entrar -->
+    <!-- Botão Voltar -->
     <a href="../index.html" class="btn-voltar">
         <i class="fa-solid fa-arrow-left"></i> Voltar ao Início
     </a>
