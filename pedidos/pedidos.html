@@ -6,11 +6,14 @@
     <title>Faça seu Pedido - Na Brasas</title>
     
     <!-- CSS Global e CSS específico de Pedidos -->
-    <link rel="stylesheet" href="../estilos/style.css">
-    <link rel="stylesheet" href="../estilos/stylepedido.css">
+    <link rel="stylesheet" href="estilos/style.css">
+    <link rel="stylesheet" href="estilos/stylepedido.css">
     
     <!-- Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- ===================== VERCEL ANALYTICS ===================== -->
+    <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
@@ -31,84 +34,143 @@
 </header>
 
 <!-- ===================== SEÇÃO DE PEDIDOS ===================== -->
-<section class="secao">
-    <h2>Monte seu Pedido</h2>
-    <p class="subtitulo-pedido">Escolha seus lanches favoritos e adicione ao carrinho.</p>
-
+<section id="planos" class="secao">
+    <h2>NOSSOS PRODUTOS</h2>
+    <!-- ---- Lanches ---- -->
     <div class="cards-planos">
+        <h3 class="titulo-grupo-planos">Todo nosso cardápio disponível de lanches, faça a sua escolha</h3>
+        
         <!-- Lanche 1 -->
         <div class="card-premium">
-            <img src="imagens/lanches/3.png" alt="Soberano" class="card-imagem">
+            <img src="imagens/lanches/3.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3><i class="fa-solid fa-crown"></i> Na Brasa's Soberano</h3>
-            <p class="preco">R$ 35,00</p>
+            <p class="preco">R$ 35,00<span>/unidade</span></p>
             <ul>
                 <li>✔ Pão, maionese e molho barbecue</li>
-                <li>✔ 2 Hambúrgueres bovinos, frango e 3 queijos</li>
+                <li>✔<span class="destaqueproduto">2 Hamburgueres bovinos</span> artesanais suculentos e assados na brasa</li>
+                <li>✔ Batata palha, <span class="destaqueproduto">3 fatias de queijo</span></li>
+                <li>✔ Pedaços de frango assado na brasa</li>
             </ul>
             <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Soberano', 35.00)">Adicionar</button>
         </div>
 
         <!-- Lanche 2 -->
         <div class="card-premium">
-            <img src="imagens/lanches/1.png" alt="Duplo" class="card-imagem">
+            <img src="imagens/lanches/1.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3><i class="fa-solid fa-star"></i> Na Brasa's Burguer Duplo</h3>
-            <p class="preco">R$ 26,00</p>
+            <p class="preco">R$ 26,00<span>/unidade</span></p>
             <ul>
                 <li>✔ Pão, maionese e molho barbecue</li>
-                <li>✔ 2 Hambúrgueres bovinos e 2 queijos</li>
+                <li>✔ <span class="destaqueproduto">2 Hamburgueres bovinos</span> artesanais suculentos e assados na brasa</li>
+                <li>✔ Batata palha, <span class="destaqueproduto">2 fatias de queijo</span></li>
             </ul>
             <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer Duplo', 26.00)">Adicionar</button>
         </div>
 
         <!-- Lanche 3 -->
         <div class="card-premium">
-            <img src="imagens/lanches/2.png" alt="Triplo" class="card-imagem">
+            <img src="imagens/lanches/2.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3><i class="fa-solid fa-star"></i> Na Brasa's Burguer Triplo</h3>
-            <p class="preco">R$ 35,00</p>
+            <p class="preco">R$ 35,00<span>/unidade</span></p>
             <ul>
                 <li>✔ Pão, maionese e molho barbecue</li>
-                <li>✔ 3 Hambúrgueres bovinos e 3 queijos</li>
+                <li>✔ <span class="destaqueproduto">3 Hamburgueres bovinos</span> artesanais suculentos e assados na brasa</li>
+                <li>✔ Batata palha, <span class="destaqueproduto">3 fatias de queijo</span></li>
             </ul>
             <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer Triplo', 35.00)">Adicionar</button>
         </div>
 
         <!-- Lanche 4 -->
         <div class="card-premium">
-            <img src="imagens/lanches/4.png" alt="Tem Como" class="card-imagem">
+            <img src="imagens/lanches/4.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3><i class="fa-solid fa-star"></i> Na Brasas's Burguer Tem Como</h3>
-            <p class="preco">R$ 35,00</p>
+            <p class="preco">R$ 35,00<span>/unidade</span></p>
             <ul>
-                <li>✔ 2 Hambúrgueres, frango, calabresa e bacon</li>
-                <li>✔ O dobro de queijo e cebola roxa</li>
+                <li>✔ Pão, , maionese e molho barbecue</li>
+                <li>✔<span class="destaqueproduto">2 Hamburgueres bovinos</span> artesanais suculentos e assados na brasa</li>
+                <li>✔ Batata palha, o dobro de queijo, <span class="destaqueproduto">cebola roxa, bacon</span></li>
+                <li>✔ <span class="destaqueproduto">Pedaços de frango e calabresa assado na brasa</span></li>
             </ul>
             <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasas\'s Burguer Tem Como', 35.00)">Adicionar</button>
         </div>
 
         <!-- Lanche 5 -->
         <div class="card">
-            <img src="imagens/lanches/burguersimples.png" alt="Simples" class="card-imagem">
+            <img src="imagens/lanches/burguersimples.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3>Na Brasa's Burguer</h3>
-            <p class="preco">R$ 15,00</p>
+            <p class="preco">R$ 15,00<span>/unidade</span></p>
             <ul>
-                <li>✔ Pão, maionese e molho barbecue</li>
-                <li>✔ 1 Hambúrguer e queijo</li>
+                <li>✔ Pão, , maionese e molho barbecue</li>
+                <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
+                <li>✔ Batata palha e queijo</li>
             </ul>
             <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer', 15.00)">Adicionar</button>
         </div>
 
         <!-- Lanche 6 -->
         <div class="card">
-            <img src="imagens/lanches/burguersalada.png" alt="Salada" class="card-imagem">
+            <img src="imagens/lanches/burguersalada.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3>Na Brasa's Burguer Salada</h3>
-            <p class="preco">R$ 18,00</p>
+            <p class="preco">R$ 18,00<span>/unidade</span></p>
             <ul>
-                <li>✔ Pão, alface, tomate e maionese</li>
-                <li>✔ 1 Hambúrguer e queijo</li>
+                <li>✔ Pão, alface, tomate, maionese e molho barbecue</li>
+                <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
+                <li>✔ Batata palha e queijo</li>           
             </ul>
             <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer Salada', 18.00)">Adicionar</button>
         </div>
-        
-        <!-- Adicione os outros lanches (Toscana, Calabresa, Frango, Bacon) aqui seguindo o mesmo padrão -->
+
+        <!-- Lanche 7 -->
+        <div class="card">
+            <img src="imagens/lanches/burguertoscana.png" alt="Hambúrguer Clássico" class="card-imagem">
+            <h3>Na Brasa's Toscana</h3>
+            <p class="preco">R$ 18,00<span>/unidade</span></p>
+            <ul>
+                <li>✔ Pão, maionese e molho barbecue</li>
+                <li>✔ 1 Linguiça toscana assada na brasa</li>
+                <li>✔ Batata palha e queijo</li>           
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Toscana', 18.00)">Adicionar</button>
+        </div>
+
+        <!-- Lanche 8 -->
+        <div class="card">
+            <img src="imagens/lanches/burguercalabresa.png" alt="Hambúrguer Clássico" class="card-imagem">
+            <h3>Na Brasa's Calabresa</h3>
+            <p class="preco">R$ 25,00<span>/unidade</span></p>
+            <ul>
+                <li>✔ Pão, maionese e molho barbecue</li>
+                <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
+                <li>✔ Batata palha, calabresa e queijo</li>           
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Calabresa', 25.00)">Adicionar</button>
+        </div>
+
+        <!-- Lanche 9 -->
+        <div class="card">
+            <img src="imagens/lanches/burguerfrango.png" alt="Hambúrguer Clássico" class="card-imagem">
+            <h3>Na Brasa's Burguer Frango</h3>
+            <p class="preco">R$ 25,00<span>/unidade</span></p>
+            <ul>
+                <li>✔ Pão, maionese e molho barbecue</li>
+                <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
+                <li>✔ Batata palha, pedaços de frango e queijo</li>           
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer Frango', 25.00)">Adicionar</button>
+        </div>
+
+        <!-- Lanche 10 -->
+        <div class="card">
+            <img src="imagens/lanches/burguerbacon.png" alt="Hambúrguer Clássico" class="card-imagem">
+            <h3>Na Brasa's Burguer Bacon</h3>
+            <p class="preco">R$ 25,00<span>/unidade</span></p>
+            <ul>
+                <li>✔ Pão, maionese e molho barbecue</li>
+                <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
+                <li>✔ Batata palha, pedaços de bacon e queijo</li>           
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer Bacon', 25.00)">Adicionar</button>
+        </div>
     </div>
 </section>
 
