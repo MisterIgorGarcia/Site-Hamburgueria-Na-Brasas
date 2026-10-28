@@ -13,20 +13,23 @@ async function desconectarImpressoraAtual() {
   try {
     if (modoImpressao === 'bluetooth' && impressoraDevice) {
       if (impressoraDevice.gatt.connected) impressoraDevice.gatt.disconnect();
-      impressoraChar = null;
-      impressoraDevice = null;
       console.log('Bluetooth desconectado manualmente.');
     } 
     else if (modoImpressao === 'usb' && usbDevice) {
       if (usbDevice.opened) await usbDevice.close();
-      usbDevice = null;
-      usbEndpoint = null;
       console.log('USB desconectado manualmente.');
     }
+  } catch (err) {
+    console.error('Aviso: Erro ao fechar a porta física (pode estar em uso pelo Windows):', err);
+  } finally {
+    // O bloco "finally" roda sempre, com erro ou sem erro.
+    // Isso garante que o sistema "esqueça" a impressora antiga e libere o botão.
+    impressoraChar = null;
+    impressoraDevice = null;
+    usbDevice = null;
+    usbEndpoint = null;
     modoImpressao = null;
     atualizarStatusImpressora();
-  } catch (err) {
-    console.error('Erro ao desconectar:', err);
   }
 }
 
