@@ -75,8 +75,12 @@
   <main>
     <!-- ABA 1: RECENTES -->
     <div id="aba-recentes" class="conteudo-aba ativo">
-      <div class="top-bar-aba">
+      <div class="top-bar-aba" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <h2>Pedidos na Fila</h2>
+        <!-- NOVO BOTÃO DE PEDIDO MANUAL AQUI -->
+        <button class="btn-admin btn-admin-primario" onclick="abrirModalPedidoManual()">
+          <i class="fa-solid fa-plus"></i> Novo Pedido (Mesa)
+        </button>
       </div>
       <div id="lista-pedidos">
         <div class="vazio">Nenhum pedido ainda. Aguardando...</div>
@@ -121,6 +125,44 @@
         </div>
     </div>
   </main>
+</div>
+
+<!-- MODAL DE PEDIDO MANUAL (PARA MESAS) -->
+<div id="modal-pedido-manual" class="modal-overlay">
+  <div class="modal-conteudo">
+    <div class="modal-header">
+      <h3>Novo Pedido Manual</h3>
+      <button class="fechar-modal" onclick="fecharModalPedidoManual()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    
+    <div class="form-manual">
+      <div class="input-group">
+        <input type="text" id="manual-nome" placeholder="Nome do Cliente (Obrigatório)" required>
+        <input type="text" id="manual-mesa" placeholder="Mesa / Telefone (Opcional)">
+      </div>
+
+      <div class="add-item-group" style="margin-top: 10px; display: flex; gap: 10px;">
+        <select id="manual-lanche" style="flex: 1; padding: 12px; border-radius: 6px; border: 1px solid #333; background: var(--cor-primaria); color: #fff;">
+          <!-- Preenchido via JS -->
+        </select>
+        <button class="btn-admin" onclick="adicionarItemManual()">Adicionar</button>
+      </div>
+    </div>
+
+    <div id="lista-manual-carrinho" style="max-height: 200px; overflow-y: auto; margin-top: 15px;">
+      <!-- Itens adicionados vão aparecer aqui -->
+    </div>
+
+    <div class="modal-footer">
+      <div class="total-carrinho">
+        <span>Total:</span>
+        <strong id="total-manual-valor">R$ 0,00</strong>
+      </div>
+      <button class="btn-admin btn-admin-primario btn-enviar-manual" onclick="enviarPedidoManual()">
+        <i class="fa-solid fa-paper-plane"></i> Enviar para a Cozinha
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL DE FUNCIONÁRIO -->
