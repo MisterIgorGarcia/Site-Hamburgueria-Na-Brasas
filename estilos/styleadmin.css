@@ -1,0 +1,324 @@
+/* ===================== VARIÁVEIS LOCAIS DO ADMIN ===================== 
+   (Usa as variáveis do style.css como fallback, mas define as específicas) */
+:root {
+  --admin-verde: #22c55e;
+  --admin-vermelho: #ef4444;
+  --admin-card: #1a1a1a;
+  --admin-card-claro: #252525;
+  --admin-cinza: #999;
+}
+
+/* ===================== BOTÕES DO PAINEL ===================== */
+button.btn-admin {
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--admin-card-claro);
+  color: var(--cor-texto-claro);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+button.btn-admin:hover {
+  border-color: var(--cor-secundaria);
+}
+
+button.btn-admin-primario {
+  background: var(--cor-secundaria);
+  color: var(--cor-primaria);
+}
+
+button.btn-admin-primario:hover {
+  background: #ffe066;
+}
+
+button.btn-admin-perigo {
+  background: transparent;
+  color: var(--admin-vermelho);
+  border-color: #3a1a1a;
+}
+
+button.btn-admin-perigo:hover {
+  border-color: var(--admin-vermelho);
+}
+
+button.btn-admin:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===================== TELA DE LOGIN ===================== */
+#view-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.login-box {
+  background: var(--admin-card);
+  border: 1px solid #2a2a2a;
+  border-top: 3px solid var(--cor-secundaria);
+  border-radius: 12px;
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-box h1 {
+  color: var(--cor-secundaria);
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+}
+
+.login-box p {
+  color: var(--admin-cinza);
+  font-size: 0.85rem;
+  margin-bottom: 25px;
+}
+
+.login-box label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--admin-cinza);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background: var(--cor-primaria);
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: var(--cor-texto-claro);
+  font-size: 1rem;
+}
+
+.login-box input:focus {
+  outline: none;
+  border-color: var(--cor-secundaria);
+}
+
+.login-box button {
+  width: 100%;
+  padding: 14px;
+  background: var(--cor-secundaria);
+  color: var(--cor-primaria);
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-box button:hover:not(:disabled) {
+  background: #ffe066;
+}
+
+.login-box button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.erro {
+  color: var(--admin-vermelho);
+  font-size: 0.85rem;
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+/* ===================== DASHBOARD ===================== */
+#view-dash {
+  display: none;
+}
+
+#view-dash.ativo {
+  display: block;
+}
+
+/* O header do painel sobrescreve o header padrão do style.css */
+#view-dash header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--admin-card);
+  border-bottom: 3px solid var(--cor-secundaria);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+#view-dash header h1 {
+  color: var(--cor-secundaria);
+  font-size: 1.3rem;
+}
+
+#view-dash header .user-info {
+  color: var(--admin-cinza);
+  font-size: 0.85rem;
+}
+
+#view-dash header .botoes {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ===================== STATUS IMPRESSORA ===================== */
+.status-impressora {
+  padding: 12px 24px;
+  background: #151515;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.status-impressora .bolinha {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--admin-vermelho);
+}
+
+.status-impressora.conectada .bolinha {
+  background: var(--admin-verde);
+}
+
+/* ===================== LISTA DE PEDIDOS ===================== */
+#view-dash main {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+#view-dash main > h2 {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  color: var(--cor-secundaria);
+}
+
+#lista-pedidos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vazio {
+  text-align: center;
+  color: var(--admin-cinza);
+  padding: 40px;
+  font-style: italic;
+}
+
+.pedido {
+  background: var(--admin-card);
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 18px 20px;
+  transition: border-color 0.2s;
+}
+
+.pedido.novo {
+  border-color: var(--cor-secundaria);
+  animation: pulse 1s ease 2;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(223, 141, 34, 0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(223, 141, 34, 0); }
+}
+
+.pedido-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pedido-id {
+  color: var(--admin-cinza);
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+
+.pedido-hora {
+  color: var(--admin-cinza);
+  font-size: 0.8rem;
+}
+
+.pedido-cliente {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.pedido-cliente small {
+  color: var(--admin-cinza);
+  font-weight: normal;
+  margin-left: 8px;
+  font-size: 0.85rem;
+}
+
+.pedido-itens {
+  list-style: none;
+  margin-bottom: 12px;
+}
+
+.pedido-itens li {
+  padding: 6px 0;
+  border-bottom: 1px dashed #2a2a2a;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.pedido-itens li:last-child {
+  border-bottom: none;
+}
+
+.pedido-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #333;
+  margin-bottom: 14px;
+}
+
+.pedido-total .valor {
+  color: var(--cor-secundaria);
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.pedido-acoes {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.pedido-acoes button {
+  flex: 1 1 auto;
+  min-width: 130px;
+}
+
+/* ===================== RESPONSIVO ===================== */
+@media (max-width: 600px) {
+  #view-dash header { padding: 12px 16px; }
+  #view-dash header h1 { font-size: 1.1rem; }
+  #view-dash main { padding: 16px; }
+  .pedido { padding: 14px 16px; }
+  .pedido-acoes button { min-width: 0; }
+}
