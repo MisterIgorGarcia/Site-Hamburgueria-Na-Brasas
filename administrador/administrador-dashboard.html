@@ -22,25 +22,22 @@
       <h1>Painel Admin</h1>
       <div class="user-info" id="user-info">Carregando...</div>
     </div>
-    
-    <!-- A div "botoes" foi restaurada aqui -->
     <div class="botoes">
-      <!-- Botão Bluetooth -->
-      <button class="btn-admin tooltip" id="btn-conectar">
-        🔌 Bluetooth
-        <span class="tooltip-content">Conectar via Bluetooth (Celular)</span>
-      </button>
-
-      <!-- Botão USB -->
-      <button class="btn-admin tooltip" id="btn-conectar-usb">
-        🔗 USB
-        <span class="tooltip-content">
-          Conectar via Cabo USB<br> (PC usando o aplicativo <a href="https://zadig.akeo.ie" target="_blank">Zadig</a>)
-        </span>
-      </button>
-
-      <!-- Botão Sair (Tinha desaparecido) -->
-      <button class="btn-admin btn-admin-perigo" onclick="sair()">Sair</button>
+        <!-- Botão Bluetooth COM TOOLTIP -->
+        <button class="btn-admin tooltip" id="btn-conectar">
+            🔌 Bluetooth
+            <span class="tooltip-content">Conectar via Bluetooth (Celular)</span>
+        </button>
+        <!-- Botão USB COM TOOLTIP E LINK -->
+        <button class="btn-admin tooltip" id="btn-conectar-usb">
+            🔗 USB
+            <span class="tooltip-content">
+            Conectar via Cabo USB (PC)<br>
+            Use o app <a href="https://zadig.akeo.ie" target="_blank">Zadig</a>
+            </span>
+        </button>
+        <!-- Botão Sair -->
+        <button class="btn-admin btn-admin-perigo" onclick="sair()">Sair</button>
     </div>
   </header>
 
