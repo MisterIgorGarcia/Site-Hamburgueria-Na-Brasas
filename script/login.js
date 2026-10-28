@@ -24,13 +24,13 @@ formLogin.addEventListener('submit', async (e) => {
     if (errorAdmin) throw errorAdmin;
 
     if (dataAdmin?.success) {
-      // É Admin! Salva a sessão e vai para o painel do dono
       localStorage.setItem('nabrasas_sessao', JSON.stringify({ tipo: 'admin', nome: dataAdmin.login }));
-      window.location.href = 'administrador/administrador-dashboard.html';
+      // Como o login está na pasta admin, o dashboard está no MESMO lugar
+      window.location.href = 'administrador-dashboard.html'; 
       return;
     }
 
-    // 2. Se não achou no admin, tenta logar como FUNCIONÁRIO (usuario)
+    // 2. Tenta logar como FUNCIONÁRIO
     let { data: dataUser, error: errorUser } = await supabaseClient.rpc('login_usuario', {
       p_login: login, p_senha: senha
     });
@@ -38,13 +38,12 @@ formLogin.addEventListener('submit', async (e) => {
     if (errorUser) throw errorUser;
 
     if (dataUser?.success) {
-      // É Funcionário! Salva a sessão e vai para o painel do funcionário
       localStorage.setItem('nabrasas_sessao', JSON.stringify({ tipo: 'funcionario', nome: dataUser.login }));
-      window.location.href = 'funcionario-dashboard.html';
+      // O funcionário está na raiz, então precisamos voltar uma pasta
+      window.location.href = '../funcionario-dashboard.html'; 
       return;
     }
 
-    // Se chegou aqui, não achou em nenhuma das duas tabelas
     loginErro.textContent = 'Login ou senha inválidos.';
 
   } catch (err) {
