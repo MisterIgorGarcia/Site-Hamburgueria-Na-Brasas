@@ -12,14 +12,17 @@ let carrinho = [];
 
 /* ===================== NAVEGAÇÃO DE CATEGORIAS ===================== */
 function mudarCategoria(categoria) {
-    // 1. Remove a classe 'ativo' de todos os botões e conteúdos
+    // 1. Remove a classe 'ativo' de todos os botões
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('ativo'));
+    
+    // 2. Remove a classe 'ativo' de todas as divs de conteúdo
     document.querySelectorAll('.categoria-conteudo').forEach(conteudo => conteudo.classList.remove('ativo'));
 
-    // 2. Adiciona 'ativo' apenas no botão e conteúdo clicado
+    // 3. Adiciona 'ativo' apenas no botão que foi clicado
     const botaoClicado = document.querySelector(`.tab-btn[onclick="mudarCategoria('${categoria}')"]`);
     if (botaoClicado) botaoClicado.classList.add('ativo');
     
+    // 4. Adiciona 'ativo' apenas no conteúdo da categoria clicada
     const conteudoAlvo = document.getElementById(`cat-${categoria}`);
     if (conteudoAlvo) conteudoAlvo.classList.add('ativo');
 }
@@ -55,7 +58,7 @@ async function carregarProdutos() {
     data.forEach(produto => {
         const precoFormatado = Number(produto.preco).toFixed(2).replace('.', ',');
         
-        // AQUI ESTÁ A CORREÇÃO: Substitui o "\n" literal por uma quebra de linha real e depois separa
+        // Correção do \n
         let descricaoTratada = produto.descricao ? produto.descricao.replace(/\\n/g, '\n') : '';
         
         const listaDescricao = descricaoTratada
