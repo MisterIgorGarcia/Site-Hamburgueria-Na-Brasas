@@ -41,9 +41,11 @@ async function carregarProdutos() {
     data.forEach(produto => {
         const precoFormatado = Number(produto.preco).toFixed(2).replace('.', ',');
         
-        // CORREÇÃO AQUI: O regex /\r?\n/ garante que ele quebre a linha em Windows e Linux/Mac
-        const listaDescricao = produto.descricao 
-            ? produto.descricao.split(/\r?\n/).filter(linha => linha.trim() !== '').map(item => `<li><i class="fa-solid fa-check"></i> ${item}</li>`).join('') 
+        // AQUI ESTÁ A CORREÇÃO: Substitui o "\n" literal por uma quebra de linha real e depois separa
+        let descricaoTratada = produto.descricao ? produto.descricao.replace(/\\n/g, '\n') : '';
+        
+        const listaDescricao = descricaoTratada
+            ? descricaoTratada.split('\n').filter(linha => linha.trim() !== '').map(item => `<li><i class="fa-solid fa-check"></i> ${item}</li>`).join('') 
             : '';
 
         const classeCard = produto.destaque ? 'card-premium' : 'card';
