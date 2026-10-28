@@ -56,10 +56,14 @@ function mudarAba(aba) {
   document.querySelector(`.aba-btn[onclick="mudarAba('${aba}')"]`).classList.add('ativo');
   document.getElementById(`aba-${aba}`).classList.add('ativo');
 
-  // Se entrou em recentes, ZERA a notificação imediatamente
+  // Se entrou em recentes, ZERA a notificação e esconde o número
   if (aba === 'recentes') {
     novasNotificacoes = 0;
-    atualizarBadgeNotificacao(); // Atualiza o visual
+    const badge = document.getElementById('badge-notificacao');
+    if (badge) {
+        badge.classList.add('escondido');
+        badge.textContent = '0';
+    }
     carregarPedidos(paginaAtualRecentes); 
   }
   
@@ -209,7 +213,7 @@ function removerPedidoDaTela(id) {
   if (el) el.remove();
   pedidosNaTela.delete(id);
   
-  // Se a notificação estiver ativa, diminui 1 ao apagar um pedido
+  // Se o usuário apagar um pedido, diminui a notificação (caso tenha alguma)
   if (novasNotificacoes > 0) {
     novasNotificacoes--;
     atualizarBadgeNotificacao();
@@ -221,17 +225,6 @@ function removerPedidoDaTela(id) {
   }
 }
 
-async function apagarPedidoRecente(id) {
-  if (!confirm("Tem certeza que deseja APAGAR este pedido?")) return;
-
-  removerPedidoDaTela(id);
-
-  const { error } = await supabaseClient.from('pedidos_recentes').delete().eq('id', id);
-  if (error) { 
-    alert("Erro ao apagar: " + error.message); 
-    carregarPedidos(paginaAtualRecentes);
-  }
-}
 
 /* ===================== ABA 2: HISTÓRICO ===================== */
 async function carregarHistorico(pagina = 1) {

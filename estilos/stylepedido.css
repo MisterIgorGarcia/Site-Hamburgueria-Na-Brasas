@@ -408,20 +408,19 @@
 }
 
 .badge-notif {
-  background-color: #ef4444 !important; /* Vermelho */
+  background-color: #ef4444 !important;
   color: white !important;
   font-size: 0.7rem;
   font-weight: bold;
   padding: 2px 6px;
   border-radius: 10px;
-  margin-left: 6px; /* Dá um espacinho do texto Recentes */
+  margin-left: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   animation: pulse-notif 1.5s infinite;
 }
 
-/* FORÇA O SUMIÇO QUANDO A CLASSE FOR APLICADA */
 .badge-notif.escondido {
   display: none !important; 
 }
