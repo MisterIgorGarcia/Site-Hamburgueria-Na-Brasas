@@ -109,57 +109,67 @@ button.btn-admin:disabled { opacity: 0.5; cursor: not-allowed; }
 /* ===================== GRÁFICOS ===================== */
 .grafico-container { background: var(--admin-card); border: 1px solid #2a2a2a; border-radius: 12px; padding: 20px; width: 100%; }
 
-/* ===================== TOOLTIPS COM HTML ===================== */
-.tooltip { position: relative; }
+/* ===================== TOOLTIPS ===================== */
+.tooltip {
+    position: relative;
+    overflow: visible !important; 
+}
 
+/* O balão do tooltip agora para BAIXO */
 .tooltip-content {
     position: absolute;
-    bottom: 130%;
+    top: 140%; /* Joga o balão para baixo do botão */
     left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    background-color: #222;
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.75rem;
+    transform: translateX(-50%) translateY(-10px); /* Animação vindo de cima para baixo */
+    background-color: #252525; 
+    color: #f5f5f5;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.8rem;
     font-weight: normal;
     text-align: center;
     line-height: 1.4;
-    min-width: 180px;
+    white-space: nowrap;
     opacity: 0;
     visibility: hidden;
     transition: all 0.2s ease-in-out;
-    z-index: 100;
-    border: 1px solid #444;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    z-index: 9999; 
+    border: 1px solid var(--cor-secundaria);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.6);
     pointer-events: none;
 }
 
-.tooltip-content::before {
+/* A setinha do balão agora aponta para CIMA */
+.tooltip-content::after {
     content: "";
     position: absolute;
-    top: 100%;
+    bottom: 100%; /* Coloca a setinha no topo do balão */
     left: 50%;
     transform: translateX(-50%);
     border-width: 6px;
     border-style: solid;
-    border-color: #222 transparent transparent transparent;
+    /* Inverte as cores para a seta apontar pra cima */
+    border-color: transparent transparent var(--cor-secundaria) transparent; 
 }
 
+/* Efeito ao passar o mouse */
 .tooltip:hover .tooltip-content {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(0);
-    pointer-events: auto;
+    transform: translateX(-50%) translateY(0); /* Termina a animação */
+    pointer-events: auto; 
 }
 
+/* Estilo do link */
 .tooltip-content a {
     color: var(--cor-secundaria);
     text-decoration: underline;
     font-weight: bold;
 }
-.tooltip-content a:hover { color: var(--amarelo-claro); }
 
+.tooltip-content a:hover {
+    color: #ffe066;
+}
 /* ===================== RESPONSIVO ===================== */
 @media (max-width: 600px) {
   #view-dash header { padding: 12px 16px; }
