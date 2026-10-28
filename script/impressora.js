@@ -283,8 +283,8 @@ function atualizarStatusImpressora() {
   // Reseta o visual dos botões para o padrão (mantendo os ícones)
   btnBT.classList.remove('btn-admin-perigo');
   btnUSB.classList.remove('btn-admin-perigo');
-  txtBT.innerHTML = '<i class="fa-brands fa-bluetooth-b"></i> Conectar Bluetooth';
-  txtUSB.innerHTML = '<i class="fa-solid fa-plug"></i> Conectar USB';
+  txtBT.innerHTML = '<i class="fa-brands fa-bluetooth-b"></i> Bluetooth';
+  txtUSB.innerHTML = '<i class="fa-solid fa-plug"></i> USB';
 
   if (modoImpressao === 'bluetooth' && impressoraChar && impressoraDevice?.gatt?.connected) {
     conectado = true;
