@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Na Brasas</title>
+<link rel="stylesheet" href="../estilos/style.css">
+<link rel="stylesheet" href="../estilos/styleadmin.css">
+<!-- Vercel Analytics -->
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+
+<div class="login-wrapper">
+  <div class="login-box">
+    <h1>Painel — Na Brasas</h1>
+    <p>Acesso restrito</p>
+    <form id="form-login">
+      <label>Login</label>
+      <input type="text" id="inp-login" required autocomplete="username">
+      <label>Senha</label>
+      <input type="password" id="inp-senha" required autocomplete="current-password">
+      <button type="submit" id="btn-entrar">Entrar</button>
+      <div class="erro" id="login-erro"></div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../script/login.js"></script>
+</body>
+</html>
