@@ -249,13 +249,29 @@ function criarCardPedido(pedido, lista, novo) {
   const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
   const itensHTML = itens.map(i => `<li><span>${i.qtd || 1}x ${i.nome}</span><span>R$ ${Number(i.preco).toFixed(2).replace('.', ',')}</span></li>`).join('');
 
+  // Lógica para o Endereço e Google Maps
+  let enderecoHTML = '';
+  if (pedido.cliente_endereco) {
+      const enderecoMapa = encodeURIComponent(pedido.cliente_endereco);
+      enderecoHTML = `
+        <div class="pedido-endereco">
+            <p><i class="fa-solid fa-location-dot" style="color:var(--cor-secundaria)"></i> ${pedido.cliente_endereco}</p>
+            <iframe 
+                src="https://maps.google.com/maps?q=${enderecoMapa}&t=&z=16&ie=UTF8&iwloc=&output=embed" 
+                class="mapa-pedido" allowfullscreen="" loading="lazy">
+            </iframe>
+        </div>
+      `;
+  }
+
   card.innerHTML = `
     <div class="pedido-header">
       <span class="pedido-id">#${pedido.id.slice(0, 8)}</span>
       <span class="pedido-hora">${dataFormatada} às ${horaFormatada}</span>
     </div>
     <div class="pedido-cliente">${pedido.cliente_nome} <small>${pedido.cliente_telefone || ''}</small></div>
-    <ul class="pedido-itens">${itensHTML}</ul>
+    ${enderecoHTML}
+    <ul class="pedido-itens" style="margin-top: 15px;">${itensHTML}</ul>
     <div class="pedido-total">
       <span>Total</span><span class="valor">R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}</span>
     </div>

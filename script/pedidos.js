@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarAdicionais(); // Carrega os adicionais primeiro
     await carregarProdutos();
     configurarMascaraTelefone();
+    configurarBuscaCEP(); // Inicia a busca de CEP
 });
 
 async function carregarAdicionais() {
@@ -93,16 +94,10 @@ async function carregarProdutos() {
 
 /* ===================== LÓGICA DO MODAL DE ADICIONAIS ===================== */
 function abrirModalItem(id) {
-    // Encontra o produto no banco (pelo ID passado no botão)
-    const produto = Array.from(document.querySelectorAll('.btn-add-carrinho')).find(btn => btn.getAttribute('onclick').includes(id));
-    
-    // Vamos buscar o produto do banco novamente para pegar os dados certos (nome e preço base)
-    // Para otimizar, o ideal seria salvar os produtos numa variável global, mas faremos a busca simples:
     supabaseClient.from('produtos').select('*').eq('id', id).single().then(({data}) => {
         itemAtualSelecionado = data;
         document.getElementById('item-nome-titulo').textContent = data.nome;
         
-        // Popula a lista de adicionais
         const listaModal = document.getElementById('lista-adicionais-modal');
         listaModal.innerHTML = '';
 
@@ -122,7 +117,7 @@ function abrirModalItem(id) {
             });
         }
 
-        calcularTotalModal(); // Inicia com o valor base
+        calcularTotalModal(); 
         document.getElementById('modal-item').classList.add('ativo');
     });
 }
@@ -159,13 +154,11 @@ function confirmarAdicaoAoCarrinho() {
         precoFinal += preco;
     });
 
-    // Junta o nome base + os adicionais (ex: "Burguer Duplo (+ Bacon, + Cheddar)")
     let nomeExibicao = itemAtualSelecionado.nome;
     if (adicionaisEscolhidos.length > 0) {
         nomeExibicao += ` (+ ${adicionaisEscolhidos.map(a => a.nome).join(', ')})`;
     }
 
-    // Cria o objeto do item
     const novoItem = {
         nome: nomeExibicao,
         nomeBase: itemAtualSelecionado.nome,
@@ -174,7 +167,6 @@ function confirmarAdicaoAoCarrinho() {
         qtd: 1
     };
 
-    // Adiciona ao carrinho
     const itemExistenteIndex = carrinho.findIndex(i => i.nome === novoItem.nome);
     
     if (itemExistenteIndex > -1) {
@@ -245,7 +237,6 @@ function atualizarCarrinhoUI() {
         totalGeral += item.preco * item.qtd;
         totalItens += item.qtd;
 
-        // Se tiver adicionais, renderiza eles embaixo
         let adicionaisHTML = '';
         if (item.adicionais && item.adicionais.length > 0) {
             const nomes = item.adicionais.map(a => a.nome).join(', ');
@@ -305,6 +296,13 @@ async function enviarPedido() {
     const nome = document.getElementById('nome-cliente').value.trim();
     const telefone = document.getElementById('tel-cliente').value.trim();
 
+    // Captura endereço
+    const cep = document.getElementById('cep-cliente').value.trim();
+    const rua = document.getElementById('rua-cliente').value.trim();
+    const num = document.getElementById('num-cliente').value.trim();
+    const bairro = document.getElementById('bairro-cliente').value.trim();
+    const cidade = document.getElementById('cidade-cliente').value.trim();
+
     if (nome.length < 3) { alert("Por favor, preencha seu nome completo."); return; }
     if (telefone) {
         const regexTelefone = /^\(\d{2}\) \d{4,5}-\d{4}$/;
@@ -314,22 +312,34 @@ async function enviarPedido() {
         }
     }
 
+    // Se o cliente preencheu o CEP, obriga a digitar o número da casa.
+    if (cep && !num) {
+        alert("Por favor, digite o número da sua casa para completar o endereço.");
+        document.getElementById('num-cliente').focus();
+        return;
+    }
+
     const total = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
 
-    // Limpa o formato do carrinho para mandar pro banco do jeito certo
+    // Limpa o formato do carrinho para mandar pro banco
     const itensFormatados = carrinho.map(item => {
-        // Se tiver adicionais, junta no nome pra imprimir bonitinho no cupom
-        let nomeFinal = item.nome;
         return {
-            nome: nomeFinal,
+            nome: item.nome,
             preco: item.preco,
             qtd: item.qtd
         };
     });
 
+    // Monta o endereço completo
+    let enderecoCompleto = '';
+    if (rua && num) {
+        enderecoCompleto = `${rua}, ${num} - ${bairro}, ${cidade}`;
+    }
+
     const novoPedido = {
         cliente_nome: nome,
         cliente_telefone: telefone,
+        cliente_endereco: enderecoCompleto || null, // Envia null se for retirada no balcão
         itens: itensFormatados,
         total: total
     };
@@ -344,17 +354,59 @@ async function enviarPedido() {
 
         alert("Pedido enviado com sucesso! Aguarde a impressão na cozinha.");
         
+        // Limpa o carrinho e TODOS os campos do formulário
         carrinho = [];
         atualizarCarrinhoUI();
+        
         document.getElementById('nome-cliente').value = '';
         document.getElementById('tel-cliente').value = '';
+        document.getElementById('cep-cliente').value = '';
+        document.getElementById('num-cliente').value = '';
+        document.getElementById('rua-cliente').value = '';
+        document.getElementById('bairro-cliente').value = '';
+        document.getElementById('cidade-cliente').value = '';
+        
         fecharCarrinho();
 
     } catch (err) {
         console.error(err);
-        alert("Erro ao enviar o pedido. Tente novamente.");
+        // Mostra o erro real no console, caso a coluna do banco não exista ainda
+        alert("Erro ao enviar o pedido. Verifique a conexão e tente novamente.");
     } finally {
         btnEnviar.disabled = false;
         btnEnviar.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar Pedido';
+    }
+}
+
+/* ===================== BUSCA DE CEP (ViaCEP) ===================== */
+function configurarBuscaCEP() {
+    const cepInput = document.getElementById('cep-cliente');
+    if (cepInput) {
+        cepInput.addEventListener('blur', async (e) => {
+            let cep = e.target.value.replace(/\D/g, '');
+            if (cep.length === 8) {
+                try {
+                    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                    const data = await res.json();
+                    if (!data.erro) {
+                        document.getElementById('rua-cliente').value = data.logradouro;
+                        document.getElementById('bairro-cliente').value = data.bairro;
+                        document.getElementById('cidade-cliente').value = `${data.localidade} - ${data.uf}`;
+                        document.getElementById('num-cliente').focus();
+                    } else {
+                        alert("CEP não encontrado.");
+                    }
+                } catch (err) {
+                    console.error("Erro ao buscar CEP", err);
+                }
+            }
+        });
+
+        // Máscara do CEP (00000-000)
+        cepInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/\D/g, '');
+            if (val.length > 5) val = val.replace(/^(\d{5})(\d)/, '$1-$2');
+            e.target.value = val;
+        });
     }
 }

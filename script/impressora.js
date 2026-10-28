@@ -338,6 +338,7 @@ async function imprimirEArquivar(pedido, botao) {
         id: pedido.id,
         cliente_nome: pedido.cliente_nome,
         cliente_telefone: pedido.cliente_telefone,
+        cliente_endereco: pedido.cliente_endereco,
         itens: pedido.itens,
         total: pedido.total,
         status: 'impresso',

@@ -214,11 +214,20 @@
     background-color: var(--cor-primaria);
     color: white;
     font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .form-cliente input:focus {
     outline: none;
     border-color: var(--cor-secundaria);
+}
+
+/* Campos bloqueados (preenchidos pelo CEP) */
+.form-cliente input[readonly] {
+    background-color: #1a1a1a;
+    color: #888;
+    cursor: not-allowed;
 }
 
 .btn-enviar {
@@ -468,43 +477,4 @@
     margin-top: 4px;
     padding-left: 5px;
     border-left: 2px solid #333;
-}
-
-/* ===================== TERMINAL VISUAL DE LOGS ===================== */
-.terminal-container {
-  background-color: #000;
-  border-bottom: 2px solid var(--cor-secundaria);
-  padding: 10px;
-  max-height: 200px;
-  overflow-y: auto;
-  font-family: monospace;
-}
-
-.terminal-header {
-  color: #666;
-  font-size: 0.75rem;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-#terminal-logs {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.log-line {
-  font-size: 0.8rem;
-  color: #22c55e; /* Verde Matrix */
-  word-break: break-all;
-  line-height: 1.4;
-}
-
-.log-erro {
-  color: #ef4444; /* Vermelho */
-}
-
-.log-aviso {
-  color: #eab308; /* Amarelo */
 }

@@ -77,9 +77,18 @@
                 <strong id="total-carrinho-valor">R$ 0,00</strong>
             </div>
             
+            <!-- FORMULÁRIO ATUALIZADO COM ENDEREÇO -->
             <div class="form-cliente">
                 <input type="text" id="nome-cliente" placeholder="Seu Nome (Obrigatório)" required>
                 <input type="tel" id="tel-cliente" placeholder="Seu WhatsApp (Opcional)" maxlength="15" inputmode="numeric">
+                
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="cep-cliente" placeholder="CEP" maxlength="9" inputmode="numeric" style="flex: 1;">
+                    <input type="text" id="num-cliente" placeholder="Número" style="width: 80px;">
+                </div>
+                <input type="text" id="rua-cliente" placeholder="Rua / Avenida (Preenchido pelo CEP)" readonly>
+                <input type="text" id="bairro-cliente" placeholder="Bairro (Preenchido pelo CEP)" readonly>
+                <input type="text" id="cidade-cliente" placeholder="Cidade (Preenchido pelo CEP)" readonly>
             </div>
 
             <button class="btn-amarelo btn-enviar" onclick="enviarPedido()">
@@ -120,7 +129,6 @@
 
 <!-- ===================== SCRIPTS ===================== -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Caminho corrigido com ../ -->
 <script src="../script/pedidos.js"></script>
 </body>
 </html>
