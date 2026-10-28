@@ -1,5 +1,5 @@
 /* =====================================================================
-   SISTEMA DE IMPRESSÃO (WEB BLUETOOTH / WEBUSB) - COM RECONEXÃO AUTOMÁTICA
+   SISTEMA DE IMPRESSÃO (WEB BLUETOOTH / WEBUSB) - COM TROCA AUTOMÁTICA
    ===================================================================== */
 
 let impressoraChar = null; // Bluetooth
@@ -8,24 +8,39 @@ let usbDevice = null; // USB
 let usbEndpoint = null; // USB
 let modoImpressao = null; // 'bluetooth' ou 'usb'
 
+/* ===================== DESCONECTAR ===================== */
+async function desconectarImpressoraAtual() {
+  try {
+    if (modoImpressao === 'bluetooth' && impressoraDevice) {
+      if (impressoraDevice.gatt.connected) impressoraDevice.gatt.disconnect();
+      impressoraChar = null;
+      impressoraDevice = null;
+      console.log('Bluetooth desconectado manualmente.');
+    } 
+    else if (modoImpressao === 'usb' && usbDevice) {
+      if (usbDevice.opened) await usbDevice.close();
+      usbDevice = null;
+      usbEndpoint = null;
+      console.log('USB desconectado manualmente.');
+    }
+    modoImpressao = null;
+    atualizarStatusImpressora();
+  } catch (err) {
+    console.error('Erro ao desconectar:', err);
+  }
+}
+
 /* ===================== INICIALIZAÇÃO E RECONEXÃO USB ===================== */
-// Tenta reconectar ao USB automaticamente quando a página carrega
 document.addEventListener('DOMContentLoaded', async () => {
   if (!navigator.usb) return;
-  
   try {
     const devices = await navigator.usb.getDevices();
     if (devices.length > 0) {
-      // Tenta configurar o primeiro dispositivo USB autorizado
       await configurarConexaoUSB(devices[0]);
-      console.log('USB reconectado automaticamente!');
     }
-  } catch (err) {
-    console.log('Nenhum USB autorizado previamente.', err);
-  }
+  } catch (err) {}
 });
 
-// Monitora se o cabo USB foi desconectado ou reconectado fisicamente
 if (navigator.usb) {
   navigator.usb.addEventListener('disconnect', (event) => {
     if (usbDevice && event.device === usbDevice) {
@@ -34,46 +49,45 @@ if (navigator.usb) {
       if (modoImpressao === 'usb') atualizarStatusImpressora();
     }
   });
-
-  navigator.usb.addEventListener('connect', async (event) => {
-    // Se o cabo for plugado novamente, tenta reconectar sozinho
-    if (!usbDevice && modoImpressao === 'usb') {
-      try {
-        await configurarConexaoUSB(event.device);
-      } catch (e) {}
-    }
-  });
 }
 
 /* ===================== CONEXÃO USB ===================== */
 const btnConectarUSB = document.getElementById('btn-conectar-usb');
 if (btnConectarUSB) {
   btnConectarUSB.addEventListener('click', async () => {
+    // Se já está conectado no USB, clicar novamente desconecta
+    if (modoImpressao === 'usb') {
+      return desconectarImpressoraAtual();
+    }
+
     if (!navigator.usb) {
       alert("Seu navegador não suporta WebUSB. Use o Chrome ou Edge.");
       return;
     }
     try {
+      // TROCA AUTOMÁTICA: Se estiver no Bluetooth, desliga antes de conectar o USB
+      if (modoImpressao === 'bluetooth') {
+        await desconectarImpressoraAtual();
+      }
+
       btnConectarUSB.disabled = true;
-      btnConectarUSB.textContent = 'Conectando...';
+      document.getElementById('txt-usb').textContent = 'Conectando...';
+      
       const device = await navigator.usb.requestDevice({ filters: [] });
       await configurarConexaoUSB(device);
     } catch (err) {
       alert('Falha ao conectar USB: ' + err.message);
     } finally {
       btnConectarUSB.disabled = false;
-      btnConectarUSB.textContent = '🔗 USB';
+      atualizarStatusImpressora(); // Restaura o texto se falhar ou der certo
     }
   });
 }
 
 async function configurarConexaoUSB(device) {
-  if (usbDevice && usbDevice.opened) return usbEndpoint;
-
   await device.open();
   if (device.configuration === null) await device.selectConfiguration(1);
 
-  // Procura a interface de impressora
   let interfaceEncontrada = null;
   for (const iface of device.configuration.interfaces) {
     for (const alt of iface.alternates) {
@@ -88,7 +102,6 @@ async function configurarConexaoUSB(device) {
 
   await device.claimInterface(interfaceEncontrada.interfaceNumber);
 
-  // Procura o endpoint de saída
   let endpoint = null;
   for (const alt of interfaceEncontrada.alternates) {
     for (const ep of alt.endpoints) {
@@ -111,34 +124,41 @@ async function configurarConexaoUSB(device) {
 const btnConectar = document.getElementById('btn-conectar');
 if (btnConectar) {
   btnConectar.addEventListener('click', async () => {
+    // Se já está conectado no BT, clicar novamente desconecta
+    if (modoImpressao === 'bluetooth') {
+      return desconectarImpressoraAtual();
+    }
+
     try {
+      // TROCA AUTOMÁTICA: Se estiver no USB, desliga antes de conectar o BT
+      if (modoImpressao === 'usb') {
+        await desconectarImpressoraAtual();
+      }
+
       btnConectar.disabled = true;
-      btnConectar.textContent = 'Conectando...';
-      await garantirConexaoBluetooth(true); // true = forçar novo seletor
+      document.getElementById('txt-bt').textContent = 'Conectando...';
+      
+      await garantirConexaoBluetooth(true); 
     } catch (err) {
       alert('Falha ao conectar Bluetooth: ' + err.message);
     } finally {
       btnConectar.disabled = false;
-      btnConectar.textContent = '🔌 Bluetooth';
+      atualizarStatusImpressora();
     }
   });
 }
 
 async function garantirConexaoBluetooth(forcarNovo = false) {
-  // Se já está conectado, não faz nada
   if (!forcarNovo && impressoraChar && impressoraDevice?.gatt?.connected) return impressoraChar;
 
   let device;
-  
-  // Tenta pegar um dispositivo salvo em cache (Reconexão rápida no celular)
   if (!forcarNovo && navigator.bluetooth.getDevices) {
     try {
       const devices = await navigator.bluetooth.getDevices();
-      if (devices.length > 0) device = devices[0]; // Pega o primeiro autorizado
+      if (devices.length > 0) device = devices[0];
     } catch (e) {}
   }
 
-  // Se não achou no cache ou forçou novo, abre a janelinha do Chrome
   if (!device) {
     device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
@@ -173,20 +193,16 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
   impressoraDevice = device;
   modoImpressao = 'bluetooth';
 
-  // Se cair a conexão no celular, tenta reconectar sozinho
   device.addEventListener('gattserverdisconnected', async () => {
     impressoraChar = null;
     if (modoImpressao === 'bluetooth') {
       atualizarStatusImpressora();
-      console.log('Bluetooth caiu. Tentando reconectar em 3 segundos...');
-      
+      console.log('Bluetooth caiu. Tentando reconectar em 3s...');
       setTimeout(async () => {
         try {
           await garantirConexaoBluetooth(false);
-          console.log('Bluetooth reconectado com sucesso!');
-        } catch (err) {
-          console.log('Falha na reconexão automática.');
-        }
+          console.log('Bluetooth reconectado!');
+        } catch (err) {}
       }, 3000);
     }
   });
@@ -195,21 +211,44 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
   return char;
 }
 
-/* ===================== STATUS UNIFICADO ===================== */
+/* ===================== STATUS E VISUAL DOS BOTÕES ===================== */
 function atualizarStatusImpressora() {
   const wrap = document.getElementById('status-impressora');
   const txt = document.getElementById('status-texto');
+  const btnBT = document.getElementById('btn-conectar');
+  const btnUSB = document.getElementById('btn-conectar-usb');
+  const txtBT = document.getElementById('txt-bt');
+  const txtUSB = document.getElementById('txt-usb');
+  const tipBT = document.getElementById('tip-bt');
+  const tipUSB = document.getElementById('tip-usb');
+
   if (!wrap || !txt) return;
 
   let conectado = false;
   let nome = '';
 
+  // Reseta o visual dos botões para o padrão
+  btnBT.classList.remove('btn-admin-perigo');
+  btnUSB.classList.remove('btn-admin-perigo');
+  txtBT.textContent = '🔌 Conectar Bluetooth';
+  txtUSB.textContent = '🔗 Conectar USB';
+  tipBT.innerHTML = 'Conectar via Bluetooth (Celular)';
+  tipUSB.innerHTML = 'Conectar via Cabo USB (PC)<br>Use o app <a href="https://zadig.akeo.ie" target="_blank">Zadig</a> no Windows.';
+
+  // Aplica o status atual
   if (modoImpressao === 'bluetooth' && impressoraChar && impressoraDevice?.gatt?.connected) {
     conectado = true;
     nome = impressoraDevice.name || 'POS-58 (Bluetooth)';
-  } else if (modoImpressao === 'usb' && usbDevice && usbDevice.opened) {
+    btnBT.classList.add('btn-admin-perigo'); // Deixa o botão vermelho
+    txtBT.textContent = '❌ Desconectar Bluetooth';
+    tipBT.innerHTML = 'Clique para desconectar o Bluetooth';
+  } 
+  else if (modoImpressao === 'usb' && usbDevice && usbDevice.opened) {
     conectado = true;
     nome = usbDevice.productName || 'POS-58 (USB)';
+    btnUSB.classList.add('btn-admin-perigo'); // Deixa o botão vermelho
+    txtUSB.textContent = '❌ Desconectar USB';
+    tipUSB.innerHTML = 'Clique para desconectar o cabo USB';
   }
 
   if (conectado) {
@@ -221,7 +260,7 @@ function atualizarStatusImpressora() {
   }
 }
 
-/* ===================== ENVIO DE BYTES UNIFICADO ===================== */
+/* ===================== ENVIO DE BYTES ===================== */
 async function enviarBytesParaImpressora(bytes) {
   if (modoImpressao === 'bluetooth') {
     const CHUNK = 100;
@@ -275,7 +314,6 @@ async function imprimirEArquivar(pedido, botao) {
 }
 
 /* ===================== GERADOR DE RECIBO (ESC/POS) ===================== */
-// (Mantenha sua função gerarRecibo e normalizar exatamente como estão)
 function normalizar(s) {
   return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
