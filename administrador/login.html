@@ -23,48 +23,54 @@
             background-color: var(--cor-primaria);
             margin: 0;
         }
-        .btn-voltar {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: var(--cor-secundaria);
-            text-decoration: none;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: color 0.3s;
-        }
-        .btn-voltar:hover {
-            color: var(--cor-tercearia);
-        }
-        /* Garante que a caixa de login não seja afetada pelo body flex */
+        
         #view-login {
             width: 100%;
             display: flex;
             justify-content: center;
         }
+
+        /* Novo estilo do botão voltar (embaixo do Entrar) */
+        .btn-voltar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            color: #999;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+            width: 100%;
+        }
+        
+        .btn-voltar:hover {
+            color: var(--cor-secundaria);
+        }
     </style>
 </head>
 <body>
-
-<!-- Botão de Voltar para o Index (que está na raiz) -->
-<a href="../index.html" class="btn-voltar">
-    <i class="fa-solid fa-arrow-left"></i> Voltar ao Início
-</a>
 
 <div id="view-login">
   <div class="login-box">
     <h1>Painel — Na Brasas</h1>
     <p>Acesso restrito</p>
+    
     <form id="form-login">
       <label>Login</label>
       <input type="text" id="inp-login" required autocomplete="username">
       <label>Senha</label>
       <input type="password" id="inp-senha" required autocomplete="current-password">
+      
       <button type="submit" id="btn-entrar">Entrar</button>
       <div class="erro" id="login-erro"></div>
     </form>
+
+    <!-- Botão de Voltar agora fica aqui dentro da caixa -->
+    <a href="../index.html" class="btn-voltar">
+        <i class="fa-solid fa-arrow-left"></i> Voltar ao Início
+    </a>
+
   </div>
 </div>
 
