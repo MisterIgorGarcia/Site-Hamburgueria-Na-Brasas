@@ -1,5 +1,5 @@
 /* =====================================================================
-   DASHBOARD DO ADMIN (TEMPO REAL OTIMIZADO)
+   DASHBOARD DO ADMIN (TEMPO REAL OTIMIZADO COM LOGS)
    ===================================================================== */
 const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
@@ -10,14 +10,12 @@ const pedidosNaTela = new Map();
 let abaAtiva = 'recentes'; 
 let novasNotificacoes = 0; 
 
-// Variáveis de Controle de Paginação
 const ITENS_POR_PAGINA = 10;
 let paginaAtualRecentes = 1;
 let totalPaginasRecentes = 1;
 let paginaAtualHistorico = 1;
 let totalPaginasHistorico = 1;
 
-/* ===================== VERIFICAÇÃO DE LOGIN ===================== */
 document.addEventListener('DOMContentLoaded', () => {
   const sessaoSalva = localStorage.getItem('nabrasas_sessao');
   if (!sessaoSalva) { window.location.href = 'login.html'; return; }
@@ -34,7 +32,6 @@ function sair() {
   window.location.href = 'login.html'; 
 }
 
-/* ===================== INICIAR PAINEL ===================== */
 function iniciarPainel() {
   carregarPedidos(1);
   escutarNovosPedidos();
@@ -48,7 +45,6 @@ function iniciarPainel() {
   }
 }
 
-/* ===================== NAVEGAÇÃO DE ABAS ===================== */
 function mudarAba(aba) {
   abaAtiva = aba; 
   document.querySelectorAll('.aba-btn').forEach(btn => btn.classList.remove('ativo'));
@@ -68,7 +64,6 @@ function mudarAba(aba) {
   if (aba === 'funcionarios') carregarFuncionarios();
 }
 
-/* ===================== NOTIFICAÇÃO VISUAL ===================== */
 function atualizarBadgeNotificacao() {
   const badge = document.getElementById('badge-notificacao');
   if (!badge) return;
@@ -79,17 +74,25 @@ function atualizarBadgeNotificacao() {
     badge.style.display = 'inline-flex'; // Força a exibição
   } else {
     badge.classList.add('escondido');
-    badge.style.display = 'none'; // Força o sumiço, independente do CSS
+    badge.style.display = 'none'; // Força o sumiço
     badge.textContent = ''; 
   }
 }
 
-/* ===================== ESCUTA EM TEMPO REAL ===================== */
+/* ===================== ESCUTA EM TEMPO REAL (COM LOGS) ===================== */
 function escutarNovosPedidos() {
+  console.log("⏳ Tentando conectar ao Realtime...");
+
   subscriptionPedidos = supabaseClient
     .channel('mudancas-gerais')
     
+    .on('system', {}, (payload) => {
+      console.log("🟢 Status do Canal:", payload.status);
+    })
+
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
+      console.log("📦 Novo pedido recebido via WebSocket!", payload.new);
+      
       if (abaAtiva === 'recentes' && paginaAtualRecentes === 1) {
         adicionarPedidoNoTopo(payload.new);
       } else {
@@ -100,14 +103,20 @@ function escutarNovosPedidos() {
     })
     
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
+      console.log("🗑️ Pedido apagado no banco:", payload.old.id);
       removerPedidoDaTela(payload.old.id);
     })
 
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_arquivados' }, (payload) => {
+      console.log("📁 Pedido movido para o histórico.");
       if (abaAtiva === 'historico') carregarHistorico(paginaAtualHistorico);
       if (abaAtiva === 'graficos') gerarGraficos();
     })
-    .subscribe();
+    
+    .subscribe((status, err) => {
+      console.log("🚀 Status final da conexão:", status);
+      if (err) console.error("❌ Erro no Realtime:", err);
+    });
 }
 
 /* ===================== ABA 1: PEDIDOS RECENTES ===================== */
@@ -122,7 +131,10 @@ async function carregarPedidos(pagina = 1) {
     .order('created_at', { ascending: false }) 
     .range(inicio, fim);
 
-  if (error) return;
+  if (error) {
+    console.error("Erro ao buscar pedidos:", error);
+    return;
+  }
 
   totalPaginasRecentes = Math.ceil((count || 0) / ITENS_POR_PAGINA) || 1;
 
@@ -195,7 +207,6 @@ function criarCardPedido(pedido, lista, novo) {
   return card;
 }
 
-/* ===================== REMOÇÃO E APAGAR ===================== */
 function removerPedidoDaTela(id) {
   const el = document.querySelector(`[data-pedido="${id}"]`);
   if (el) el.remove();
