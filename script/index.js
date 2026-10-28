@@ -256,11 +256,11 @@ const NOMES_DIAS_SEMANA = [
 // Ícone (Font Awesome) exibido no topo de cada card — troque livremente
 const ICONES_DIAS = {
     0: 'fa-mug-hot',    // Domingo
-    1: 'fa-dumbbell',   // Segunda
-    2: 'fa-dumbbell',   // Terça
-    3: 'fa-dumbbell',   // Quarta
-    4: 'fa-dumbbell',   // Quinta
-    5: 'fa-dumbbell',   // Sexta
+    1: 'fa-close',   // Segunda
+    2: 'fa-burger',   // Terça
+    3: 'fa-burger',   // Quarta
+    4: 'fa-burger',   // Quinta
+    5: 'fa-burger',   // Sexta
     6: 'fa-sun'         // Sábado
 };
 
