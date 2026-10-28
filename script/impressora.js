@@ -1,27 +1,32 @@
 /* =====================================================================
-   SISTEMA DE IMPRESSÃO (WEB BLUETOOTH / ESC-POS)
+   SISTEMA DE IMPRESSÃO (WEB BLUETOOTH / WEBUSB)
    ===================================================================== */
 
-let impressoraChar = null;
-let impressoraDevice = null;
+let impressoraChar = null; // Bluetooth
+let impressoraDevice = null; // Bluetooth
+let usbDevice = null; // USB
+let usbEndpoint = null; // USB
+let modoImpressao = null; // 'bluetooth' ou 'usb'
 
+/* ===================== CONEXÃO BLUETOOTH ===================== */
 const btnConectar = document.getElementById('btn-conectar');
 if (btnConectar) {
   btnConectar.addEventListener('click', async () => {
     try {
       btnConectar.disabled = true;
       btnConectar.textContent = 'Conectando...';
-      await garantirConexao();
+      await garantirConexaoBluetooth();
+      modoImpressao = 'bluetooth';
     } catch (err) {
-      alert('Falha ao conectar: ' + err.message);
+      alert('Falha ao conectar Bluetooth: ' + err.message);
     } finally {
       btnConectar.disabled = false;
-      btnConectar.textContent = '🔌 Conectar Impressora';
+      btnConectar.textContent = '🔌 Bluetooth';
     }
   });
 }
 
-async function garantirConexao() {
+async function garantirConexaoBluetooth() {
   if (impressoraChar && impressoraDevice?.gatt?.connected) return impressoraChar;
 
   const device = await navigator.bluetooth.requestDevice({
@@ -34,7 +39,6 @@ async function garantirConexao() {
   });
 
   const server = await device.gatt.connect();
-
   let char = null;
   const servicos = [
     '000018f0-0000-1000-8000-00805f9b34fb',
@@ -58,33 +62,141 @@ async function garantirConexao() {
   
   device.addEventListener('gattserverdisconnected', () => {
     impressoraChar = null;
-    atualizarStatusImpressora();
+    if (modoImpressao === 'bluetooth') atualizarStatusImpressora();
   });
 
   atualizarStatusImpressora();
   return char;
 }
 
+/* ===================== CONEXÃO USB ===================== */
+const btnConectarUSB = document.getElementById('btn-conectar-usb');
+if (btnConectarUSB) {
+  btnConectarUSB.addEventListener('click', async () => {
+    if (!navigator.usb) {
+      alert("Seu navegador não suporta WebUSB. Use o Chrome ou Edge.");
+      return;
+    }
+    try {
+      btnConectarUSB.disabled = true;
+      btnConectarUSB.textContent = 'Conectando...';
+      await garantirConexaoUSB();
+      modoImpressao = 'usb';
+    } catch (err) {
+      alert('Falha ao conectar USB: ' + err.message);
+    } finally {
+      btnConectarUSB.disabled = false;
+      btnConectarUSB.textContent = '🔗 USB';
+    }
+  });
+}
+
+async function garantirConexaoUSB() {
+  if (usbDevice && usbDevice.opened) return usbEndpoint;
+
+  // Abre o seletor de dispositivos USB do navegador
+  const device = await navigator.usb.requestDevice({ filters: [] }); // filtro vazio mostra todos
+  await device.open();
+
+  if (device.configuration === null) {
+    await device.selectConfiguration(1);
+  }
+
+  // Procura a interface que tem um endpoint de saída (OUT)
+  let interfaceEncontrada = null;
+  for (const iface of device.configuration.interfaces) {
+    for (const alt of iface.alternates) {
+      // Classe 7 = Impressora
+      if (alt.interfaceClass === 0x07 || alt.endpoints.some(e => e.direction === 'out')) {
+        interfaceEncontrada = iface;
+        break;
+      }
+    }
+    if (interfaceEncontrada) break;
+  }
+
+  if (!interfaceEncontrada) {
+    throw new Error('Nenhuma interface de impressora encontrada no dispositivo USB.');
+  }
+
+  await device.claimInterface(interfaceEncontrada.interfaceNumber);
+
+  // Encontra o endpoint de saída
+  let endpoint = null;
+  for (const alt of interfaceEncontrada.alternates) {
+    for (const ep of alt.endpoints) {
+      if (ep.direction === 'out') {
+        endpoint = ep;
+        break;
+      }
+    }
+    if (endpoint) break;
+  }
+
+  if (!endpoint) {
+    throw new Error('Endpoint de saída não encontrado.');
+  }
+
+  usbDevice = device;
+  usbEndpoint = endpoint;
+  atualizarStatusImpressora();
+  return endpoint;
+}
+
+/* ===================== STATUS UNIFICADO ===================== */
 function atualizarStatusImpressora() {
   const wrap = document.getElementById('status-impressora');
   const txt = document.getElementById('status-texto');
   if (!wrap || !txt) return;
 
-  if (impressoraChar && impressoraDevice?.gatt?.connected) {
+  let conectado = false;
+  let nome = '';
+
+  if (modoImpressao === 'bluetooth' && impressoraChar && impressoraDevice?.gatt?.connected) {
+    conectado = true;
+    nome = impressoraDevice.name || 'POS-58 (Bluetooth)';
+  } else if (modoImpressao === 'usb' && usbDevice && usbDevice.opened) {
+    conectado = true;
+    nome = usbDevice.productName || 'POS-58 (USB)';
+  }
+
+  if (conectado) {
     wrap.classList.add('conectada');
-    txt.textContent = 'Impressora conectada — ' + (impressoraDevice.name || 'POS-58');
+    txt.textContent = `Impressora conectada — ${nome}`;
   } else {
     wrap.classList.remove('conectada');
     txt.textContent = 'Impressora desconectada';
   }
 }
 
+/* ===================== ENVIO DE BYTES UNIFICADO ===================== */
+async function enviarBytesParaImpressora(bytes) {
+  if (modoImpressao === 'bluetooth') {
+    // Envio via Bluetooth (chunks de 100 bytes)
+    const CHUNK = 100;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      const pedaco = bytes.slice(i, i + CHUNK);
+      await impressoraChar.writeValue(pedaco);
+      await new Promise(r => setTimeout(r, 25));
+    }
+  } else if (modoImpressao === 'usb') {
+    // Envio via USB (WebUSB transferOut)
+    await usbDevice.transferOut(usbEndpoint.endpointNumber, bytes);
+  } else {
+    throw new Error('Nenhuma impressora conectada. Conecte via Bluetooth ou USB.');
+  }
+}
+
+/* ===================== IMPRESSÃO E ARQUIVAMENTO ===================== */
 async function imprimirEArquivar(pedido, botao) {
   try {
-    // 1. Imprime
-    const char = await garantirConexao();
+    if (!modoImpressao) {
+      throw new Error('Conecte uma impressora (Bluetooth ou USB) primeiro.');
+    }
+
+    // 1. Gera o recibo e envia
     const bytes = gerarRecibo(pedido);
-    await enviarBytes(char, bytes);
+    await enviarBytesParaImpressora(bytes);
 
     // 2. Arquiva no banco
     const { error: errInsert } = await supabaseClient
@@ -110,7 +222,7 @@ async function imprimirEArquivar(pedido, botao) {
       console.warn('Pedido ficou duplicado (arquivado + recente):', pedido.id);
     }
 
-    // 4. Remove da tela (função do admin-dashboard.js)
+    // 4. Remove da tela
     removerPedidoDaTela(pedido.id);
     
   } catch (err) {
@@ -120,15 +232,8 @@ async function imprimirEArquivar(pedido, botao) {
   }
 }
 
-async function enviarBytes(characteristic, bytes) {
-  const CHUNK = 100;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    const pedaco = bytes.slice(i, i + CHUNK);
-    await characteristic.writeValue(pedaco);
-    await new Promise(r => setTimeout(r, 25));
-  }
-}
-
+/* ===================== GERADOR DE RECIBO (ESC/POS) ===================== */
+// (Mantenha a função gerarRecibo que você já tem)
 function normalizar(s) {
   return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
