@@ -10,34 +10,91 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ===================== ESTADO DO CARRINHO ===================== */
 let carrinho = [];
 
+/* ===================== CARREGAR PRODUTOS DO BANCO ===================== */
+document.addEventListener('DOMContentLoaded', async () => {
+    // Carrega o HTML dos produtos assim que a página abre
+    await carregarProdutos();
+    // Inicializa a máscara de telefone
+    configurarMascaraTelefone();
+});
+
+async function carregarProdutos() {
+    const { data, error } = await supabaseClient
+        .from('produtos')
+        .select('*')
+        .eq('ativo', true)
+        .order('nome', { ascending: true });
+
+    if (error) {
+        console.error('Erro ao carregar produtos:', error);
+        return;
+    }
+
+    // Limpa as divs
+    const catLanches = document.getElementById('cat-lanches');
+    const catBebidas = document.getElementById('cat-bebidas');
+    const catDoces = document.getElementById('cat-doces');
+    
+    catLanches.innerHTML = '<h3 class="titulo-grupo-planos">Todo nosso cardápio disponível de lanches, faça a sua escolha</h3>';
+    catBebidas.innerHTML = '<h3 class="titulo-grupo-planos">Refresque-se com nossas bebidas</h3>';
+    catDoces.innerHTML = '<h3 class="titulo-grupo-planos">A sobremesa perfeita para fechar a conta</h3>';
+
+    data.forEach(produto => {
+        // Formata o preço para exibir (ex: 35 -> 35,00)
+        const precoFormatado = Number(produto.preco).toFixed(2).replace('.', ',');
+        
+        // Transforma a descrição em lista (quebra por linha)
+        const listaDescricao = produto.descricao 
+            ? produto.descricao.split('\n').map(item => `<li>✔ ${item}</li>`).join('') 
+            : '';
+
+        // Define se o card é premium ou normal
+        const classeCard = produto.destaque ? 'card-premium' : 'card';
+        const icone = produto.destaque ? '<i class="fa-solid fa-crown"></i>' : '<i class="fa-solid fa-star"></i>';
+
+        // Usa uma imagem padrão caso o campo esteja vazio (para bebidas/doces sem foto ainda)
+        const imagemHTML = produto.imagem_url 
+            ? `<img src="${produto.imagem_url}" alt="${produto.nome}" class="card-imagem" loading="lazy">`
+            : `<div style="height: 150px; background: #333; display: flex; align-items: center; justify-content: center; border-radius: 8px; margin-bottom: 15px; color: #666;"><i class="fa-solid fa-image" style="font-size: 3rem;"></i></div>`;
+
+        const cardHTML = `
+            <div class="${classeCard}">
+                ${imagemHTML}
+                <h3>${icone} ${produto.nome}</h3>
+                <p class="preco">R$ ${precoFormatado}<span>/unidade</span></p>
+                <ul>${listaDescricao}</ul>
+                <button class="btn-amarelo" onclick="adicionarAoCarrinho('${produto.nome}', ${produto.preco})">Adicionar</button>
+            </div>
+        `;
+
+        // Injeta na aba correta
+        if (produto.categoria === 'lanches') catLanches.innerHTML += cardHTML;
+        if (produto.categoria === 'bebidas') catBebidas.innerHTML += cardHTML;
+        if (produto.categoria === 'doces') catDoces.innerHTML += cardHTML;
+    });
+}
+
 /* ===================== MÁSCARA DE TELEFONE ===================== */
-// Adiciona máscara automática no input de telefone
-document.addEventListener('DOMContentLoaded', () => {
+function configurarMascaraTelefone() {
     const telInput = document.getElementById('tel-cliente');
     if(telInput) {
         telInput.addEventListener('input', function (e) {
-            let valor = e.target.value.replace(/\D/g, ''); // Remove tudo que não é número
-            
-            if (valor.length > 11) valor = valor.slice(0, 11); // Limita a 11 números
-
+            let valor = e.target.value.replace(/\D/g, '');
+            if (valor.length > 11) valor = valor.slice(0, 11);
             if (valor.length > 10) {
-                // (XX) XXXXX-XXXX (Celular)
                 e.target.value = valor.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
             } else if (valor.length > 6) {
-                // (XX) XXXX-XXXX (Telefone fixo)
                 e.target.value = valor.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
             } else if (valor.length > 2) {
-                // (XX) XXXX
                 e.target.value = valor.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
             } else if (valor.length > 0) {
-                // (XX
                 e.target.value = valor.replace(/^(\d*)/, '($1');
             } else {
                 e.target.value = '';
             }
         });
     }
-});
+}
 
 /* ===================== FUNÇÕES DO CARRINHO ===================== */
 function adicionarAoCarrinho(nome, preco) {
