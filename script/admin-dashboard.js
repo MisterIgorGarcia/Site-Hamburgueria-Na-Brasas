@@ -1,5 +1,5 @@
 /* =====================================================================
-   DASHBOARD DO ADMIN (TEMPO REAL OTIMIZADO E INSTANTÂNEO)
+   DASHBOARD DO ADMIN (TEMPO REAL INSTANTÂNEO VIA WEBSOCKET)
    ===================================================================== */
 const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
@@ -8,7 +8,6 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let subscriptionPedidos = null;
 const pedidosNaTela = new Map();
 let abaAtiva = 'recentes'; 
-let timeoutAtualizacao = null; 
 
 // Variáveis de Controle de Paginação
 const ITENS_POR_PAGINA = 10;
@@ -20,7 +19,6 @@ let totalPaginasHistorico = 1;
 /* ===================== VERIFICAÇÃO DE LOGIN ===================== */
 document.addEventListener('DOMContentLoaded', () => {
   const sessaoSalva = localStorage.getItem('nabrasas_sessao');
-  
   if (!sessaoSalva) { window.location.href = 'login.html'; return; }
 
   const sessao = JSON.parse(sessaoSalva);
@@ -62,31 +60,39 @@ function mudarAba(aba) {
   if (aba === 'graficos') gerarGraficos();
 }
 
-/* ===================== ESCUTA EM TEMPO REAL ===================== */
+/* ===================== ESCUTA EM TEMPO REAL (WEBSOCKET) ===================== */
 function escutarNovosPedidos() {
   subscriptionPedidos = supabaseClient
     .channel('mudancas-gerais')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_recentes' }, () => {
-        atualizarAbaAtiva();
+    
+    // Quando um pedido NOVO chega
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
+      // Insere o pedido direto na tela do usuário instantaneamente (sem esperar banco)
+      if (abaAtiva === 'recentes' && paginaAtualRecentes === 1) {
+        adicionarPedidoNoTopo(payload.new);
+      } else {
+        // Se o admin estiver em outra aba, só atualiza o contador (para não piscar a tela dele)
+        totalPaginasRecentes = Math.ceil((totalPaginasRecentes * ITENS_POR_PAGINA + 1) / ITENS_POR_PAGINA);
+      }
+      
+      // Atualiza os gráficos se estiver na aba deles
+      if (abaAtiva === 'graficos') gerarGraficos();
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_arquivados' }, () => {
-        atualizarAbaAtiva();
+    
+    // Quando um pedido é DELETADO (pela lixeira ou impressão)
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
+      removerPedidoDaTela(payload.old.id);
     })
-    .subscribe();
-}
 
-function atualizarAbaAtiva() {
-  // Reduzido de 500ms para 100ms (quase instantâneo, mas evita sobreposição de requisições)
-  clearTimeout(timeoutAtualizacao);
-  timeoutAtualizacao = setTimeout(() => {
-    if (abaAtiva === 'recentes') {
-      carregarPedidos(paginaAtualRecentes);
-    } else if (abaAtiva === 'historico') {
-      carregarHistorico(paginaAtualHistorico);
-    } else if (abaAtiva === 'graficos') {
-      gerarGraficos();
-    }
-  }, 100); 
+    // Quando um pedido vai para o HISTÓRICO
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_arquivados' }, (payload) => {
+      if (abaAtiva === 'historico') {
+        carregarHistorico(paginaAtualHistorico);
+      }
+      if (abaAtiva === 'graficos') gerarGraficos();
+    })
+
+    .subscribe();
 }
 
 /* ===================== ABA 1: PEDIDOS RECENTES ===================== */
@@ -98,7 +104,6 @@ async function carregarPedidos(pagina = 1) {
   const { data, error, count } = await supabaseClient
     .from('pedidos_recentes')
     .select('*', { count: 'exact' })
-    // CORREÇÃO: Ordem decrescente para os pedidos novos aparecerem no TOPO
     .order('created_at', { ascending: false }) 
     .range(inicio, fim);
 
@@ -115,21 +120,29 @@ async function carregarPedidos(pagina = 1) {
   pedidosNaTela.clear();
 
   if (!data || data.length === 0) {
-    lista.innerHTML = '<div class="vazio">Nenhum pedido nesta página.</div>';
+    lista.innerHTML = '<div class="vazio">Nenhum pedido ainda. Aguardando...</div>';
   } else {
-    data.forEach(p => adicionarPedidoNaTela(p, false));
+    data.forEach(p => criarCardPedido(p, lista, false));
   }
 
   renderizarPaginacao('recentes', paginaAtualRecentes, totalPaginasRecentes);
 }
 
-function adicionarPedidoNaTela(pedido, novo) {
+// Função nova exclusiva para colocar o pedido no topo assim que ele chega via WebSocket
+function adicionarPedidoNoTopo(pedido) {
   if (pedidosNaTela.has(pedido.id)) return;
-  pedidosNaTela.set(pedido.id, pedido);
-
+  
   const lista = document.getElementById('lista-pedidos');
   const vazio = lista.querySelector('.vazio');
   if (vazio) vazio.remove();
+
+  // Cria o card e insere ANTES do primeiro elemento da lista (no topo)
+  const card = criarCardPedido(pedido, lista, true);
+  lista.insertBefore(card, lista.firstChild);
+}
+
+function criarCardPedido(pedido, lista, novo) {
+  pedidosNaTela.set(pedido.id, pedido);
 
   const card = document.createElement('div');
   card.className = 'pedido' + (novo ? ' novo' : '');
@@ -166,27 +179,33 @@ function adicionarPedidoNaTela(pedido, novo) {
     imprimirEArquivar(pedido, ev.currentTarget);
   });
 
-  lista.appendChild(card);
+  if (lista) {
+    lista.appendChild(card);
+  }
+  
+  return card;
 }
 
 function removerPedidoDaTela(id) {
   const el = document.querySelector(`[data-pedido="${id}"]`);
   if (el) el.remove();
   pedidosNaTela.delete(id);
+  
+  const lista = document.getElementById('lista-pedidos');
+  if (lista && lista.children.length === 0) {
+    lista.innerHTML = '<div class="vazio">Nenhum pedido ainda. Aguardando...</div>';
+  }
 }
 
 async function apagarPedidoRecente(id) {
   if (!confirm("Tem certeza que deseja APAGAR este pedido?")) return;
 
-  // 1. Remove da tela IMEDIATAMENTE (Feedback visual instantâneo)
   removerPedidoDaTela(id);
 
-  // 2. Manda para o banco
   const { error } = await supabaseClient.from('pedidos_recentes').delete().eq('id', id);
-  
   if (error) { 
     alert("Erro ao apagar: " + error.message); 
-    carregarPedidos(paginaAtualRecentes); // Se der erro no banco, a tela se restaura
+    carregarPedidos(paginaAtualRecentes);
   }
 }
 
@@ -197,7 +216,6 @@ async function carregarHistorico(pagina = 1) {
   const fim = inicio + ITENS_POR_PAGINA - 1;
 
   const lista = document.getElementById('lista-historico');
-  
   if (lista.innerHTML === '' || lista.innerHTML.includes('vazio')) {
     lista.innerHTML = '<div class="vazio">Buscando histórico...</div>';
   }
@@ -208,16 +226,10 @@ async function carregarHistorico(pagina = 1) {
     .order('archived_at', { ascending: false })
     .range(inicio, fim);
 
-  if (error || !data) {
-    lista.innerHTML = '<div class="vazio">Erro ao carregar histórico.</div>';
-    return;
-  }
+  if (error || !data) return;
 
   totalPaginasHistorico = Math.ceil((count || 0) / ITENS_POR_PAGINA) || 1;
-
-  if (data.length === 0 && pagina > 1) {
-    return carregarHistorico(pagina - 1);
-  }
+  if (data.length === 0 && pagina > 1) return carregarHistorico(pagina - 1);
 
   lista.innerHTML = '';
   if (data.length === 0) {
@@ -248,17 +260,13 @@ async function carregarHistorico(pagina = 1) {
 }
 
 async function apagarHistorico(id) {
-  if (!confirm("Tem certeza que deseja apagar este pedido do histórico? Isso não pode ser desfeito.")) return;
+  if (!confirm("Tem certeza que deseja apagar este pedido do histórico?")) return;
 
-  // Remove do HTML imediatamente para não precisar esperar o Realtime
   const el = document.getElementById(`hist-${id}`);
   if (el) el.remove();
 
   const { error } = await supabaseClient.from('pedidos_arquivados').delete().eq('id', id);
-  if (error) { 
-    alert("Erro ao apagar: " + error.message); 
-    carregarHistorico(paginaAtualHistorico);
-  }
+  if (error) { alert("Erro ao apagar: " + error.message); carregarHistorico(paginaAtualHistorico); }
 }
 
 /* ===================== CONTROLE DE PAGINAÇÃO ===================== */
@@ -266,12 +274,9 @@ function renderizarPaginacao(aba, paginaAtual, totalPaginas) {
   const container = document.getElementById(`paginacao-${aba}`);
   if (!container) return;
 
-  if (totalPaginas <= 1) {
-    container.innerHTML = ''; 
-    return;
-  }
+  if (totalPaginas <= 1) { container.innerHTML = ''; return; }
 
-  let html = `
+  container.innerHTML = `
     <button class="btn-pag" onclick="mudarPagina('${aba}', ${paginaAtual - 1})" ${paginaAtual === 1 ? 'disabled' : ''}>
       <i class="fa-solid fa-chevron-left"></i> Anterior
     </button>
@@ -280,8 +285,6 @@ function renderizarPaginacao(aba, paginaAtual, totalPaginas) {
       Próxima <i class="fa-solid fa-chevron-right"></i>
     </button>
   `;
-
-  container.innerHTML = html;
 }
 
 function mudarPagina(aba, novaPagina) {
@@ -297,7 +300,7 @@ async function gerarGraficos() {
   const todosPedidos = [...(recentes || []), ...(arquivados || [])];
 
   if (todosPedidos.length === 0) {
-    document.getElementById('piechart').innerHTML = '<div class="vazio" style="padding-top:100px;">Sem dados suficientes.</div>';
+    document.getElementById('piechart').innerHTML = '<div class="vazio" style="padding-top:100px;">Sem dados.</div>';
     document.getElementById('linechart').innerHTML = '';
     return;
   }
@@ -307,9 +310,7 @@ async function gerarGraficos() {
 
   todosPedidos.forEach(p => {
     if (Array.isArray(p.itens)) {
-      p.itens.forEach(item => {
-        vendasPorLanche[item.nome] = (vendasPorLanche[item.nome] || 0) + (item.qtd || 1);
-      });
+      p.itens.forEach(item => { vendasPorLanche[item.nome] = (vendasPorLanche[item.nome] || 0) + (item.qtd || 1); });
     }
     const dia = new Date(p.created_at).toLocaleDateString('pt-BR');
     vendasPorDia[dia] = (vendasPorDia[dia] || 0) + Number(p.total);
@@ -322,12 +323,8 @@ async function gerarGraficos() {
 
   const pieChart = new google.visualization.PieChart(document.getElementById('piechart'));
   pieChart.draw(dataPie, {
-    title: 'Lanches Mais Vendidos',
-    pieHole: 0.4,
-    backgroundColor: '#1a1a1a',
-    titleTextStyle: { color: '#df8d22', fontSize: 18 },
-    legend: { textStyle: { color: '#f5f5f5' } },
-    chartArea: { width: '90%', height: '80%' }
+    title: 'Lanches Mais Vendidos', pieHole: 0.4, backgroundColor: '#1a1a1a',
+    titleTextStyle: { color: '#df8d22', fontSize: 18 }, legend: { textStyle: { color: '#f5f5f5' } }, chartArea: { width: '90%', height: '80%' }
   });
 
   const diasOrdenados = Object.keys(vendasPorDia).sort((a, b) => {
@@ -343,45 +340,24 @@ async function gerarGraficos() {
 
   const lineChart = new google.visualization.LineChart(document.getElementById('linechart'));
   lineChart.draw(dataLine, {
-    title: 'Faturamento por Dia',
-    backgroundColor: '#1a1a1a',
-    titleTextStyle: { color: '#df8d22', fontSize: 18 },
-    legend: { textStyle: { color: '#f5f5f5' } },
+    title: 'Faturamento por Dia', backgroundColor: '#1a1a1a',
+    titleTextStyle: { color: '#df8d22', fontSize: 18 }, legend: { textStyle: { color: '#f5f5f5' } },
     hAxis: { title: 'Data', textStyle: { color: '#999' }, titleTextStyle: { color: '#999' } },
-    vAxis: { title: 'R$ (Faturamento)', textStyle: { color: '#999' }, titleTextStyle: { color: '#999' } },
-    colors: ['#df8d22'],
-    curveType: 'function',
-    chartArea: { width: '85%', height: '70%' }
+    vAxis: { title: 'R$', textStyle: { color: '#999' }, titleTextStyle: { color: '#999' } },
+    colors: ['#df8d22'], curveType: 'function', chartArea: { width: '85%', height: '70%' }
   });
 }
 
 /* ===================== LIMPEZA AUTOMÁTICA (+7 DIAS) ===================== */
 async function arquivarAntigos() {
   const limite = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  const { data: antigos, error } = await supabaseClient
-    .from('pedidos_recentes')
-    .select('*')
-    .lt('created_at', limite);
-
+  const { data: antigos, error } = await supabaseClient.from('pedidos_recentes').select('*').lt('created_at', limite);
   if (error || !antigos?.length) return;
 
-  const { error: eIns } = await supabaseClient
-    .from('pedidos_arquivados')
-    .insert(antigos.map(p => ({
-      id: p.id,
-      cliente_nome: p.cliente_nome,
-      cliente_telefone: p.cliente_telefone,
-      itens: p.itens,
-      total: p.total,
-      status: 'impresso',
-      created_at: p.created_at,
-      archived_at: new Date().toISOString()
-    })));
+  const { error: eIns } = await supabaseClient.from('pedidos_arquivados').insert(antigos.map(p => ({
+    id: p.id, cliente_nome: p.cliente_nome, cliente_telefone: p.cliente_telefone,
+    itens: p.itens, total: p.total, status: 'impresso', created_at: p.created_at, archived_at: new Date().toISOString()
+  })));
   if (eIns) return;
-
-  await supabaseClient
-    .from('pedidos_recentes')
-    .delete()
-    .in('id', antigos.map(p => p.id));
+  await supabaseClient.from('pedidos_recentes').delete().in('id', antigos.map(p => p.id));
 }
