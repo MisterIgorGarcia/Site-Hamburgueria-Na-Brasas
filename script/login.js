@@ -20,7 +20,6 @@ formLogin.addEventListener('submit', async (e) => {
   loginErro.textContent = '';
 
   try {
-    // Chama a única função unificada
     const { data, error } = await supabaseClient.rpc('login_unificado', {
       p_login: login, 
       p_senha: senha
@@ -29,16 +28,15 @@ formLogin.addEventListener('submit', async (e) => {
     if (error) throw error;
 
     if (data?.success) {
-      // Salva a sessão com o tipo que veio do banco ('admin' ou 'funcionario')
+      // Salva a sessão
       localStorage.setItem('nabrasas_sessao', JSON.stringify({ id: data.id, tipo: data.tipo, nome: data.login }));
 
       // Redireciona baseado no tipo
       if (data.tipo === 'admin') {
-        // Como o login.html está na pasta admin, o dashboard está no mesmo lugar
         window.location.href = 'administrador-dashboard.html';
       } else {
-        // Funcionário volta uma pasta para achar o dashboard dele
-        window.location.href = '../funcionario-dashboard.html';
+        //Agora o funcionário está na mesma pasta que o admin
+        window.location.href = 'funcionario-dashboard.html';
       }
       return;
     }

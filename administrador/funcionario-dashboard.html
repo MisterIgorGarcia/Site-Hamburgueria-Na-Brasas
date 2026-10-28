@@ -2,53 +2,106 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Painel Funcionário — Na Brasas</title>
-<link rel="stylesheet" href="estilos/style.css">
-<link rel="stylesheet" href="estilos/styleadmin.css">
+<link rel="stylesheet" href="../estilos/style.css">
+<link rel="stylesheet" href="../estilos/styleadmin.css">
+
+<!-- FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
-<div class="ativo">
+<div id="view-dash" class="ativo">
   <header>
-    <div>
-      <h1>Painel do Funcionário</h1>
+    <div class="header-brand">
+      <h1>Painel Funcionário</h1>
       <div class="user-info" id="user-info">Carregando...</div>
     </div>
+    
     <div class="botoes">
-      <button class="btn-admin btn-admin-perigo" onclick="sair()">Sair</button>
+        <button class="btn-admin tooltip" id="btn-conectar">
+            <span id="txt-bt"><i class="fa-brands fa-bluetooth-b"></i> Bluetooth</span>
+            <span class="tooltip-content" id="tip-bt">Conectar via Bluetooth (Celular)</span>
+        </button>
+        <button class="btn-admin tooltip" id="btn-conectar-usb">
+            <span id="txt-usb"><i class="fa-solid fa-plug"></i> USB</span>
+            <span class="tooltip-content" id="tip-usb">
+                Conectar via Cabo USB (PC)<br>
+                Use o app <a href="https://zadike.akeo.ie" target="_blank">Zadig</a> no Windows.
+            </span>
+        </button>
+        <button class="btn-admin btn-admin-perigo tooltip" onclick="sair()">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+        </button>
     </div>
   </header>
 
-  <main style="text-align: center; margin-top: 50px;">
-    <h2>Bem-vindo à Cozinha!</h2>
-    <p style="color: #999; margin-top: 20px;">Aqui você poderá ver os pedidos e marcar como prontos.</p>
+  <div class="status-impressora" id="status-impressora">
+    <span class="bolinha"></span>
+    <span id="status-texto">Impressora desconectada</span>
+  </div>
+
+  <main style="padding-top: 20px;">
+    <!-- Única Aba: Recentes -->
+    <div id="aba-recentes" class="conteudo-aba ativo">
+      <div class="top-bar-aba" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <h2>Fila de Pedidos</h2>
+        <!-- Botão para o funcionário lançar pedidos de mesa -->
+        <button class="btn-admin btn-admin-primario" onclick="abrirModalPedidoManual()">
+          <i class="fa-solid fa-plus"></i> Novo Pedido (Mesa)
+        </button>
+      </div>
+      <div id="lista-pedidos">
+        <div class="vazio">Nenhum pedido no momento. Aguardando...</div>
+      </div>
+      <div id="paginacao-recentes" class="paginacao-container"></div>
+    </div>
   </main>
 </div>
 
-<script>
-  // Verifica se está logado como funcionário
-  document.addEventListener('DOMContentLoaded', () => {
-    const sessaoSalva = localStorage.getItem('nabrasas_sessao');
+<!-- MODAL DE PEDIDO MANUAL (PARA MESAS) -->
+<div id="modal-pedido-manual" class="modal-overlay">
+  <div class="modal-conteudo">
+    <div class="modal-header">
+      <h3>Novo Pedido Manual</h3>
+      <button class="fechar-modal" onclick="fecharModalPedidoManual()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
     
-    if (!sessaoSalva) {
-      window.location.href = 'login.html';
-      return;
-    }
+    <div class="form-manual">
+      <div class="input-group">
+        <input type="text" id="manual-nome" placeholder="Nome do Cliente (Obrigatório)" required>
+        <input type="text" id="manual-mesa" placeholder="Mesa / Telefone (Opcional)">
+      </div>
 
-    const sessao = JSON.parse(sessaoSalva);
-    if (sessao.tipo !== 'funcionario') {
-      window.location.href = 'login.html'; // Se for admin tentando acessar área de func, expulsa
-      return;
-    }
+      <div class="add-item-group" style="margin-top: 10px; display: flex; gap: 10px;">
+        <select id="manual-lanche" style="flex: 1; padding: 12px; border-radius: 6px; border: 1px solid #333; background: var(--cor-primaria); color: #fff;">
+          <!-- Preenchido via JS -->
+        </select>
+        <button class="btn-admin" onclick="adicionarItemManual()">Adicionar</button>
+      </div>
+    </div>
 
-    document.getElementById('user-info').textContent = `Logado como: ${sessao.nome} (Funcionário)`;
-  });
+    <div id="lista-manual-carrinho" style="max-height: 200px; overflow-y: auto; margin-top: 15px;">
+      <!-- Itens adicionados vão aparecer aqui -->
+    </div>
 
-  function sair() {
-    localStorage.removeItem('nabrasas_sessao');
-    window.location.href = 'login.html';
-  }
-</script>
+    <div class="modal-footer">
+      <div class="total-carrinho">
+        <span>Total:</span>
+        <strong id="total-manual-valor">R$ 0,00</strong>
+      </div>
+      <button class="btn-admin btn-admin-primario btn-enviar-manual" onclick="enviarPedidoManual()">
+        <i class="fa-solid fa-paper-plane"></i> Enviar para a Cozinha
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Carrega a impressora primeiro, depois o script unificado -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../script/impressora.js"></script>
+<script src="../script/admin-dashboard.js"></script>
 </body>
 </html>

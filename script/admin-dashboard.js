@@ -1,12 +1,11 @@
 /* =====================================================================
-   DASHBOARD DO ADMIN (TEMPO REAL OTIMIZADO COM LOGS)
+   DASHBOARD UNIFICADO (ADMIN E FUNCIONÁRIO)
    ===================================================================== */
 const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ===================== TERMINAL VISUAL DE LOGS ===================== */
-// Salva as funções originais do console
 const originalLog = console.log;
 const originalError = console.error;
 const originalWarn = console.warn;
@@ -14,7 +13,9 @@ const originalWarn = console.warn;
 let logsVisuais = [];
 
 function adicionarLogVisual(tipo, args) {
-  // Converte o que foi passado para string legível
+  // Se não existir o terminal na tela (ex: tela do funcionário), nem tenta rodar
+  if (!document.getElementById('terminal-container')) return;
+
   const msg = Array.from(args).map(arg => {
     if (typeof arg === 'object') {
       try { return JSON.stringify(arg); } catch (e) { return '[Objeto]'; }
@@ -25,11 +26,7 @@ function adicionarLogVisual(tipo, args) {
   const hora = new Date().toLocaleTimeString('pt-BR');
   logsVisuais.push({ tipo, texto: `[${hora}] ${msg}` });
   
-  // Mantém apenas os últimos 10 logs
-  if (logsVisuais.length > 10) {
-    logsVisuais.shift();
-  }
-
+  if (logsVisuais.length > 10) logsVisuais.shift();
   atualizarInterfaceLogs();
 }
 
@@ -43,36 +40,21 @@ function atualizarInterfaceLogs() {
     if (log.tipo === 'warn') classe += ' log-aviso';
     return `<div class="${classe}">${log.texto}</div>`;
   }).join('');
-
-  // Auto scroll para o final
   terminal.scrollTop = terminal.scrollHeight;
 }
 
 function toggleTerminal() {
   const term = document.getElementById('terminal-container');
-  if (term.style.display === 'none') {
-    term.style.display = 'block';
-  } else {
-    term.style.display = 'none';
-  }
+  if (!term) return;
+  term.style.display = (term.style.display === 'none') ? 'block' : 'none';
 }
 
-// Substitui as funções nativas para capturar tudo o que o sistema fizer
-console.log = function(...args) {
-  originalLog.apply(console, args);
-  adicionarLogVisual('log', args);
-};
+console.log = function(...args) { originalLog.apply(console, args); adicionarLogVisual('log', args); };
+console.error = function(...args) { originalError.apply(console, args); adicionarLogVisual('error', args); };
+console.warn = function(...args) { originalWarn.apply(console, args); adicionarLogVisual('warn', args); };
 
-console.error = function(...args) {
-  originalError.apply(console, args);
-  adicionarLogVisual('error', args);
-};
 
-console.warn = function(...args) {
-  originalWarn.apply(console, args);
-  adicionarLogVisual('warn', args);
-};
-
+/* ===================== ESTADO GLOBAL ===================== */
 let subscriptionPedidos = null;
 const pedidosNaTela = new Map();
 let abaAtiva = 'recentes'; 
@@ -84,16 +66,25 @@ let totalPaginasRecentes = 1;
 let paginaAtualHistorico = 1;
 let totalPaginasHistorico = 1;
 
+let produtosGlobais = []; 
+let carrinhoManual = []; 
 
-
+/* ===================== INICIALIZAÇÃO E LOGIN ===================== */
 document.addEventListener('DOMContentLoaded', () => {
   const sessaoSalva = localStorage.getItem('nabrasas_sessao');
   if (!sessaoSalva) { window.location.href = 'login.html'; return; }
 
   const sessao = JSON.parse(sessaoSalva);
-  if (sessao.tipo !== 'admin') { window.location.href = 'login.html'; return; }
+  
+  const isAdminPage = window.location.pathname.includes('administrador-dashboard.html');
+  const isFuncPage = window.location.pathname.includes('funcionario-dashboard.html');
 
-  document.getElementById('user-info').textContent = `Logado como: ${sessao.nome} (Admin)`;
+  // Segurança de Rota Cruzada
+  if (sessao.tipo === 'admin' && isFuncPage) { window.location.href = 'administrador-dashboard.html'; return; }
+  if (sessao.tipo === 'funcionario' && isAdminPage) { window.location.href = 'funcionario-dashboard.html'; return; }
+  if (!isAdminPage && !isFuncPage) { window.location.href = 'login.html'; return; }
+
+  document.getElementById('user-info').textContent = `Logado como: ${sessao.nome} (${sessao.tipo === 'admin' ? 'Admin' : 'Funcionário'})`;
   iniciarPainel();
 });
 
@@ -106,8 +97,10 @@ function iniciarPainel() {
   carregarPedidos(1);
   escutarNovosPedidos();
   atualizarBadgeNotificacao();
+  carregarProdutosParaManual(); // Necessário para lançar pedidos de mesa
   
-  if (typeof google !== 'undefined') {
+  // Só inicializa gráficos se a tela for de Admin
+  if (document.getElementById('piechart') && typeof google !== 'undefined') {
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(() => {
       if(abaAtiva === 'graficos') gerarGraficos();
@@ -115,13 +108,17 @@ function iniciarPainel() {
   }
 }
 
+/* ===================== NAVEGAÇÃO DE ABAS ===================== */
 function mudarAba(aba) {
   abaAtiva = aba; 
   document.querySelectorAll('.aba-btn').forEach(btn => btn.classList.remove('ativo'));
   document.querySelectorAll('.conteudo-aba').forEach(div => div.classList.remove('ativo'));
 
-  document.querySelector(`.aba-btn[onclick="mudarAba('${aba}')"]`).classList.add('ativo');
-  document.getElementById(`aba-${aba}`).classList.add('ativo');
+  const btn = document.querySelector(`.aba-btn[onclick="mudarAba('${aba}')"]`);
+  if (btn) btn.classList.add('ativo');
+  
+  const conteudo = document.getElementById(`aba-${aba}`);
+  if (conteudo) conteudo.classList.add('ativo');
 
   if (aba === 'recentes') {
     novasNotificacoes = 0;
@@ -129,11 +126,13 @@ function mudarAba(aba) {
     carregarPedidos(paginaAtualRecentes); 
   }
   
-  if (aba === 'historico') carregarHistorico(1);
-  if (aba === 'graficos') gerarGraficos();
-  if (aba === 'funcionarios') carregarFuncionarios();
+  // Guards: Só carrega se os elementos existirem na tela
+  if (aba === 'historico' && document.getElementById('lista-historico')) carregarHistorico(1);
+  if (aba === 'graficos' && document.getElementById('piechart')) gerarGraficos();
+  if (aba === 'funcionarios' && document.getElementById('lista-funcionarios')) carregarFuncionarios();
 }
 
+/* ===================== NOTIFICAÇÕES ===================== */
 function atualizarBadgeNotificacao() {
   const badge = document.getElementById('badge-notificacao');
   if (!badge) return;
@@ -141,55 +140,45 @@ function atualizarBadgeNotificacao() {
   if (novasNotificacoes > 0 && abaAtiva !== 'recentes') {
     badge.textContent = novasNotificacoes;
     badge.classList.remove('escondido');
-    badge.style.display = 'inline-flex'; // Força a exibição
+    badge.style.display = 'inline-flex'; 
   } else {
     badge.classList.add('escondido');
-    badge.style.display = 'none'; // Força o sumiço
+    badge.style.display = 'none'; 
     badge.textContent = ''; 
   }
 }
 
-/* ===================== ESCUTA EM TEMPO REAL (COM LOGS) ===================== */
+/* ===================== ESCUTA EM TEMPO REAL ===================== */
 function escutarNovosPedidos() {
   console.log("⏳ Tentando conectar ao Realtime...");
 
   subscriptionPedidos = supabaseClient
     .channel('mudancas-gerais')
-    
-    .on('system', {}, (payload) => {
-      console.log("🟢 Status do Canal:", payload.status);
-    })
-
+    .on('system', {}, (payload) => console.log("🟢 Status do Canal:", payload.status))
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
-      console.log("📦 Novo pedido recebido via WebSocket!", payload.new);
-      
+      console.log("📦 Novo pedido recebido via WebSocket!");
       if (abaAtiva === 'recentes' && paginaAtualRecentes === 1) {
         adicionarPedidoNoTopo(payload.new);
       } else {
         novasNotificacoes++;
         atualizarBadgeNotificacao();
       }
-      if (abaAtiva === 'graficos') gerarGraficos();
+      if (abaAtiva === 'graficos' && document.getElementById('piechart')) gerarGraficos();
     })
-    
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
-      console.log("🗑️ Pedido apagado no banco:", payload.old.id);
       removerPedidoDaTela(payload.old.id);
     })
-
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_arquivados' }, (payload) => {
-      console.log("📁 Pedido movido para o histórico.");
-      if (abaAtiva === 'historico') carregarHistorico(paginaAtualHistorico);
-      if (abaAtiva === 'graficos') gerarGraficos();
+      if (abaAtiva === 'historico' && document.getElementById('lista-historico')) carregarHistorico(paginaAtualHistorico);
+      if (abaAtiva === 'graficos' && document.getElementById('piechart')) gerarGraficos();
     })
-    
     .subscribe((status, err) => {
       console.log("🚀 Status final da conexão:", status);
       if (err) console.error("❌ Erro no Realtime:", err);
     });
 }
 
-/* ===================== ABA 1: PEDIDOS RECENTES ===================== */
+/* ===================== LISTA DE PEDIDOS (RECENTES) ===================== */
 async function carregarPedidos(pagina = 1) {
   paginaAtualRecentes = pagina;
   const inicio = (pagina - 1) * ITENS_POR_PAGINA;
@@ -201,16 +190,10 @@ async function carregarPedidos(pagina = 1) {
     .order('created_at', { ascending: false }) 
     .range(inicio, fim);
 
-  if (error) {
-    console.error("Erro ao buscar pedidos:", error);
-    return;
-  }
+  if (error) { console.error("Erro ao buscar pedidos:", error); return; }
 
   totalPaginasRecentes = Math.ceil((count || 0) / ITENS_POR_PAGINA) || 1;
-
-  if (paginaAtualRecentes > totalPaginasRecentes) {
-    return carregarPedidos(totalPaginasRecentes);
-  }
+  if (paginaAtualRecentes > totalPaginasRecentes) return carregarPedidos(totalPaginasRecentes);
 
   const lista = document.getElementById('lista-pedidos');
   lista.innerHTML = '';
@@ -226,7 +209,6 @@ async function carregarPedidos(pagina = 1) {
 
 function adicionarPedidoNoTopo(pedido) {
   if (pedidosNaTela.has(pedido.id)) return;
-  
   const lista = document.getElementById('lista-pedidos');
   const vazio = lista.querySelector('.vazio');
   if (vazio) vazio.remove();
@@ -249,17 +231,13 @@ function criarCardPedido(pedido, lista, novo) {
   const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
   const itensHTML = itens.map(i => `<li><span>${i.qtd || 1}x ${i.nome}</span><span>R$ ${Number(i.preco).toFixed(2).replace('.', ',')}</span></li>`).join('');
 
-  // Lógica para o Endereço e Google Maps
   let enderecoHTML = '';
   if (pedido.cliente_endereco) {
       const enderecoMapa = encodeURIComponent(pedido.cliente_endereco);
       enderecoHTML = `
         <div class="pedido-endereco">
             <p><i class="fa-solid fa-location-dot" style="color:var(--cor-secundaria)"></i> ${pedido.cliente_endereco}</p>
-            <iframe 
-                src="https://maps.google.com/maps?q=${enderecoMapa}&t=&z=16&ie=UTF8&iwloc=&output=embed" 
-                class="mapa-pedido" allowfullscreen="" loading="lazy">
-            </iframe>
+            <iframe src="https://maps.google.com/maps?q=${enderecoMapa}&t=&z=16&ie=UTF8&iwloc=&output=embed" class="mapa-pedido" allowfullscreen="" loading="lazy"></iframe>
         </div>
       `;
   }
@@ -311,23 +289,21 @@ function removerPedidoDaTela(id) {
 
 async function apagarPedidoRecente(id) {
   if (!confirm("Tem certeza que deseja APAGAR este pedido?")) return;
-
   removerPedidoDaTela(id);
 
   const { error } = await supabaseClient.from('pedidos_recentes').delete().eq('id', id);
-  if (error) { 
-    alert("Erro ao apagar: " + error.message); 
-    carregarPedidos(paginaAtualRecentes);
-  }
+  if (error) { alert("Erro ao apagar: " + error.message); carregarPedidos(paginaAtualRecentes); }
 }
 
-/* ===================== ABA 2: HISTÓRICO ===================== */
+/* ===================== ABA DE HISTÓRICO ===================== */
 async function carregarHistorico(pagina = 1) {
   paginaAtualHistorico = pagina;
   const inicio = (pagina - 1) * ITENS_POR_PAGINA;
   const fim = inicio + ITENS_POR_PAGINA - 1;
 
   const lista = document.getElementById('lista-historico');
+  if (!lista) return;
+
   if (lista.innerHTML === '' || lista.innerHTML.includes('vazio')) {
     lista.innerHTML = '<div class="vazio">Buscando histórico...</div>';
   }
@@ -350,7 +326,6 @@ async function carregarHistorico(pagina = 1) {
     data.forEach(p => {
       const dataObj = new Date(p.created_at);
       const dataStr = dataObj.toLocaleString('pt-BR');
-
       lista.innerHTML += `
         <div class="card-historico" id="hist-${p.id}">
           <div class="info">
@@ -372,15 +347,13 @@ async function carregarHistorico(pagina = 1) {
 
 async function apagarHistorico(id) {
   if (!confirm("Tem certeza que deseja apagar este pedido do histórico?")) return;
-
   const el = document.getElementById(`hist-${id}`);
   if (el) el.remove();
-
   const { error } = await supabaseClient.from('pedidos_arquivados').delete().eq('id', id);
   if (error) { alert("Erro ao apagar: " + error.message); carregarHistorico(paginaAtualHistorico); }
 }
 
-/* ===================== CONTROLE DE PAGINAÇÃO ===================== */
+/* ===================== PAGINAÇÃO ===================== */
 function renderizarPaginacao(aba, paginaAtual, totalPaginas) {
   const container = document.getElementById(`paginacao-${aba}`);
   if (!container) return;
@@ -403,8 +376,10 @@ function mudarPagina(aba, novaPagina) {
   if (aba === 'historico') carregarHistorico(novaPagina);
 }
 
-/* ===================== ABA 3: GRÁFICOS ===================== */
+/* ===================== GRÁFICOS (SÓ RODA NO ADMIN) ===================== */
 async function gerarGraficos() {
+  if (!document.getElementById('piechart')) return; // Proteção para a tela de funcionário
+
   const { data: recentes } = await supabaseClient.from('pedidos_recentes').select('*');
   const { data: arquivados } = await supabaseClient.from('pedidos_arquivados').select('*');
   
@@ -459,9 +434,11 @@ async function gerarGraficos() {
   });
 }
 
-/* ===================== ABA 4: FUNCIONÁRIOS ===================== */
+/* ===================== FUNCIONÁRIOS (SÓ RODA NO ADMIN) ===================== */
 async function carregarFuncionarios() {
   const lista = document.getElementById('lista-funcionarios');
+  if (!lista) return;
+
   lista.innerHTML = '<div class="vazio">Carregando funcionários...</div>';
 
   const { data, error } = await supabaseClient
@@ -471,7 +448,6 @@ async function carregarFuncionarios() {
     .order('login', { ascending: true });
 
   if (error) { lista.innerHTML = '<div class="vazio">Erro ao carregar funcionários.</div>'; return; }
-
   if (data.length === 0) { lista.innerHTML = '<div class="vazio">Nenhum funcionário cadastrado.</div>'; return; }
 
   lista.innerHTML = '';
@@ -531,7 +507,6 @@ async function salvarFuncionario() {
       }
       alert("Funcionário criado!");
     }
-    
     fecharModalFuncionario();
     carregarFuncionarios();
   } catch (err) {
@@ -544,7 +519,6 @@ async function salvarFuncionario() {
 
 async function apagarFuncionario(id, login) {
   if (!confirm(`Tem certeza que deseja APAGAR o funcionário "${login}"?`)) return;
-
   const el = document.getElementById(`func-${id}`);
   if (el) el.style.opacity = '0.5';
 
@@ -558,28 +532,130 @@ async function apagarFuncionario(id, login) {
   }
 }
 
+/* ===================== PEDIDO MANUAL (MESAS) ===================== */
+async function carregarProdutosParaManual() {
+    if (!document.getElementById('manual-lanche')) return; 
+
+    const { data } = await supabaseClient.from('produtos').select('*').eq('ativo', true).order('nome');
+    if (data) {
+        produtosGlobais = data;
+        const select = document.getElementById('manual-lanche');
+        select.innerHTML = ''; 
+        data.forEach(prod => {
+            select.innerHTML += `<option value="${prod.nome}|${prod.preco}">${prod.nome} - R$ ${Number(prod.preco).toFixed(2).replace('.', ',')}</option>`;
+        });
+    }
+}
+
+function abrirModalPedidoManual() {
+  if (!document.getElementById('modal-pedido-manual')) return;
+  carrinhoManual = [];
+  atualizarCarrinhoManualUI();
+  document.getElementById('manual-nome').value = '';
+  document.getElementById('manual-mesa').value = '';
+  document.getElementById('modal-pedido-manual').classList.add('ativo');
+}
+
+function fecharModalPedidoManual() {
+  document.getElementById('modal-pedido-manual').classList.remove('ativo');
+}
+
+function adicionarItemManual() {
+  const select = document.getElementById('manual-lanche');
+  if (!select || !select.value) return;
+  
+  const [nome, precoStr] = select.value.split('|');
+  const preco = parseFloat(precoStr);
+
+  const itemExistente = carrinhoManual.find(i => i.nome === nome);
+  if (itemExistente) {
+    itemExistente.qtd += 1;
+  } else {
+    carrinhoManual.push({ nome, preco, qtd: 1 });
+  }
+  atualizarCarrinhoManualUI();
+}
+
+function removerItemManual(index) {
+  carrinhoManual.splice(index, 1);
+  atualizarCarrinhoManualUI();
+}
+
+function atualizarCarrinhoManualUI() {
+  const lista = document.getElementById('lista-manual-carrinho');
+  const totalEl = document.getElementById('total-manual-valor');
+  if (!lista || !totalEl) return;
+
+  lista.innerHTML = '';
+  let total = 0;
+
+  carrinhoManual.forEach((item, index) => {
+    total += item.preco * item.qtd;
+    lista.innerHTML += `
+      <div class="item-manual" style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.9rem;">
+        <span>${item.qtd}x ${item.nome}</span>
+        <div>
+            <span style="margin-right:15px;">R$ ${(item.preco * item.qtd).toFixed(2).replace('.', ',')}</span>
+            <button onclick="removerItemManual(${index})" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+    `;
+  });
+
+  if (carrinhoManual.length === 0) {
+    lista.innerHTML = '<div style="text-align:center; color:#999; padding: 20px; font-style: italic;">Nenhum item adicionado.</div>';
+  }
+  totalEl.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+}
+
+async function enviarPedidoManual() {
+  const nome = document.getElementById('manual-nome').value.trim();
+  const mesa = document.getElementById('manual-mesa').value.trim();
+
+  if (!nome) { alert("Por favor, preencha o nome do cliente."); return; }
+  if (carrinhoManual.length === 0) { alert("Adicione pelo menos um item."); return; }
+
+  const total = carrinhoManual.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+  const nomeFinal = mesa ? `${nome} (${mesa})` : nome;
+
+  const novoPedido = {
+    cliente_nome: nomeFinal,
+    cliente_telefone: 'Pedido Interno',
+    cliente_endereco: null,
+    itens: carrinhoManual,
+    total: total
+  };
+
+  const btn = document.querySelector('.btn-enviar-manual');
+  btn.disabled = true;
+  btn.innerHTML = 'Enviando...';
+
+  try {
+    const { error } = await supabaseClient.from('pedidos_recentes').insert([novoPedido]);
+    if (error) throw error;
+    fecharModalPedidoManual();
+  } catch (err) {
+    alert("Erro ao criar pedido: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar para a Cozinha';
+  }
+}
+
 /* ===================== MEU PERFIL (ADMIN) ===================== */
 function abrirModalPerfil() {
     const sessaoSalva = localStorage.getItem('nabrasas_sessao');
     if (!sessaoSalva) return;
     const sessao = JSON.parse(sessaoSalva);
 
-    if (!sessao.id) {
-        alert("Sessão antiga detectada. Por favor, saia e faça login novamente.");
-        return;
-    }
+    if (!sessao.id) { alert("Sessão antiga. Faça login novamente."); return; }
 
-    // Busca os dados atuais no banco
     supabaseClient.from('usuarios_salvos').select('*').eq('id', sessao.id).single().then(({data, error}) => {
-        if (error || !data) {
-            alert("Erro ao carregar os dados do perfil.");
-            return;
-        }
+        if (error || !data) { alert("Erro ao carregar o perfil."); return; }
         
         document.getElementById('perfil-id').value = data.id;
         document.getElementById('perfil-login').value = data.login;
         document.getElementById('perfil-senha').value = data.senha; 
-        
         document.getElementById('modal-perfil').classList.add('ativo');
     });
 }
@@ -593,24 +669,16 @@ async function salvarPerfil() {
     const novoLogin = document.getElementById('perfil-login').value.trim();
     const novaSenha = document.getElementById('perfil-senha').value.trim();
 
-    if (!novoLogin || !novaSenha) { 
-        alert("Preencha o login e a senha."); 
-        return; 
-    }
+    if (!novoLogin || !novaSenha) { alert("Preencha o login e a senha."); return; }
 
     const btn = document.querySelector('#modal-perfil .btn-enviar-manual');
     btn.disabled = true;
     btn.innerHTML = 'Salvando...';
 
     try {
-        const { error } = await supabaseClient
-            .from('usuarios_salvos')
-            .update({ login: novoLogin, senha: novaSenha })
-            .eq('id', id);
-
+        const { error } = await supabaseClient.from('usuarios_salvos').update({ login: novoLogin, senha: novaSenha }).eq('id', id);
         if (error) throw error;
 
-        // Atualiza o localStorage com o novo nome para não bugar o painel
         const sessaoSalva = localStorage.getItem('nabrasas_sessao');
         if (sessaoSalva) {
             let sessao = JSON.parse(sessaoSalva);
@@ -618,10 +686,8 @@ async function salvarPerfil() {
             localStorage.setItem('nabrasas_sessao', JSON.stringify(sessao));
         }
 
-        // Atualiza o texto na tela
         document.getElementById('user-info').textContent = `Logado como: ${novoLogin} (Admin)`;
-        
-        alert("Perfil atualizado com sucesso!");
+        alert("Perfil atualizado!");
         fecharModalPerfil();
 
     } catch (err) {
