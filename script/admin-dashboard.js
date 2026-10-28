@@ -1,5 +1,5 @@
 /* =====================================================================
-   DASHBOARD DO ADMIN (TEMPO REAL INSTANTÂNEO VIA WEBSOCKET)
+   DASHBOARD DO ADMIN (TEMPO REAL OTIMIZADO)
    ===================================================================== */
 const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
@@ -8,6 +8,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let subscriptionPedidos = null;
 const pedidosNaTela = new Map();
 let abaAtiva = 'recentes'; 
+let novasNotificacoes = 0; // Variável para contar pedidos novos
 
 // Variáveis de Controle de Paginação
 const ITENS_POR_PAGINA = 10;
@@ -37,7 +38,6 @@ function sair() {
 function iniciarPainel() {
   carregarPedidos(1);
   escutarNovosPedidos();
-  arquivarAntigos();
   
   if (typeof google !== 'undefined') {
     google.charts.load('current', {'packages':['corechart']});
@@ -56,48 +56,63 @@ function mudarAba(aba) {
   document.querySelector(`.aba-btn[onclick="mudarAba('${aba}')"]`).classList.add('ativo');
   document.getElementById(`aba-${aba}`).classList.add('ativo');
 
+  // Zera a notificação ao entrar na aba de recentes
+  if (aba === 'recentes') {
+    novasNotificacoes = 0;
+    atualizarBadgeNotificacao();
+    carregarPedidos(paginaAtualRecentes); 
+  }
+  
   if (aba === 'historico') carregarHistorico(1);
   if (aba === 'graficos') gerarGraficos();
   if (aba === 'funcionarios') carregarFuncionarios();
 }
 
-/* ===================== ESCUTA EM TEMPO REAL (WEBSOCKET) ===================== */
-function escutarNovosPedidos() {
-  console.log("⏳ Tentando conectar ao Realtime...");
+/* ===================== NOTIFICAÇÃO VISUAL ===================== */
+function atualizarBadgeNotificacao() {
+  const badge = document.getElementById('badge-notificacao');
+  if (!badge) return;
 
+  if (novasNotificacoes > 0 && abaAtiva !== 'recentes') {
+    badge.textContent = novasNotificacoes;
+    badge.classList.remove('escondido');
+  } else {
+    badge.classList.add('escondido');
+  }
+}
+
+/* ===================== ESCUTA EM TEMPO REAL ===================== */
+function escutarNovosPedidos() {
   subscriptionPedidos = supabaseClient
     .channel('mudancas-gerais')
     
-    // Log de conexão (Para vermos se a internet/WebSocket conectou)
-    .on('system', {}, (payload) => {
-      console.log("🟢 Status do Canal:", payload.status);
-    })
-
-    // Escuta novos pedidos
+    // Quando um pedido NOVO chega
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
-      console.log("📦 Novo pedido recebido via WebSocket!", payload.new);
+      
       if (abaAtiva === 'recentes' && paginaAtualRecentes === 1) {
+        // Se já está vendo a lista, insere o pedido no topo
         adicionarPedidoNoTopo(payload.new);
+      } else {
+        // Se estiver em outra aba, conta a notificação
+        novasNotificacoes++;
+        atualizarBadgeNotificacao();
       }
+      
       if (abaAtiva === 'graficos') gerarGraficos();
     })
     
-    // Escuta exclusões
+    // Quando um pedido é DELETADO
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
       removerPedidoDaTela(payload.old.id);
     })
 
-    // Escuta arquivados
+    // Quando um pedido vai para o HISTÓRICO
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_arquivados' }, (payload) => {
       if (abaAtiva === 'historico') carregarHistorico(paginaAtualHistorico);
       if (abaAtiva === 'graficos') gerarGraficos();
     })
 
-    // Callback de erro ao conectar
-    .subscribe((status, err) => {
-      console.log("🚀 Status final da conexão:", status);
-      if (err) console.error("❌ Erro no Realtime:", err);
-    });
+    .subscribe();
 }
 
 /* ===================== ABA 1: PEDIDOS RECENTES ===================== */
@@ -133,7 +148,6 @@ async function carregarPedidos(pagina = 1) {
   renderizarPaginacao('recentes', paginaAtualRecentes, totalPaginasRecentes);
 }
 
-// Função nova exclusiva para colocar o pedido no topo assim que ele chega via WebSocket
 function adicionarPedidoNoTopo(pedido) {
   if (pedidosNaTela.has(pedido.id)) return;
   
@@ -141,7 +155,6 @@ function adicionarPedidoNoTopo(pedido) {
   const vazio = lista.querySelector('.vazio');
   if (vazio) vazio.remove();
 
-  // Cria o card e insere ANTES do primeiro elemento da lista (no topo)
   const card = criarCardPedido(pedido, lista, true);
   lista.insertBefore(card, lista.firstChild);
 }
@@ -184,10 +197,7 @@ function criarCardPedido(pedido, lista, novo) {
     imprimirEArquivar(pedido, ev.currentTarget);
   });
 
-  if (lista) {
-    lista.appendChild(card);
-  }
-  
+  if (lista) lista.appendChild(card);
   return card;
 }
 
@@ -240,34 +250,25 @@ async function carregarHistorico(pagina = 1) {
   if (data.length === 0) {
     lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
   } else {
-     data.forEach(p => {
-    const dataObj = new Date(p.created_at);
-    const dataStr = dataObj.toLocaleString('pt-BR');
+    data.forEach(p => {
+      const dataObj = new Date(p.created_at);
+      const dataStr = dataObj.toLocaleString('pt-BR');
 
-    // NOVO: Pega os itens do pedido para mostrar na tela
-    const itens = Array.isArray(p.itens) ? p.itens : [];
-    const itensHTML = itens.map(i => `<li>${i.qtd || 1}x ${i.nome}</li>`).join('');
-
-    lista.innerHTML += `
-      <div class="card-historico" id="hist-${p.id}">
-        <div class="info">
-          <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
-          <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
-          
-          <!-- NOVO: Lista de lanches dentro do card -->
-          <ul class="historico-itens">
-            ${itensHTML}
-          </ul>
+      lista.innerHTML += `
+        <div class="card-historico" id="hist-${p.id}">
+          <div class="info">
+            <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
+            <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
+          </div>
+          <div class="acoes">
+            <span class="badge-impresso">✔ Impresso</span>
+            <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
         </div>
-        <div class="acoes">
-          <span class="badge-impresso">✔ Impresso</span>
-          <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-      </div>
-    `;
-  });
+      `;
+    });
   }
 
   renderizarPaginacao('historico', paginaAtualHistorico, totalPaginasHistorico);
@@ -362,13 +363,11 @@ async function gerarGraficos() {
   });
 }
 
-/* ===================== GERENCIAMENTO DE FUNCIONÁRIOS ===================== */
-
+/* ===================== ABA 4: FUNCIONÁRIOS ===================== */
 async function carregarFuncionarios() {
   const lista = document.getElementById('lista-funcionarios');
   lista.innerHTML = '<div class="vazio">Carregando funcionários...</div>';
 
-  // Busca apenas quem é 'funcionario' (não puxa os admins)
   const { data, error } = await supabaseClient
     .from('usuarios_salvos')
     .select('*')
@@ -411,7 +410,6 @@ function abrirModalFuncionario(id = null, login = '', senha = '') {
   document.getElementById('func-id').value = id || '';
   document.getElementById('func-login').value = login;
   document.getElementById('func-senha').value = senha;
-  
   document.getElementById('titulo-modal-func').textContent = id ? 'Editar Funcionário' : 'Novo Funcionário';
 }
 
@@ -424,10 +422,7 @@ async function salvarFuncionario() {
   const login = document.getElementById('func-login').value.trim();
   const senha = document.getElementById('func-senha').value.trim();
 
-  if (!login || !senha) {
-    alert("Preencha o login e a senha.");
-    return;
-  }
+  if (!login || !senha) { alert("Preencha o login e a senha."); return; }
 
   const btn = document.querySelector('#modal-funcionario .btn-enviar-manual');
   btn.disabled = true;
@@ -435,23 +430,16 @@ async function salvarFuncionario() {
 
   try {
     if (id) {
-      // EDITAR (Update)
-      const { error } = await supabaseClient
-        .from('usuarios_salvos')
-        .update({ login, senha })
-        .eq('id', id);
+      const { error } = await supabaseClient.from('usuarios_salvos').update({ login, senha }).eq('id', id);
       if (error) throw error;
-      alert("Funcionário atualizado com sucesso!");
+      alert("Funcionário atualizado!");
     } else {
-      // CRIAR NOVO (Insert)
-      const { error } = await supabaseClient
-        .from('usuarios_salvos')
-        .insert([{ login, senha, tipo: 'funcionario' }]);
+      const { error } = await supabaseClient.from('usuarios_salvos').insert([{ login, senha, tipo: 'funcionario' }]);
       if (error) {
         if (error.code === '23505') throw new Error("Este login já está em uso.");
         throw error;
       }
-      alert("Funcionário criado com sucesso!");
+      alert("Funcionário criado!");
     }
     
     fecharModalFuncionario();
@@ -465,34 +453,17 @@ async function salvarFuncionario() {
 }
 
 async function apagarFuncionario(id, login) {
-  if (!confirm(`Tem certeza que deseja APAGAR o funcionário "${login}"? Ele perderá o acesso ao sistema.`)) return;
+  if (!confirm(`Tem certeza que deseja APAGAR o funcionário "${login}"?`)) return;
 
   const el = document.getElementById(`func-${id}`);
-  if (el) el.style.opacity = '0.5'; // Feedback visual enquanto apaga
+  if (el) el.style.opacity = '0.5';
 
-  const { error } = await supabaseClient
-    .from('usuarios_salvos')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabaseClient.from('usuarios_salvos').delete().eq('id', id);
 
   if (error) {
     alert("Erro ao apagar: " + error.message);
-    if (el) el.style.opacity = '1'; // Restaura se der erro
+    if (el) el.style.opacity = '1';
   } else {
-    carregarFuncionarios(); // Recarrega a lista
+    carregarFuncionarios();
   }
-}
-
-/* ===================== LIMPEZA AUTOMÁTICA (+7 DIAS) ===================== */
-async function arquivarAntigos() {
-  const limite = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: antigos, error } = await supabaseClient.from('pedidos_recentes').select('*').lt('created_at', limite);
-  if (error || !antigos?.length) return;
-
-  const { error: eIns } = await supabaseClient.from('pedidos_arquivados').insert(antigos.map(p => ({
-    id: p.id, cliente_nome: p.cliente_nome, cliente_telefone: p.cliente_telefone,
-    itens: p.itens, total: p.total, status: 'impresso', created_at: p.created_at, archived_at: new Date().toISOString()
-  })));
-  if (eIns) return;
-  await supabaseClient.from('pedidos_recentes').delete().in('id', antigos.map(p => p.id));
 }

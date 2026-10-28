@@ -24,12 +24,10 @@
     </div>
     
     <div class="botoes">
-        <!-- Botão Bluetooth -->
         <button class="btn-admin tooltip" id="btn-conectar">
             <span id="txt-bt"><i class="fa-brands fa-bluetooth-b"></i> Conectar BT</span>
             <span class="tooltip-content" id="tip-bt">Conectar via Bluetooth (Celular)</span>
         </button>
-        <!-- Botão USB -->
         <button class="btn-admin tooltip" id="btn-conectar-usb">
             <span id="txt-usb"><i class="fa-solid fa-plug"></i> Conectar USB</span>
             <span class="tooltip-content" id="tip-usb">
@@ -37,7 +35,6 @@
                 Use o app <a href="https://zadig.akeo.ie" target="_blank">Zadig</a> no Windows.
             </span>
         </button>
-        <!-- Botão Sair -->
         <button class="btn-admin btn-admin-perigo tooltip" onclick="sair()">
             <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
         </button>
@@ -51,9 +48,14 @@
 
   <!-- NAVEGAÇÃO POR ABAS -->
   <div class="abas-container">
-    <button class="aba-btn ativo" onclick="mudarAba('recentes')"><i class="fa-solid fa-list-ul"></i> Recentes</button>
+    <button class="aba-btn ativo" onclick="mudarAba('recentes')">
+        <i class="fa-solid fa-list-ul"></i> Recentes
+        <!-- Badge de Notificação -->
+        <span id="badge-notificacao" class="badge-notif escondido">0</span>
+    </button>
     <button class="aba-btn" onclick="mudarAba('historico')"><i class="fa-solid fa-clock-rotate-left"></i> Histórico</button>
     <button class="aba-btn" onclick="mudarAba('graficos')"><i class="fa-solid fa-chart-pie"></i> Gráficos</button>
+    <button class="aba-btn" onclick="mudarAba('funcionarios')"><i class="fa-solid fa-users"></i> Funcionários</button>
   </div>
 
   <main>
@@ -61,7 +63,6 @@
     <div id="aba-recentes" class="conteudo-aba ativo">
       <div class="top-bar-aba">
         <h2>Pedidos na Fila</h2>
-        <!-- Botão de Pedido Manual (caso queira adicionar a função depois) -->
       </div>
       <div id="lista-pedidos">
         <div class="vazio">Nenhum pedido ainda. Aguardando...</div>
@@ -92,20 +93,20 @@
         <div id="linechart" style="width: 100%; height: 350px;"></div>
       </div>
     </div>
+
+    <!-- ABA 4: FUNCIONÁRIOS (Corrigido para ficar dentro da main) -->
+    <div id="aba-funcionarios" class="conteudo-aba">
+        <div class="top-bar-aba" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h2>Gerenciar Funcionários</h2>
+            <button class="btn-admin btn-admin-primario" onclick="abrirModalFuncionario()">
+                <i class="fa-solid fa-plus"></i> Novo Funcionário
+            </button>
+        </div>
+        <div id="lista-funcionarios">
+            <div class="vazio">Carregando funcionários...</div>
+        </div>
+    </div>
   </main>
-</div>
-<!-- ABA 4: FUNCIONÁRIOS -->
-<div id="aba-funcionarios" class="conteudo-aba">
-    <div class="top-bar-aba" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <h2>Gerenciar Funcionários</h2>
-        <button class="btn-admin btn-admin-primario" onclick="abrirModalFuncionario()">
-            <i class="fa-solid fa-plus"></i> Novo Funcionário
-        </button>
-    </div>
-      
-    <div id="lista-funcionarios">
-        <div class="vazio">Carregando funcionários...</div>
-    </div>
 </div>
 
 <!-- MODAL DE FUNCIONÁRIO -->

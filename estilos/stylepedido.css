@@ -401,3 +401,32 @@
     color: var(--cor-texto-mutado);
     margin-bottom: 10px;
 }
+
+/* ===================== NOTIFICAÇÃO NA ABA ===================== */
+.aba-btn {
+  position: relative; /* Necessário para posicionar a bolinha */
+}
+
+.badge-notif {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background-color: var(--admin-vermelho);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 2px solid var(--admin-card); /* Para não colar no fundo */
+  animation: pulse-notif 1.5s infinite;
+}
+
+.badge-notif.escondido {
+  display: none;
+}
+
+@keyframes pulse-notif {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
