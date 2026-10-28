@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="../estilos/style.css">
 <link rel="stylesheet" href="../estilos/styleadmin.css">
 
-<!-- FontAwesome para os ícones de paginação e lixeira -->
+<!-- FontAwesome para os ícones de paginação, lixeira, etc -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <!-- Carrega o Google Charts -->
@@ -22,17 +22,26 @@
       <h1>Painel Admin</h1>
       <div class="user-info" id="user-info">Carregando...</div>
     </div>
-        <!-- Botão Bluetooth -->
-        <button class="btn-admin tooltip" id="btn-conectar" data-tooltip="Conectar via Bluetooth (Celular)">
-        🔗 Bluetooth
-        </button>
-        <!-- Botão USB -->
-        <button class="btn-admin tooltip" id="btn-conectar-usb">
+    
+    <!-- A div "botoes" foi restaurada aqui -->
+    <div class="botoes">
+      <!-- Botão Bluetooth -->
+      <button class="btn-admin tooltip" id="btn-conectar">
+        🔌 Bluetooth
+        <span class="tooltip-content">Conectar via Bluetooth (Celular)</span>
+      </button>
+
+      <!-- Botão USB -->
+      <button class="btn-admin tooltip" id="btn-conectar-usb">
         🔗 USB
         <span class="tooltip-content">
-        Conectar via Cabo USB (PC usando o aplicativo <a href="https://zadig.akeo.ie" target="_blank">Zadig</a>)
+          Conectar via Cabo USB<br> (PC usando o aplicativo <a href="https://zadig.akeo.ie" target="_blank">Zadig</a>)
         </span>
-        </button>
+      </button>
+
+      <!-- Botão Sair (Tinha desaparecido) -->
+      <button class="btn-admin btn-admin-perigo" onclick="sair()">Sair</button>
+    </div>
   </header>
 
   <div class="status-impressora" id="status-impressora">
@@ -54,7 +63,6 @@
       <div id="lista-pedidos">
         <div class="vazio">Nenhum pedido ainda. Aguardando...</div>
       </div>
-      <!-- Controles de Paginação dos Recentes -->
       <div id="paginacao-recentes" class="paginacao-container"></div>
     </div>
 
@@ -64,7 +72,6 @@
       <div id="lista-historico">
         <div class="vazio">Carregando histórico...</div>
       </div>
-      <!-- Controles de Paginação do Histórico -->
       <div id="paginacao-historico" class="paginacao-container"></div>
     </div>
 
@@ -83,7 +90,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- Mantive o seu arquivo unificado, mas lembre-se que você pode separar o código da impressora depois -->
+<!-- Carrega a lógica da impressora primeiro -->
+<script src="../script/impressora.js"></script>
+<!-- Depois carrega a lógica do painel -->
 <script src="../script/admin-dashboard.js"></script>
 </body>
 </html>
