@@ -227,3 +227,66 @@
     font-size: 1.1rem;
     padding: 16px;
 }
+
+/* ===================== ABAS DE CATEGORIAS ===================== */
+.menu-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    background-color: var(--cor-card);
+    color: var(--cor-texto-mutado);
+    border: 2px solid #333;
+    padding: 10px 24px;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn:hover {
+    border-color: var(--cor-secundaria);
+    color: var(--cor-texto-claro);
+}
+
+.tab-btn.ativo {
+    background-color: var(--cor-secundaria);
+    color: var(--cor-primaria);
+    border-color: var(--cor-secundaria);
+    box-shadow: 0 4px 15px rgba(223, 141, 34, 0.3);
+}
+
+/* Controle de exibição das categorias */
+.categoria-conteudo {
+    display: none; /* Esconde tudo por padrão */
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    animation: fadeInCategoria 0.4s ease;
+}
+
+.categoria-conteudo.ativo {
+    display: flex; /* Mostra apenas a ativa */
+}
+
+@keyframes fadeInCategoria {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Ajuste no título dentro das categorias */
+.categoria-conteudo .titulo-grupo-planos {
+    flex-basis: 100%;
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--cor-texto-mutado);
+    margin-bottom: 10px;
+}
