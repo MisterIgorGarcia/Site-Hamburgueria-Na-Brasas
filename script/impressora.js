@@ -31,8 +31,34 @@ async function desconectarImpressoraAtual() {
   }
 }
 
-/* ===================== RECONEXÃO AUTOMÁTICA USB ===================== */
+/* ===================== TENTATIVA DE RECONEXÃO BLUETOOTH (ANDROID) ===================== */
+async function tentarReconectarBluetoothSalvo() {
+  // Se estiver usando USB ou já tiver bluetooth conectado, não faz nada
+  if (modoImpressao === 'usb' || (impressoraChar && impressoraDevice?.gatt?.connected)) return;
+
+  try {
+    console.log('Verificando dispositivos Bluetooth salvos...');
+    // Chama a função principal passando 'false' para não abrir o seletor
+    await garantirConexaoBluetooth(false);
+    console.log('Bluetooth reconectado automaticamente com sucesso!');
+  } catch (err) {
+    console.log('Sem conexão Bluetooth ativa no momento.', err.message);
+  }
+}
+
+// Tenta reconectar quando a aba volta a ficar visível (ex: desbloqueou o celular)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    tentarReconectarBluetoothSalvo();
+  }
+});
+
+/* ===================== RECONEXÃO AUTOMÁTICA USB E INICIALIZAÇÃO ===================== */
 document.addEventListener('DOMContentLoaded', async () => {
+  // 1. Tenta reconectar o Bluetooth salvo
+  tentarReconectarBluetoothSalvo();
+
+  // 2. Tenta reconectar o USB salvo
   if (!navigator.usb) return;
   try {
     const devices = await navigator.usb.getDevices();
@@ -135,6 +161,7 @@ if (btnConectar) {
       btnConectar.disabled = true;
       document.getElementById('txt-bt').textContent = 'Conectando...';
       
+      // Passa 'true' para forçar a abertura do seletor do Chrome
       await garantirConexaoBluetooth(true); 
     } catch (err) {
       alert('Falha ao conectar Bluetooth: ' + err.message);
@@ -157,20 +184,23 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
   }
 
   if (!device) {
-    device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: [
-        '000018f0-0000-1000-8000-00805f9b34fb',
-        '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-        'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
-      ]
-    });
+    if (forcarNovo) {
+      // Se o usuário clicou no botão, abre a janelinha
+      device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: [
+          '000018f0-0000-1000-8000-00805f9b34fb',
+          '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+          'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
+        ]
+      });
+    } else {
+      // Se for tentativa automática (getDevices falhou), impede a janelinha e para aqui
+      throw new Error('Nenhum dispositivo Bluetooth salvo ou disponível.');
+    }
   }
 
-  // =========================================================================
-  // INÍCIO DO TRECHO DE OBSERVAÇÃO (WATCH ADVERTISEMENTS)
-  // Isso permite que o navegador "escute" a impressora e se reconecte
-  // =========================================================================
+  // Lógica de observação (Watch Advertisements)
   if (device.watchAdvertisements) {
     try {
       await device.watchAdvertisements();
@@ -182,13 +212,8 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
           } catch (e) {}
         }
       });
-    } catch (e) {
-      console.warn('Aviso: watchAdvertisements falhou.', e);
-    }
+    } catch (e) {}
   }
-  // =========================================================================
-  // FIM DO TRECHO DE OBSERVAÇÃO
-  // =========================================================================
 
   const server = await device.gatt.connect();
   let char = null;
