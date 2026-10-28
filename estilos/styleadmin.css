@@ -261,4 +261,38 @@ button.btn-admin-perigo:hover { background: rgba(239, 68, 68, 0.1); border-color
 
   /* Desativa tooltip no celular para não bugar o toque */
   .tooltip-content { display: none !important; }
-}    
+}  
+
+/* Ajuste para o card suportar a lista de itens */
+.card-historico {
+  align-items: flex-start !important; /* Impede que os botões fiquem espremidos no meio */
+}
+
+/* Estilo da lista de lanches no histórico */
+.historico-itens {
+  list-style: none;
+  margin-top: 10px;
+  padding-left: 0;
+  font-size: 0.85rem;
+  color: var(--admin-cinza); /* Cinza claro para não brigar com o título */
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.historico-itens li {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.historico-itens li:last-child {
+  margin-bottom: 0;
+}
+
+.historico-itens li::before {
+  content: "•";
+  color: var(--cor-secundaria); /* Bolinha na cor do tema */
+}

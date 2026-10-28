@@ -240,25 +240,34 @@ async function carregarHistorico(pagina = 1) {
   if (data.length === 0) {
     lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
   } else {
-    data.forEach(p => {
-      const dataObj = new Date(p.created_at);
-      const dataStr = dataObj.toLocaleString('pt-BR');
+     data.forEach(p => {
+    const dataObj = new Date(p.created_at);
+    const dataStr = dataObj.toLocaleString('pt-BR');
 
-      lista.innerHTML += `
-        <div class="card-historico" id="hist-${p.id}">
-          <div class="info">
-            <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
-            <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
-          </div>
-          <div class="acoes">
-            <span class="badge-impresso">✔ Impresso</span>
-            <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
+    // NOVO: Pega os itens do pedido para mostrar na tela
+    const itens = Array.isArray(p.itens) ? p.itens : [];
+    const itensHTML = itens.map(i => `<li>${i.qtd || 1}x ${i.nome}</li>`).join('');
+
+    lista.innerHTML += `
+      <div class="card-historico" id="hist-${p.id}">
+        <div class="info">
+          <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
+          <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
+          
+          <!-- NOVO: Lista de lanches dentro do card -->
+          <ul class="historico-itens">
+            ${itensHTML}
+          </ul>
         </div>
-      `;
-    });
+        <div class="acoes">
+          <span class="badge-impresso">✔ Impresso</span>
+          <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  });
   }
 
   renderizarPaginacao('historico', paginaAtualHistorico, totalPaginasHistorico);
