@@ -72,7 +72,7 @@
     background-color: rgba(0, 0, 0, 0.85);
     z-index: 2000;
     display: flex;
-    align-items: flex-end; /* Faz subir por baixo */
+    align-items: flex-end;
     justify-content: center;
     opacity: 0;
     pointer-events: none;
@@ -131,7 +131,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding-right: 5px; /* Para a barra de rolagem */
+    padding-right: 5px;
 }
 
 .item-carrinho {
@@ -264,17 +264,112 @@
     box-shadow: 0 4px 15px rgba(223, 141, 34, 0.3);
 }
 
-/* Controle de exibição das categorias */
+/* ===================== CORREÇÃO E ALINHAMENTO DOS CARDS ===================== */
 .categoria-conteudo {
-    display: none; /* Esconde tudo por padrão */
+    display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    align-items: stretch; /* Força todos os cards a terem a mesma altura na mesma linha */
     gap: 30px;
-    animation: fadeInCategoria 0.4s ease;
+    margin-top: 30px;
 }
 
-.categoria-conteudo.ativo {
-    display: flex; /* Mostra apenas a ativa */
+/* Estrutura base do card */
+.card, .card-premium {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px; /* Largura máxima no celular/tablet */
+    background-color: var(--cor-card);
+    border-radius: 12px;
+    padding: 20px;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+/* Imagem do lanche */
+.card-imagem {
+    width: 100%;
+    height: 180px; /* Fixa a altura da imagem para todos */
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+/* O título do card (Força altura mínima para alinhar o preço) */
+.card h3, .card-premium h3 {
+    font-size: 1.2rem;
+    color: var(--cor-secundaria);
+    margin-bottom: 10px;
+    line-height: 1.3;
+    min-height: 3.2rem; /* Garante que títulos de 1 ou 2 linhas alinhem o preço embaixo */
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+/* Preço */
+.card .preco, .card-premium .preco {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: var(--cor-texto-claro);
+    margin-bottom: 15px;
+    display: block;
+}
+
+.card .preco span, .card-premium .preco span {
+    font-size: 0.8rem;
+    color: var(--cor-texto-mutado);
+    font-weight: normal;
+}
+
+/* Estilo da lista de ingredientes */
+.lista-descricao {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+    flex-grow: 1; /* A MÁGICA: Faz a lista ocupar o espaço restante e empurra o botão pro fundo */
+}
+
+.lista-descricao li {
+    font-size: 0.85rem;
+    color: var(--cor-texto-mutado);
+    margin-bottom: 8px;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+/* Bolinha de check estilizada */
+.lista-descricao li i {
+    color: var(--cor-secundaria);
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+/* Botão Adicionar */
+.btn-add-carrinho {
+    width: 100%;
+    margin-top: auto; /* Garante o botão sempre no final */
+    padding: 12px;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Placeholder para quando não tem imagem */
+.imagem-placeholder {
+    width: 100%;
+    height: 180px;
+    background: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    color: #666;
+    font-size: 3rem;
 }
 
 @keyframes fadeInCategoria {

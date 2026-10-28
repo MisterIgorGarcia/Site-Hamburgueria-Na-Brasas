@@ -30,7 +30,6 @@ async function carregarProdutos() {
         return;
     }
 
-    // Limpa as divs
     const catLanches = document.getElementById('cat-lanches');
     const catBebidas = document.getElementById('cat-bebidas');
     const catDoces = document.getElementById('cat-doces');
@@ -40,34 +39,30 @@ async function carregarProdutos() {
     catDoces.innerHTML = '<h3 class="titulo-grupo-planos">A sobremesa perfeita para fechar a conta</h3>';
 
     data.forEach(produto => {
-        // Formata o preço para exibir (ex: 35 -> 35,00)
         const precoFormatado = Number(produto.preco).toFixed(2).replace('.', ',');
         
-        // Transforma a descrição em lista (quebra por linha)
+        // CORREÇÃO AQUI: O regex /\r?\n/ garante que ele quebre a linha em Windows e Linux/Mac
         const listaDescricao = produto.descricao 
-            ? produto.descricao.split('\n').map(item => `<li>✔ ${item}</li>`).join('') 
+            ? produto.descricao.split(/\r?\n/).filter(linha => linha.trim() !== '').map(item => `<li><i class="fa-solid fa-check"></i> ${item}</li>`).join('') 
             : '';
 
-        // Define se o card é premium ou normal
         const classeCard = produto.destaque ? 'card-premium' : 'card';
         const icone = produto.destaque ? '<i class="fa-solid fa-crown"></i>' : '<i class="fa-solid fa-star"></i>';
 
-        // Usa uma imagem padrão caso o campo esteja vazio (para bebidas/doces sem foto ainda)
         const imagemHTML = produto.imagem_url 
             ? `<img src="${produto.imagem_url}" alt="${produto.nome}" class="card-imagem" loading="lazy">`
-            : `<div style="height: 150px; background: #333; display: flex; align-items: center; justify-content: center; border-radius: 8px; margin-bottom: 15px; color: #666;"><i class="fa-solid fa-image" style="font-size: 3rem;"></i></div>`;
+            : `<div class="imagem-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
         const cardHTML = `
             <div class="${classeCard}">
                 ${imagemHTML}
                 <h3>${icone} ${produto.nome}</h3>
                 <p class="preco">R$ ${precoFormatado}<span>/unidade</span></p>
-                <ul>${listaDescricao}</ul>
-                <button class="btn-amarelo" onclick="adicionarAoCarrinho('${produto.nome}', ${produto.preco})">Adicionar</button>
+                <ul class="lista-descricao">${listaDescricao}</ul>
+                <button class="btn-amarelo btn-add-carrinho" onclick="adicionarAoCarrinho('${produto.nome}', ${produto.preco})">Adicionar</button>
             </div>
         `;
 
-        // Injeta na aba correta
         if (produto.categoria === 'lanches') catLanches.innerHTML += cardHTML;
         if (produto.categoria === 'bebidas') catBebidas.innerHTML += cardHTML;
         if (produto.categoria === 'doces') catDoces.innerHTML += cardHTML;
