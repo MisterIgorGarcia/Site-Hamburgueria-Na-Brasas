@@ -72,8 +72,7 @@ async function carregarProdutos() {
             ? `<img src="${produto.imagem_url}" alt="${produto.nome}" class="card-imagem" loading="lazy">`
             : `<div class="imagem-placeholder"><i class="fa-solid fa-image"></i></div>`;
 
-        // AQUI ESTÁ A CORREÇÃO: O JSON.stringify blinda o nome do lanche, resolvendo o problema do apóstrofo (Brasa's)
-        const nomeSeguro = JSON.stringify(produto.nome);
+        const nomeSeguro = produto.nome.replace(/'/g, "\\'");
 
         const cardHTML = `
             <div class="${classeCard}">
@@ -81,7 +80,7 @@ async function carregarProdutos() {
                 <h3>${icone} ${produto.nome}</h3>
                 <p class="preco">R$ ${precoFormatado}<span>/unidade</span></p>
                 <ul class="lista-descricao">${listaDescricao}</ul>
-                <button class="btn-amarelo btn-add-carrinho" onclick='adicionarAoCarrinho(${nomeSeguro}, ${produto.preco})'>Adicionar</button>
+                <button class="btn-amarelo btn-add-carrinho" onclick="adicionarAoCarrinho('${nomeSeguro}', ${produto.preco})">Adicionar</button>
             </div>
         `;
 
