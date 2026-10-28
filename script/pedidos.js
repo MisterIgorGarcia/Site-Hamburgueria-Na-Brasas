@@ -1,3 +1,7 @@
+/* =====================================================================
+   FUNCIONALIDADES DOS PEDIDOS
+   ===================================================================== */
+
 /* ===================== CONEXÃO COM SUPABASE ===================== */
 // COLOQUE SUAS CREDENCIAIS AQUI
 const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co'; 

@@ -1,36 +1,30 @@
+/* =====================================================================
+   CONEXÃO E VARIÁVEIS GLOBAIS
+   ===================================================================== */
 const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let impressoraChar = null;
-let impressoraDevice = null;
 let subscriptionPedidos = null;
 const pedidosNaTela = new Map();
+let graficosDesenhados = false;
 
 /* ===================== VERIFICAÇÃO DE LOGIN ===================== */
 document.addEventListener('DOMContentLoaded', () => {
   const sessaoSalva = localStorage.getItem('nabrasas_sessao');
   
-  if (!sessaoSalva) {
-    // Redireciona para o login que está na MESMA pasta (administrador)
-    window.location.href = 'login.html'; 
-    return;
-  }
+  if (!sessaoSalva) { window.location.href = 'login.html'; return; }
 
   const sessao = JSON.parse(sessaoSalva);
-  if (sessao.tipo !== 'admin') {
-    window.location.href = 'login.html'; 
-    return;
-  }
+  if (sessao.tipo !== 'admin') { window.location.href = 'login.html'; return; }
 
-  // Se chegou aqui, é admin logado!
   document.getElementById('user-info').textContent = `Logado como: ${sessao.nome} (Admin)`;
   iniciarPainel();
 });
 
 function sair() {
   localStorage.removeItem('nabrasas_sessao');
-  window.location.href = 'login.html'; // Redireciona para o login na mesma pasta
+  window.location.href = 'login.html'; 
 }
 
 /* ===================== INICIAR PAINEL ===================== */
@@ -38,14 +32,30 @@ function iniciarPainel() {
   carregarPedidos();
   escutarNovosPedidos();
   arquivarAntigos();
+  
+  if (typeof google !== 'undefined') {
+    google.charts.load('current', {'packages':['corechart']});
+  }
 }
 
-async function carregarPedidos() {
-  const { data, error } = await supabaseClient
-    .from('pedidos_recentes')
-    .select('*')
-    .order('created_at', { ascending: true });
+/* ===================== NAVEGAÇÃO DE ABAS ===================== */
+function mudarAba(aba) {
+  document.querySelectorAll('.aba-btn').forEach(btn => btn.classList.remove('ativo'));
+  document.querySelectorAll('.conteudo-aba').forEach(div => div.classList.remove('ativo'));
 
+  document.querySelector(`.aba-btn[onclick="mudarAba('${aba}')"]`).classList.add('ativo');
+  document.getElementById(`aba-${aba}`).classList.add('ativo');
+
+  if (aba === 'historico') carregarHistorico();
+  if (aba === 'graficos' && !graficosDesenhados) {
+    gerarGraficos();
+    graficosDesenhados = true;
+  }
+}
+
+/* ===================== ABA 1: PEDIDOS RECENTES ===================== */
+async function carregarPedidos() {
+  const { data, error } = await supabaseClient.from('pedidos_recentes').select('*').order('created_at', { ascending: true });
   if (error) return;
 
   const lista = document.getElementById('lista-pedidos');
@@ -55,7 +65,6 @@ async function carregarPedidos() {
     lista.innerHTML = '<div class="vazio">Nenhum pedido ainda. Aguardando...</div>';
     return;
   }
-
   data.forEach(p => adicionarPedidoNaTela(p, false));
 }
 
@@ -81,15 +90,17 @@ function adicionarPedidoNaTela(pedido, novo) {
   card.className = 'pedido' + (novo ? ' novo' : '');
   card.dataset.pedido = pedido.id;
 
-  const data = new Date(pedido.created_at);
-  const hora = data.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const dataObj = new Date(pedido.created_at);
+  const dataFormatada = dataObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  const horaFormatada = dataObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
   const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
   const itensHTML = itens.map(i => `<li><span>${i.qtd || 1}x ${i.nome}</span><span>R$ ${Number(i.preco).toFixed(2).replace('.', ',')}</span></li>`).join('');
 
   card.innerHTML = `
     <div class="pedido-header">
       <span class="pedido-id">#${pedido.id.slice(0, 8)}</span>
-      <span class="pedido-hora">${hora}</span>
+      <span class="pedido-hora">${dataFormatada} às ${horaFormatada}</span>
     </div>
     <div class="pedido-cliente">${pedido.cliente_nome} <small>${pedido.cliente_telefone || ''}</small></div>
     <ul class="pedido-itens">${itensHTML}</ul>
@@ -104,6 +115,7 @@ function adicionarPedidoNaTela(pedido, novo) {
   card.querySelector('.btn-imprimir').addEventListener('click', (ev) => {
     ev.currentTarget.disabled = true;
     ev.currentTarget.textContent = 'Imprimindo...';
+    // Chama a função que está no impressora.js
     imprimirEArquivar(pedido, ev.currentTarget);
   });
 
@@ -119,208 +131,125 @@ function removerPedidoDaTela(id) {
   }
 }
 
-/* ===================== IMPRESSÃO E ARQUIVAMENTO ===================== */
-const btnConectar = document.getElementById('btn-conectar');
+/* ===================== ABA 2: HISTÓRICO (ARQUIVADOS) ===================== */
+async function carregarHistorico() {
+  const lista = document.getElementById('lista-historico');
+  lista.innerHTML = '<div class="vazio">Buscando histórico...</div>';
 
-btnConectar.addEventListener('click', async () => {
-  try {
-    btnConectar.disabled = true;
-    btnConectar.textContent = 'Conectando...';
-    await garantirConexao();
-  } catch (err) {
-    alert('Falha ao conectar: ' + err.message);
-  } finally {
-    btnConectar.disabled = false;
-    btnConectar.textContent = '🔌 Conectar Impressora';
+  const { data, error } = await supabaseClient.from('pedidos_arquivados').select('*').order('archived_at', { ascending: false }).limit(50);
+
+  if (error || !data) {
+    lista.innerHTML = '<div class="vazio">Erro ao carregar histórico.</div>';
+    return;
   }
-});
 
-async function garantirConexao() {
-  if (impressoraChar && impressoraDevice?.gatt?.connected) return impressoraChar;
+  if (data.length === 0) {
+    lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
+    return;
+  }
 
-  const device = await navigator.bluetooth.requestDevice({
-    acceptAllDevices: true,
-    optionalServices: [
-      '000018f0-0000-1000-8000-00805f9b34fb',
-      '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-      'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
-    ]
+  lista.innerHTML = '';
+  data.forEach(p => {
+    const dataObj = new Date(p.created_at);
+    const dataStr = dataObj.toLocaleString('pt-BR');
+
+    lista.innerHTML += `
+      <div class="card-historico" id="hist-${p.id}">
+        <div class="info">
+          <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
+          <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
+        </div>
+        <div class="acoes">
+          <span class="badge-impresso">✔ Impresso</span>
+          <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
   });
+}
 
-  const server = await device.gatt.connect();
+async function apagarHistorico(id) {
+  if (!confirm("Tem certeza que deseja apagar este pedido do histórico? Isso não pode ser desfeito.")) return;
 
-  let char = null;
-  const servicos = [
-    '000018f0-0000-1000-8000-00805f9b34fb',
-    '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-    'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
-  ];
-
-  for (const uuid of servicos) {
-    try {
-      const svc = await server.getPrimaryService(uuid);
-      const chars = await svc.getCharacteristics();
-      char = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
-      if (char) break;
-    } catch (_) {}
-  }
-
-  if (!char) throw new Error('Característica de escrita não encontrada');
-
-  impressoraChar = char;
-  impressoraDevice = device;
+  const { error } = await supabaseClient.from('pedidos_arquivados').delete().eq('id', id);
   
-  device.addEventListener('gattserverdisconnected', () => {
-    impressoraChar = null;
-    atualizarStatusImpressora();
+  if (error) { alert("Erro ao apagar: " + error.message); return; }
+
+  document.getElementById(`hist-${id}`).remove();
+  if (document.getElementById('lista-historico').children.length === 0) {
+    document.getElementById('lista-historico').innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
+  }
+}
+
+/* ===================== ABA 3: GRÁFICOS ===================== */
+async function gerarGraficos() {
+  const { data: recentes } = await supabaseClient.from('pedidos_recentes').select('*');
+  const { data: arquivados } = await supabaseClient.from('pedidos_arquivados').select('*');
+  
+  const todosPedidos = [...(recentes || []), ...(arquivados || [])];
+
+  if (todosPedidos.length === 0) {
+    document.getElementById('piechart').innerHTML = '<div class="vazio" style="padding-top:100px;">Sem dados suficientes.</div>';
+    document.getElementById('linechart').innerHTML = '';
+    return;
+  }
+
+  const vendasPorLanche = {};
+  const vendasPorDia = {};
+
+  todosPedidos.forEach(p => {
+    if (Array.isArray(p.itens)) {
+      p.itens.forEach(item => {
+        vendasPorLanche[item.nome] = (vendasPorLanche[item.nome] || 0) + (item.qtd || 1);
+      });
+    }
+    const dia = new Date(p.created_at).toLocaleDateString('pt-BR');
+    vendasPorDia[dia] = (vendasPorDia[dia] || 0) + Number(p.total);
   });
 
-  atualizarStatusImpressora();
-  return char;
+  const dataPie = new google.visualization.DataTable();
+  dataPie.addColumn('string', 'Lanche');
+  dataPie.addColumn('number', 'Quantidade');
+  for (const [nome, qtd] of Object.entries(vendasPorLanche)) dataPie.addRow([nome, qtd]);
+
+  const pieChart = new google.visualization.PieChart(document.getElementById('piechart'));
+  pieChart.draw(dataPie, {
+    title: 'Lanches Mais Vendidos',
+    pieHole: 0.4,
+    backgroundColor: '#1a1a1a',
+    titleTextStyle: { color: '#df8d22', fontSize: 18 },
+    legend: { textStyle: { color: '#f5f5f5' } },
+    chartArea: { width: '90%', height: '80%' }
+  });
+
+  const diasOrdenados = Object.keys(vendasPorDia).sort((a, b) => {
+    const [da, ma, ya] = a.split('/').map(Number);
+    const [db, mb, yb] = b.split('/').map(Number);
+    return new Date(ya, ma-1, da) - new Date(yb, mb-1, db);
+  });
+
+  const dataLine = new google.visualization.DataTable();
+  dataLine.addColumn('string', 'Data');
+  dataLine.addColumn('number', 'Faturamento (R$)');
+  diasOrdenados.forEach(dia => dataLine.addRow([dia, vendasPorDia[dia]]));
+
+  const lineChart = new google.visualization.LineChart(document.getElementById('linechart'));
+  lineChart.draw(dataLine, {
+    title: 'Faturamento por Dia',
+    backgroundColor: '#1a1a1a',
+    titleTextStyle: { color: '#df8d22', fontSize: 18 },
+    legend: { textStyle: { color: '#f5f5f5' } },
+    hAxis: { title: 'Data', textStyle: { color: '#999' }, titleTextStyle: { color: '#999' } },
+    vAxis: { title: 'R$ (Faturamento)', textStyle: { color: '#999' }, titleTextStyle: { color: '#999' } },
+    colors: ['#df8d22'],
+    curveType: 'function',
+    chartArea: { width: '85%', height: '70%' }
+  });
 }
 
-function atualizarStatusImpressora() {
-  const wrap = document.getElementById('status-impressora');
-  const txt = document.getElementById('status-texto');
-  if (impressoraChar && impressoraDevice?.gatt?.connected) {
-    wrap.classList.add('conectada');
-    txt.textContent = 'Impressora conectada — ' + (impressoraDevice.name || 'POS-58');
-  } else {
-    wrap.classList.remove('conectada');
-    txt.textContent = 'Impressora desconectada';
-  }
-}
-
-async function imprimirEArquivar(pedido, botao) {
-  try {
-    // 1. Imprime
-    const char = await garantirConexao();
-    const bytes = gerarRecibo(pedido);
-    await enviarBytes(char, bytes);
-
-    // 2. Arquiva no banco
-    const { error: errInsert } = await supabaseClient
-      .from('pedidos_arquivados')
-      .insert({
-        id: pedido.id,
-        cliente_nome: pedido.cliente_nome,
-        cliente_telefone: pedido.cliente_telefone,
-        itens: pedido.itens,
-        total: pedido.total,
-        status: 'impresso',
-        created_at: pedido.created_at
-      });
-    if (errInsert) throw new Error('Falha ao arquivar: ' + errInsert.message);
-
-    // 3. Remove da fila de recentes
-    const { error: errDelete } = await supabaseClient
-      .from('pedidos_recentes')
-      .delete()
-      .eq('id', pedido.id);
-      
-    if (errDelete) {
-      console.warn('Pedido ficou duplicado (arquivado + recente):', pedido.id);
-    }
-
-    // Remove da tela
-    removerPedidoDaTela(pedido.id);
-  } catch (err) {
-    alert('Erro na impressão: ' + err.message);
-    botao.disabled = false;
-    botao.textContent = '🖨️ Imprimir e arquivar';
-  }
-}
-
-async function enviarBytes(characteristic, bytes) {
-  const CHUNK = 100;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    const pedaco = bytes.slice(i, i + CHUNK);
-    await characteristic.writeValue(pedaco);
-    await new Promise(r => setTimeout(r, 25));
-  }
-}
-
-function normalizar(s) {
-  return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
-function gerarRecibo(pedido) {
-  const CMD = {
-    init:   [0x1B, 0x40],
-    center: [0x1B, 0x61, 0x01],
-    left:   [0x1B, 0x61, 0x00],
-    normal: [0x1B, 0x21, 0x00],
-    bold:   [0x1B, 0x21, 0x08],
-    double: [0x1B, 0x21, 0x30],
-    cut:    [0x1D, 0x56, 0x00]
-  };
-
-  const partes = [];
-  const add = (arr) => partes.push(new Uint8Array(arr));
-  const txt = (s) => partes.push(new TextEncoder().encode(normalizar(s)));
-
-  const linha      = '-'.repeat(32) + '\n';
-  const linhaIgual = '='.repeat(32) + '\n';
-
-  add(CMD.init);
-  add(CMD.center);
-  add(CMD.double);
-  txt('NA BRASAS\n');
-  add(CMD.normal);
-  txt('Hamburgueria Artesanal\n');
-  txt(linhaIgual);
-  add(CMD.left);
-
-  const data = new Date(pedido.created_at);
-  txt(`Pedido: #${pedido.id.slice(0, 8)}\n`);
-  txt(`Data:   ${data.toLocaleString('pt-BR')}\n`);
-  txt(linha);
-
-  add(CMD.bold);
-  txt(`Cliente: ${pedido.cliente_nome}\n`);
-  add(CMD.normal);
-  if (pedido.cliente_telefone) txt(`Tel: ${pedido.cliente_telefone}\n`);
-  txt(linha);
-
-  add(CMD.bold);
-  txt('ITENS:\n');
-  add(CMD.normal);
-
-  const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
-  for (const i of itens) {
-    const nome  = i.nome || '?';
-    const qtd   = i.qtd || 1;
-    const preco = Number(i.preco || 0).toFixed(2).replace('.', ',');
-    const label = `${qtd}x ${nome}`;
-    const val   = `R$ ${preco}`;
-    const esp   = Math.max(1, 32 - label.length - val.length);
-    txt(label + ' '.repeat(esp) + val + '\n');
-  }
-
-  txt(linha);
-  add(CMD.bold);
-  const totLabel = 'TOTAL:';
-  const totVal   = `R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}`;
-  txt(totLabel + ' '.repeat(Math.max(1, 32 - totLabel.length - totVal.length)) + totVal + '\n');
-  add(CMD.normal);
-  txt(linhaIgual);
-
-  add(CMD.center);
-  txt('Obrigado pela preferencia!\n');
-  txt('@na_brasas_hamburgueria\n');
-  txt('\n\n\n');
-  add(CMD.cut);
-
-  const total = partes.reduce((s, p) => s + p.length, 0);
-  const out = new Uint8Array(total);
-  let off = 0;
-  for (const p of partes) {
-    out.set(p, off);
-    off += p.length;
-  }
-  return out;
-}
-
+/* ===================== LIMPEZA AUTOMÁTICA (+7 DIAS) ===================== */
 async function arquivarAntigos() {
   const limite = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 

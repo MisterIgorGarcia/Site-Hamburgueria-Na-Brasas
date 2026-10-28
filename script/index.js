@@ -1,3 +1,7 @@
+/* =====================================================================
+   FUNCIONALIDADES DO INDEX (PAGINA PRINCIPAL)
+   ===================================================================== */
+
 /* ===================== CONFIGURAÇÃO DE HORÁRIOS ===================== */
 // Altere aqui os horários de funcionamento da hamburgueria.
 // Cada dia da semana é representado por um número:
