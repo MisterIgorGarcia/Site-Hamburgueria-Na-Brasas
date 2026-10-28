@@ -8,6 +8,26 @@ let usbDevice = null; // USB
 let usbEndpoint = null; // USB
 let modoImpressao = null; // 'bluetooth' ou 'usb'
 
+/* ===================== RECONEXÃO AUTOMÁTICA BLUETOOTH (ANDROID) ===================== */
+document.addEventListener('DOMContentLoaded', async () => {
+  // Verifica se a API de Bluetooth existe e se o método getDevices está disponível
+  if (!navigator.bluetooth || !navigator.bluetooth.getDevices) return;
+
+  try {
+    // Tenta obter dispositivos Bluetooth que já receberam permissão anteriormente
+    const devices = await navigator.bluetooth.getDevices();
+    
+    // Se encontrou um dispositivo salvo, tenta se conectar a ele
+    if (devices.length > 0) {
+      console.log('Tentando reconectar ao Bluetooth salvo...');
+      await garantirConexaoBluetooth(false); // O "false" evita abrir o seletor de dispositivos
+      console.log('Bluetooth reconectado automaticamente!');
+    }
+  } catch (err) {
+    console.log('Não foi possível reconectar automaticamente:', err);
+  }
+});
+
 /* ===================== DESCONECTAR ===================== */
 async function desconectarImpressoraAtual() {
   try {
