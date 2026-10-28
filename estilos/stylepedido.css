@@ -382,6 +382,94 @@
     margin-bottom: 10px;
 }
 
+/* ===================== ADICIONAIS NO MODAL ===================== */
+.lista-adicionais {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    padding-right: 5px;
+}
+
+.item-adicional {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--cor-primaria);
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.item-adicional:hover {
+    border-color: var(--cor-secundaria);
+}
+
+.item-adicional.checked {
+    border-color: var(--cor-secundaria);
+    background-color: rgba(223, 141, 34, 0.1);
+}
+
+.item-adicional label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    width: 100%;
+    color: #fff;
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+/* Checkbox customizado */
+.item-adicional input[type="checkbox"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    outline: none;
+}
+
+.item-adicional input[type="checkbox"]:checked {
+    background-color: var(--cor-secundaria);
+    border-color: var(--cor-secundaria);
+}
+
+.item-adicional input[type="checkbox"]:checked::after {
+    content: '✔';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--cor-primaria);
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.preco-adicional {
+    color: var(--cor-secundaria);
+    font-weight: bold;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+/* Ajuste para quando o carrinho exibir os adicionais */
+.item-adicionais-carrinho {
+    display: block;
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 4px;
+    padding-left: 5px;
+    border-left: 2px solid #333;
+}
+
 /* ===================== TERMINAL VISUAL DE LOGS ===================== */
 .terminal-container {
   background-color: #000;
