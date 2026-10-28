@@ -58,6 +58,7 @@ function mudarAba(aba) {
 
   if (aba === 'historico') carregarHistorico(1);
   if (aba === 'graficos') gerarGraficos();
+  if (aba === 'funcionarios') carregarFuncionarios();
 }
 
 /* ===================== ESCUTA EM TEMPO REAL (WEBSOCKET) ===================== */
@@ -350,6 +351,127 @@ async function gerarGraficos() {
     vAxis: { title: 'R$', textStyle: { color: '#999' }, titleTextStyle: { color: '#999' } },
     colors: ['#df8d22'], curveType: 'function', chartArea: { width: '85%', height: '70%' }
   });
+}
+
+/* ===================== GERENCIAMENTO DE FUNCIONÁRIOS ===================== */
+
+async function carregarFuncionarios() {
+  const lista = document.getElementById('lista-funcionarios');
+  lista.innerHTML = '<div class="vazio">Carregando funcionários...</div>';
+
+  // Busca apenas quem é 'funcionario' (não puxa os admins)
+  const { data, error } = await supabaseClient
+    .from('usuarios_salvos')
+    .select('*')
+    .eq('tipo', 'funcionario')
+    .order('login', { ascending: true });
+
+  if (error) {
+    lista.innerHTML = '<div class="vazio">Erro ao carregar funcionários.</div>';
+    return;
+  }
+
+  if (data.length === 0) {
+    lista.innerHTML = '<div class="vazio">Nenhum funcionário cadastrado.</div>';
+    return;
+  }
+
+  lista.innerHTML = '';
+  data.forEach(func => {
+    lista.innerHTML += `
+      <div class="card-funcionario" id="func-${func.id}">
+        <div class="info">
+          <h4>${func.login}</h4>
+          <p>Senha: ${func.senha}</p>
+        </div>
+        <div class="acoes">
+          <button class="btn-editar" onclick="abrirModalFuncionario('${func.id}', '${func.login}', '${func.senha}')" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn-lixeira" onclick="apagarFuncionario('${func.id}', '${func.login}')" title="Apagar">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function abrirModalFuncionario(id = null, login = '', senha = '') {
+  document.getElementById('modal-funcionario').classList.add('ativo');
+  document.getElementById('func-id').value = id || '';
+  document.getElementById('func-login').value = login;
+  document.getElementById('func-senha').value = senha;
+  
+  document.getElementById('titulo-modal-func').textContent = id ? 'Editar Funcionário' : 'Novo Funcionário';
+}
+
+function fecharModalFuncionario() {
+  document.getElementById('modal-funcionario').classList.remove('ativo');
+}
+
+async function salvarFuncionario() {
+  const id = document.getElementById('func-id').value;
+  const login = document.getElementById('func-login').value.trim();
+  const senha = document.getElementById('func-senha').value.trim();
+
+  if (!login || !senha) {
+    alert("Preencha o login e a senha.");
+    return;
+  }
+
+  const btn = document.querySelector('#modal-funcionario .btn-enviar-manual');
+  btn.disabled = true;
+  btn.innerHTML = 'Salvando...';
+
+  try {
+    if (id) {
+      // EDITAR (Update)
+      const { error } = await supabaseClient
+        .from('usuarios_salvos')
+        .update({ login, senha })
+        .eq('id', id);
+      if (error) throw error;
+      alert("Funcionário atualizado com sucesso!");
+    } else {
+      // CRIAR NOVO (Insert)
+      const { error } = await supabaseClient
+        .from('usuarios_salvos')
+        .insert([{ login, senha, tipo: 'funcionario' }]);
+      if (error) {
+        if (error.code === '23505') throw new Error("Este login já está em uso.");
+        throw error;
+      }
+      alert("Funcionário criado com sucesso!");
+    }
+    
+    fecharModalFuncionario();
+    carregarFuncionarios();
+  } catch (err) {
+    alert("Erro ao salvar: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar';
+  }
+}
+
+async function apagarFuncionario(id, login) {
+  if (!confirm(`Tem certeza que deseja APAGAR o funcionário "${login}"? Ele perderá o acesso ao sistema.`)) return;
+
+  const el = document.getElementById(`func-${id}`);
+  if (el) el.style.opacity = '0.5'; // Feedback visual enquanto apaga
+
+  const { error } = await supabaseClient
+    .from('usuarios_salvos')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    alert("Erro ao apagar: " + error.message);
+    if (el) el.style.opacity = '1'; // Restaura se der erro
+  } else {
+    carregarFuncionarios(); // Recarrega a lista
+  }
 }
 
 /* ===================== LIMPEZA AUTOMÁTICA (+7 DIAS) ===================== */
