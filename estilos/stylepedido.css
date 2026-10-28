@@ -264,6 +264,21 @@
     box-shadow: 0 4px 15px rgba(223, 141, 34, 0.3);
 }
 
+/* ===================== CONTROLE DAS ABAS ===================== */
+.categoria-conteudo {
+    display: none; /* ESCONDE TODAS AS CATEGORIAS POR PADRÃO */
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch; 
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.categoria-conteudo.ativo {
+    display: flex; /* MOSTRA APENAS A CATEGORIA QUE TIVER A CLASSE ATIVO */
+    animation: fadeInCategoria 0.3s ease;
+}
+
 /* ===================== CORREÇÃO E ALINHAMENTO DOS CARDS ===================== */
 .categoria-conteudo {
     display: flex;
