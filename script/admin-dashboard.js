@@ -541,3 +541,77 @@ async function apagarFuncionario(id, login) {
     carregarFuncionarios();
   }
 }
+
+/* ===================== MEU PERFIL (ADMIN) ===================== */
+function abrirModalPerfil() {
+    const sessaoSalva = localStorage.getItem('nabrasas_sessao');
+    if (!sessaoSalva) return;
+    const sessao = JSON.parse(sessaoSalva);
+
+    if (!sessao.id) {
+        alert("Sessão antiga detectada. Por favor, saia e faça login novamente.");
+        return;
+    }
+
+    // Busca os dados atuais no banco
+    supabaseClient.from('usuarios_salvos').select('*').eq('id', sessao.id).single().then(({data, error}) => {
+        if (error || !data) {
+            alert("Erro ao carregar os dados do perfil.");
+            return;
+        }
+        
+        document.getElementById('perfil-id').value = data.id;
+        document.getElementById('perfil-login').value = data.login;
+        document.getElementById('perfil-senha').value = data.senha; 
+        
+        document.getElementById('modal-perfil').classList.add('ativo');
+    });
+}
+
+function fecharModalPerfil() {
+    document.getElementById('modal-perfil').classList.remove('ativo');
+}
+
+async function salvarPerfil() {
+    const id = document.getElementById('perfil-id').value;
+    const novoLogin = document.getElementById('perfil-login').value.trim();
+    const novaSenha = document.getElementById('perfil-senha').value.trim();
+
+    if (!novoLogin || !novaSenha) { 
+        alert("Preencha o login e a senha."); 
+        return; 
+    }
+
+    const btn = document.querySelector('#modal-perfil .btn-enviar-manual');
+    btn.disabled = true;
+    btn.innerHTML = 'Salvando...';
+
+    try {
+        const { error } = await supabaseClient
+            .from('usuarios_salvos')
+            .update({ login: novoLogin, senha: novaSenha })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        // Atualiza o localStorage com o novo nome para não bugar o painel
+        const sessaoSalva = localStorage.getItem('nabrasas_sessao');
+        if (sessaoSalva) {
+            let sessao = JSON.parse(sessaoSalva);
+            sessao.nome = novoLogin; 
+            localStorage.setItem('nabrasas_sessao', JSON.stringify(sessao));
+        }
+
+        // Atualiza o texto na tela
+        document.getElementById('user-info').textContent = `Logado como: ${novoLogin} (Admin)`;
+        
+        alert("Perfil atualizado com sucesso!");
+        fecharModalPerfil();
+
+    } catch (err) {
+        alert("Erro ao salvar: " + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar Alterações';
+    }
+}

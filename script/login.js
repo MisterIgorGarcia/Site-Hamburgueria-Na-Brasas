@@ -30,10 +30,7 @@ formLogin.addEventListener('submit', async (e) => {
 
     if (data?.success) {
       // Salva a sessão com o tipo que veio do banco ('admin' ou 'funcionario')
-      localStorage.setItem('nabrasas_sessao', JSON.stringify({ 
-        tipo: data.tipo, 
-        nome: data.login 
-      }));
+      localStorage.setItem('nabrasas_sessao', JSON.stringify({ id: data.id, tipo: data.tipo, nome: data.login }));
 
       // Redireciona baseado no tipo
       if (data.tipo === 'admin') {

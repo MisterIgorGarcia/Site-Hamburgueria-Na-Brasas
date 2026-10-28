@@ -21,6 +21,11 @@
     <div class="header-brand">
       <h1>Painel Admin</h1>
       <div class="user-info" id="user-info">Carregando...</div>
+      <!-- Botão para abrir o perfil -->
+      <button class="btn-admin" onclick="abrirModalPerfil()" style="margin-top: 8px; font-size: 0.75rem; padding: 4px 10px; width: fit-content;">
+        <i class="fa-solid fa-user-gear"></i> Alterar Senha
+      </button>
+    </div>
       <!-- Botão para abrir os logs -->
       <button class="btn-admin" onclick="toggleTerminal()" style="margin-top: 8px; font-size: 0.75rem; padding: 4px 10px; width: fit-content;">
         <i class="fa-solid fa-terminal"></i> Ver Logs
@@ -137,6 +142,30 @@
     <div class="modal-footer">
       <button class="btn-admin btn-admin-primario btn-enviar-manual" onclick="salvarFuncionario()">
         <i class="fa-solid fa-floppy-disk"></i> Salvar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE PERFIL DO ADMIN -->
+<div id="modal-perfil" class="modal-overlay">
+  <div class="modal-conteudo">
+    <div class="modal-header">
+      <h3>Meu Perfil</h3>
+      <button class="fechar-modal" onclick="fecharModalPerfil()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    
+    <div class="form-manual">
+      <div class="input-group">
+        <input type="hidden" id="perfil-id">
+        <input type="text" id="perfil-login" placeholder="Seu Login" required>
+        <input type="text" id="perfil-senha" placeholder="Sua Senha" required>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-admin btn-admin-primario btn-enviar-manual" onclick="salvarPerfil()">
+        <i class="fa-solid fa-floppy-disk"></i> Salvar Alterações
       </button>
     </div>
   </div>
