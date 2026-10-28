@@ -1,17 +1,59 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - Na Brasas</title>
-<link rel="stylesheet" href="../estilos/style.css">
-<link rel="stylesheet" href="../estilos/styleadmin.css">
-<!-- Vercel Analytics -->
-<script defer src="/_vercel/insights/script.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Na Brasas</title>
+    
+    <!-- Carrega os estilos -->
+    <link rel="stylesheet" href="../estilos/style.css">
+    <link rel="stylesheet" href="../estilos/styleadmin.css">
+    <!-- FontAwesome para o ícone de voltar -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <script defer src="/_vercel/insights/script.js"></script>
+
+    <!-- Estilo extra para forçar a centralização e o botão de voltar -->
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--cor-primaria);
+            margin: 0;
+        }
+        .btn-voltar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: var(--cor-secundaria);
+            text-decoration: none;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.3s;
+        }
+        .btn-voltar:hover {
+            color: var(--cor-tercearia);
+        }
+        /* Garante que a caixa de login não seja afetada pelo body flex */
+        #view-login {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+    </style>
 </head>
 <body>
 
-<div class="login-wrapper">
+<!-- Botão de Voltar para o Index (que está na raiz) -->
+<a href="../index.html" class="btn-voltar">
+    <i class="fa-solid fa-arrow-left"></i> Voltar ao Início
+</a>
+
+<div id="view-login">
   <div class="login-box">
     <h1>Painel — Na Brasas</h1>
     <p>Acesso restrito</p>
