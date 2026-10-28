@@ -181,11 +181,22 @@ function removerPedidoDaTela(id) {
 async function apagarPedidoRecente(id) {
   if (!confirm("Tem certeza que deseja APAGAR este pedido? Ele NÃO será impresso e NÃO irá para o histórico.")) return;
 
-  const { error } = await supabaseClient.from('pedidos_recentes').delete().eq('id', id);
-  
+  // Adicionando .select() para saber se a linha realmente foi apagada no banco
+  const { data, error } = await supabaseClient
+    .from('pedidos_recentes')
+    .delete()
+    .eq('id', id)
+    .select();
+
   if (error) { 
     alert("Erro ao apagar: " + error.message); 
     return; 
+  }
+  
+  if (!data || data.length === 0) {
+    alert("Falha ao apagar: A permissão do banco de dados foi negada.");
+    // Recarrega a tela para trazer o pedido de volta e mostrar que não apagou
+    carregarPedidos(paginaAtualRecentes);
   }
 }
 
@@ -250,9 +261,21 @@ async function carregarHistorico(pagina = 1) {
 async function apagarHistorico(id) {
   if (!confirm("Tem certeza que deseja apagar este pedido do histórico? Isso não pode ser desfeito.")) return;
 
-  const { error } = await supabaseClient.from('pedidos_arquivados').delete().eq('id', id);
-  if (error) { alert("Erro ao apagar: " + error.message); return; }
-  // O Realtime vai cuidar de atualizar a tela sozinho!
+  const { data, error } = await supabaseClient
+    .from('pedidos_arquivados')
+    .delete()
+    .eq('id', id)
+    .select();
+
+  if (error) { 
+    alert("Erro ao apagar: " + error.message); 
+    return; 
+  }
+  
+  if (!data || data.length === 0) {
+    alert("Falha ao apagar: A permissão do banco de dados foi negada.");
+    carregarHistorico(paginaAtualHistorico);
+  }
 }
 
 /* ===================== CONTROLE DE PAGINAÇÃO ===================== */
