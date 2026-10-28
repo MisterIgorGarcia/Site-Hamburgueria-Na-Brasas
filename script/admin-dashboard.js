@@ -38,6 +38,7 @@ function sair() {
 function iniciarPainel() {
   carregarPedidos(1);
   escutarNovosPedidos();
+  atualizarBadgeNotificacao();
   
   if (typeof google !== 'undefined') {
     google.charts.load('current', {'packages':['corechart']});
@@ -56,7 +57,6 @@ function mudarAba(aba) {
   document.querySelector(`.aba-btn[onclick="mudarAba('${aba}')"]`).classList.add('ativo');
   document.getElementById(`aba-${aba}`).classList.add('ativo');
 
-  // Se entrou em recentes, ZERA a notificação e esconde a bolinha
   if (aba === 'recentes') {
     novasNotificacoes = 0;
     atualizarBadgeNotificacao(); 
@@ -73,13 +73,14 @@ function atualizarBadgeNotificacao() {
   const badge = document.getElementById('badge-notificacao');
   if (!badge) return;
 
-  // Se tem notificação E o usuário NÃO está na aba recentes
   if (novasNotificacoes > 0 && abaAtiva !== 'recentes') {
     badge.textContent = novasNotificacoes;
     badge.classList.remove('escondido');
+    badge.style.display = 'inline-flex'; // Força a exibição
   } else {
     badge.classList.add('escondido');
-    badge.textContent = '0';
+    badge.style.display = 'none'; // Força o sumiço, independente do CSS
+    badge.textContent = ''; 
   }
 }
 
@@ -211,7 +212,6 @@ function removerPedidoDaTela(id) {
   }
 }
 
-// FUNÇÃO QUE ESTAVA FALTANDO E QUEBRAVA A LIXEIRA
 async function apagarPedidoRecente(id) {
   if (!confirm("Tem certeza que deseja APAGAR este pedido?")) return;
 
