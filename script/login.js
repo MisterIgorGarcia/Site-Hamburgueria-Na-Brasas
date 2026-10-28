@@ -16,31 +16,29 @@ formLogin.addEventListener('submit', async (e) => {
   loginErro.textContent = '';
 
   try {
-    // 1. Tenta logar como ADMIN
-    let { data: dataAdmin, error: errorAdmin } = await supabaseClient.rpc('login_admin', {
-      p_login: login, p_senha: senha
+    // Chama a única função unificada
+    const { data, error } = await supabaseClient.rpc('login_unificado', {
+      p_login: login, 
+      p_senha: senha
     });
     
-    if (errorAdmin) throw errorAdmin;
+    if (error) throw error;
 
-    if (dataAdmin?.success) {
-      localStorage.setItem('nabrasas_sessao', JSON.stringify({ tipo: 'admin', nome: dataAdmin.login }));
-      // Como o login está na pasta admin, o dashboard está no MESMO lugar
-      window.location.href = 'administrador-dashboard.html'; 
-      return;
-    }
+    if (data?.success) {
+      // Salva a sessão com o tipo que veio do banco ('admin' ou 'funcionario')
+      localStorage.setItem('nabrasas_sessao', JSON.stringify({ 
+        tipo: data.tipo, 
+        nome: data.login 
+      }));
 
-    // 2. Tenta logar como FUNCIONÁRIO
-    let { data: dataUser, error: errorUser } = await supabaseClient.rpc('login_usuario', {
-      p_login: login, p_senha: senha
-    });
-
-    if (errorUser) throw errorUser;
-
-    if (dataUser?.success) {
-      localStorage.setItem('nabrasas_sessao', JSON.stringify({ tipo: 'funcionario', nome: dataUser.login }));
-      // O funcionário está na raiz, então precisamos voltar uma pasta
-      window.location.href = '../funcionario-dashboard.html'; 
+      // Redireciona baseado no tipo
+      if (data.tipo === 'admin') {
+        // Como o login.html está na pasta admin, o dashboard está no mesmo lugar
+        window.location.href = 'administrador-dashboard.html';
+      } else {
+        // Funcionário volta uma pasta para achar o dashboard dele
+        window.location.href = '../funcionario-dashboard.html';
+      }
       return;
     }
 
