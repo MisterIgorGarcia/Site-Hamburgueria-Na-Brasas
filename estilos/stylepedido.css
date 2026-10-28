@@ -266,6 +266,7 @@
 
 /* ===================== CONTROLE DAS ABAS ===================== */
 .categoria-conteudo {
+    display: none !important; /* O !important garante que ele esconda, mesmo com conflito */
     display: none; /* ESCONDE TODAS AS CATEGORIAS POR PADRÃO */
     flex-wrap: wrap;
     justify-content: center;
@@ -275,7 +276,7 @@
 }
 
 .categoria-conteudo.ativo {
-    display: flex; /* MOSTRA APENAS A CATEGORIA QUE TIVER A CLASSE ATIVO */
+    display: flex !important; /* Mostra a aba ativa */
     animation: fadeInCategoria 0.3s ease;
 }
 
