@@ -384,6 +384,15 @@ function configurarBuscaCEP() {
     if (cepInput) {
         cepInput.addEventListener('blur', async (e) => {
             let cep = e.target.value.replace(/\D/g, '');
+            
+            // Se o usuário apagou o CEP, limpa os campos para ele digitar manual
+            if (cep.length === 0) {
+                document.getElementById('rua-cliente').value = '';
+                document.getElementById('bairro-cliente').value = '';
+                document.getElementById('cidade-cliente').value = '';
+                return;
+            }
+
             if (cep.length === 8) {
                 try {
                     const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -394,7 +403,7 @@ function configurarBuscaCEP() {
                         document.getElementById('cidade-cliente').value = `${data.localidade} - ${data.uf}`;
                         document.getElementById('num-cliente').focus();
                     } else {
-                        alert("CEP não encontrado.");
+                        alert("CEP não encontrado. Digite o endereço manualmente.");
                     }
                 } catch (err) {
                     console.error("Erro ao buscar CEP", err);
@@ -408,5 +417,53 @@ function configurarBuscaCEP() {
             if (val.length > 5) val = val.replace(/^(\d{5})(\d)/, '$1-$2');
             e.target.value = val;
         });
+    }
+}
+
+/* ===================== BUSCA DE CEP PELA RUA (REVERSO) ===================== */
+async function buscarEnderecoPorRua() {
+    const ruaInput = document.getElementById('rua-cliente');
+    const rua = ruaInput.value.trim();
+
+    if (rua.length < 3) {
+        alert("Digite pelo menos 3 letras do nome da rua para buscar.");
+        ruaInput.focus();
+        return;
+    }
+
+    const btn = ruaInput.nextElementSibling;
+    const iconeOriginal = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; // Efeito de carregando
+
+    try {
+        // ATENÇÃO: Estamos fixando a busca para Cruzeiro - SP.
+        // Se o seu comércio atende outras cidades frequentemente, o cliente terá que digitar o CEP.
+        // A URL exige (Estado/Cidade/Rua)
+        const url = `https://viacep.com.br/ws/SP/Cruzeiro/${encodeURIComponent(rua)}/json/`;
+        
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data && data.length > 0) {
+            // Pega o primeiro resultado da lista
+            const resultado = data[0];
+            
+            // Preenche os campos
+            document.getElementById('cep-cliente').value = resultado.cep;
+            document.getElementById('rua-cliente').value = resultado.logradouro; // Preenche o nome completo
+            document.getElementById('bairro-cliente').value = resultado.bairro;
+            document.getElementById('cidade-cliente').value = `${resultado.localidade} - ${resultado.uf}`;
+            
+            // Foca no número para o cliente terminar
+            document.getElementById('num-cliente').focus();
+        } else {
+            // Se não achar em Cruzeiro, avisa o cliente
+            alert("Não encontramos essa rua em Cruzeiro - SP.\nPor favor, digite o CEP ou preencha o endereço manualmente.");
+        }
+    } catch (err) {
+        console.error("Erro na busca por rua:", err);
+        alert("Erro de conexão ao buscar. Digite o CEP manualmente.");
+    } finally {
+        btn.innerHTML = iconeOriginal; // Restaura a lupa
     }
 }

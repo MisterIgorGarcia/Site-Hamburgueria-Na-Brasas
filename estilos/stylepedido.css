@@ -223,13 +223,6 @@
     border-color: var(--cor-secundaria);
 }
 
-/* Campos bloqueados (preenchidos pelo CEP) */
-.form-cliente input[readonly] {
-    background-color: #1a1a1a;
-    color: #888;
-    cursor: not-allowed;
-}
-
 .btn-enviar {
     width: 100%;
     font-size: 1.1rem;

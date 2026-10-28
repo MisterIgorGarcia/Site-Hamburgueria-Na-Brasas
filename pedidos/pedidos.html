@@ -86,9 +86,17 @@
                     <input type="text" id="cep-cliente" placeholder="CEP" maxlength="9" inputmode="numeric" style="flex: 1;">
                     <input type="text" id="num-cliente" placeholder="Número" style="width: 80px;">
                 </div>
-                <input type="text" id="rua-cliente" placeholder="Rua / Avenida (Preenchido pelo CEP)" readonly>
-                <input type="text" id="bairro-cliente" placeholder="Bairro (Preenchido pelo CEP)" readonly>
-                <input type="text" id="cidade-cliente" placeholder="Cidade (Preenchido pelo CEP)" readonly>
+
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="rua-cliente" placeholder="Rua / Avenida (ex: Rua Francisco)" style="flex: 1;">
+                    <button type="button" onclick="buscarEnderecoPorRua()" style="background: var(--cor-secundaria); color: var(--cor-primaria); border: none; padding: 0 15px; border-radius: 8px; cursor: pointer;" title="Buscar CEP pela Rua">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+                <input type="text" id="bairro-cliente" placeholder="Bairro">
+                <input type="text" id="cidade-cliente" placeholder="Cidade">
+                <input type="text" id="bairro-cliente" placeholder="Bairro (Preenchido pelo CEP)">
+                <input type="text" id="cidade-cliente" placeholder="Cidade (Preenchido pelo CEP)">
             </div>
 
             <button class="btn-amarelo btn-enviar" onclick="enviarPedido()">
