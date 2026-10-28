@@ -3,13 +3,41 @@
    ===================================================================== */
 
 /* ===================== CONEXÃO COM SUPABASE ===================== */
-// COLOQUE SUAS CREDENCIAIS AQUI
 const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ===================== ESTADO DO CARRINHO ===================== */
 let carrinho = [];
+
+/* ===================== MÁSCARA DE TELEFONE ===================== */
+// Adiciona máscara automática no input de telefone
+document.addEventListener('DOMContentLoaded', () => {
+    const telInput = document.getElementById('tel-cliente');
+    if(telInput) {
+        telInput.addEventListener('input', function (e) {
+            let valor = e.target.value.replace(/\D/g, ''); // Remove tudo que não é número
+            
+            if (valor.length > 11) valor = valor.slice(0, 11); // Limita a 11 números
+
+            if (valor.length > 10) {
+                // (XX) XXXXX-XXXX (Celular)
+                e.target.value = valor.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+            } else if (valor.length > 6) {
+                // (XX) XXXX-XXXX (Telefone fixo)
+                e.target.value = valor.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+            } else if (valor.length > 2) {
+                // (XX) XXXX
+                e.target.value = valor.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+            } else if (valor.length > 0) {
+                // (XX
+                e.target.value = valor.replace(/^(\d*)/, '($1');
+            } else {
+                e.target.value = '';
+            }
+        });
+    }
+});
 
 /* ===================== FUNÇÕES DO CARRINHO ===================== */
 function adicionarAoCarrinho(nome, preco) {
@@ -97,9 +125,19 @@ async function enviarPedido() {
     const nome = document.getElementById('nome-cliente').value.trim();
     const telefone = document.getElementById('tel-cliente').value.trim();
 
-    if (!nome) {
-        alert("Por favor, preencha seu nome para enviarmos o pedido à cozinha.");
+    // Validação do Nome
+    if (nome.length < 3) {
+        alert("Por favor, preencha seu nome completo.");
         return;
+    }
+
+    // Validação do Telefone (Regex para formato (XX) XXXXX-XXXX ou (XX) XXXX-XXXX)
+    if (telefone) {
+        const regexTelefone = /^\(\d{2}\) \d{4,5}-\d{4}$/;
+        if (!regexTelefone.test(telefone)) {
+            alert("Por favor, digite um número de WhatsApp válido: (DD) 99999-9999.");
+            return;
+        }
     }
 
     const total = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
