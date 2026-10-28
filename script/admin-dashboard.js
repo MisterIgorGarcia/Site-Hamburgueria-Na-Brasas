@@ -1,5 +1,5 @@
 /* =====================================================================
-   DASHBOARD DO ADMIN (INTERFACE, DADOS E PAGINAÇÃO)
+   DASHBOARD DO ADMIN (INTERFACE, DADOS E PAGINAÇÃO - TEMPO REAL)
    ===================================================================== */
 const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
@@ -7,7 +7,8 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let subscriptionPedidos = null;
 const pedidosNaTela = new Map();
-let graficosDesenhados = false;
+let abaAtiva = 'recentes'; // Rastreia qual aba está aberta
+let timeoutAtualizacao = null; // Para evitar atualizações duplicadas
 
 // Variáveis de Controle de Paginação
 const ITENS_POR_PAGINA = 10;
@@ -42,11 +43,15 @@ function iniciarPainel() {
   
   if (typeof google !== 'undefined') {
     google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(() => {
+      if(abaAtiva === 'graficos') gerarGraficos();
+    });
   }
 }
 
 /* ===================== NAVEGAÇÃO DE ABAS ===================== */
 function mudarAba(aba) {
+  abaAtiva = aba; // Salva qual aba está ativa
   document.querySelectorAll('.aba-btn').forEach(btn => btn.classList.remove('ativo'));
   document.querySelectorAll('.conteudo-aba').forEach(div => div.classList.remove('ativo'));
 
@@ -54,13 +59,41 @@ function mudarAba(aba) {
   document.getElementById(`aba-${aba}`).classList.add('ativo');
 
   if (aba === 'historico') carregarHistorico(1);
-  if (aba === 'graficos' && !graficosDesenhados) {
-    gerarGraficos();
-    graficosDesenhados = true;
-  }
+  if (aba === 'graficos') gerarGraficos(); // Agora sempre que clicar, atualiza
 }
 
-/* ===================== ABA 1: PEDIDOS RECENTES (PAGINADO) ===================== */
+/* ===================== ESCUTA EM TEMPO REAL ===================== */
+function escutarNovosPedidos() {
+  subscriptionPedidos = supabaseClient
+    .channel('mudancas-gerais')
+    // Escuta mudanças nos pedidos recentes (novos pedidos, exclusões)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_recentes' }, () => {
+        atualizarAbaAtiva();
+    })
+    // Escuta mudanças nos pedidos arquivados (quando imprime, quando deleta do histórico)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_arquivados' }, () => {
+        atualizarAbaAtiva();
+    })
+    .subscribe();
+}
+
+// Função central que decide o que atualizar com base na aba que o admin está vendo
+function atualizarAbaAtiva() {
+  // O timeout evita que a tela pisque se 3 pedidos chegarem no mesmo segundo
+  clearTimeout(timeoutAtualizacao);
+  
+  timeoutAtualizacao = setTimeout(() => {
+    if (abaAtiva === 'recentes') {
+      carregarPedidos(paginaAtualRecentes);
+    } else if (abaAtiva === 'historico') {
+      carregarHistorico(paginaAtualHistorico);
+    } else if (abaAtiva === 'graficos') {
+      gerarGraficos();
+    }
+  }, 500); // Aguarda 500ms antes de atualizar
+}
+
+/* ===================== ABA 1: PEDIDOS RECENTES ===================== */
 async function carregarPedidos(pagina = 1) {
   paginaAtualRecentes = pagina;
   const inicio = (pagina - 1) * ITENS_POR_PAGINA;
@@ -93,14 +126,6 @@ async function carregarPedidos(pagina = 1) {
   renderizarPaginacao('recentes', paginaAtualRecentes, totalPaginasRecentes);
 }
 
-function escutarNovosPedidos() {
-  subscriptionPedidos = supabaseClient
-    .channel('pedidos-recentes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
-        carregarPedidos(paginaAtualRecentes);
-    }).subscribe();
-}
-
 function adicionarPedidoNaTela(pedido, novo) {
   if (pedidosNaTela.has(pedido.id)) return;
   pedidosNaTela.set(pedido.id, pedido);
@@ -131,7 +156,6 @@ function adicionarPedidoNaTela(pedido, novo) {
       <span>Total</span><span class="valor">R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}</span>
     </div>
     <div class="pedido-acoes">
-      <!-- NOVO BOTÃO DE LIXEIRA AQUI -->
       <button class="btn-lixeira" onclick="apagarPedidoRecente('${pedido.id}')" title="Apagar este pedido">
         <i class="fa-solid fa-trash"></i>
       </button>
@@ -163,18 +187,20 @@ async function apagarPedidoRecente(id) {
     alert("Erro ao apagar: " + error.message); 
     return; 
   }
-
-  // O Realtime vai detectar a exclusão e a tela vai se atualizar sozinha.
 }
 
-/* ===================== ABA 2: HISTÓRICO (PAGINADO) ===================== */
+/* ===================== ABA 2: HISTÓRICO ===================== */
 async function carregarHistorico(pagina = 1) {
   paginaAtualHistorico = pagina;
   const inicio = (pagina - 1) * ITENS_POR_PAGINA;
   const fim = inicio + ITENS_POR_PAGINA - 1;
 
   const lista = document.getElementById('lista-historico');
-  lista.innerHTML = '<div class="vazio">Buscando histórico...</div>';
+  
+  // Só mostra "carregando" se a lista estiver vazia, para não piscar na tela toda hora
+  if (lista.innerHTML === '' || lista.innerHTML.includes('vazio')) {
+    lista.innerHTML = '<div class="vazio">Buscando histórico...</div>';
+  }
 
   const { data, error, count } = await supabaseClient
     .from('pedidos_arquivados')
@@ -225,13 +251,11 @@ async function apagarHistorico(id) {
   if (!confirm("Tem certeza que deseja apagar este pedido do histórico? Isso não pode ser desfeito.")) return;
 
   const { error } = await supabaseClient.from('pedidos_arquivados').delete().eq('id', id);
-  
   if (error) { alert("Erro ao apagar: " + error.message); return; }
-
-  carregarHistorico(paginaAtualHistorico);
+  // O Realtime vai cuidar de atualizar a tela sozinho!
 }
 
-/* ===================== CONTROLE DE PAGINAÇÃO (UI) ===================== */
+/* ===================== CONTROLE DE PAGINAÇÃO ===================== */
 function renderizarPaginacao(aba, paginaAtual, totalPaginas) {
   const container = document.getElementById(`paginacao-${aba}`);
   if (!container) return;
@@ -261,6 +285,7 @@ function mudarPagina(aba, novaPagina) {
 
 /* ===================== ABA 3: GRÁFICOS ===================== */
 async function gerarGraficos() {
+  // Não limpa a tela inteira na hora para não piscar. Só busca e atualiza os dados.
   const { data: recentes } = await supabaseClient.from('pedidos_recentes').select('*');
   const { data: arquivados } = await supabaseClient.from('pedidos_arquivados').select('*');
   
