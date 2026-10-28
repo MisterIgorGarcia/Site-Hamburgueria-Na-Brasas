@@ -62,37 +62,41 @@ function mudarAba(aba) {
 
 /* ===================== ESCUTA EM TEMPO REAL (WEBSOCKET) ===================== */
 function escutarNovosPedidos() {
+  console.log("⏳ Tentando conectar ao Realtime...");
+
   subscriptionPedidos = supabaseClient
     .channel('mudancas-gerais')
     
-    // Quando um pedido NOVO chega
+    // Log de conexão (Para vermos se a internet/WebSocket conectou)
+    .on('system', {}, (payload) => {
+      console.log("🟢 Status do Canal:", payload.status);
+    })
+
+    // Escuta novos pedidos
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
-      // Insere o pedido direto na tela do usuário instantaneamente (sem esperar banco)
+      console.log("📦 Novo pedido recebido via WebSocket!", payload.new);
       if (abaAtiva === 'recentes' && paginaAtualRecentes === 1) {
         adicionarPedidoNoTopo(payload.new);
-      } else {
-        // Se o admin estiver em outra aba, só atualiza o contador (para não piscar a tela dele)
-        totalPaginasRecentes = Math.ceil((totalPaginasRecentes * ITENS_POR_PAGINA + 1) / ITENS_POR_PAGINA);
       }
-      
-      // Atualiza os gráficos se estiver na aba deles
       if (abaAtiva === 'graficos') gerarGraficos();
     })
     
-    // Quando um pedido é DELETADO (pela lixeira ou impressão)
+    // Escuta exclusões
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
       removerPedidoDaTela(payload.old.id);
     })
 
-    // Quando um pedido vai para o HISTÓRICO
+    // Escuta arquivados
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_arquivados' }, (payload) => {
-      if (abaAtiva === 'historico') {
-        carregarHistorico(paginaAtualHistorico);
-      }
+      if (abaAtiva === 'historico') carregarHistorico(paginaAtualHistorico);
       if (abaAtiva === 'graficos') gerarGraficos();
     })
 
-    .subscribe();
+    // Callback de erro ao conectar
+    .subscribe((status, err) => {
+      console.log("🚀 Status final da conexão:", status);
+      if (err) console.error("❌ Erro no Realtime:", err);
+    });
 }
 
 /* ===================== ABA 1: PEDIDOS RECENTES ===================== */
