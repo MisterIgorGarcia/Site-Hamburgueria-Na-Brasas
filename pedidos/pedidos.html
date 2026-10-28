@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faça seu Pedido - Na Brasas</title>
+    
+    <!-- CSS Global e CSS específico de Pedidos -->
+    <link rel="stylesheet" href=".../estilos/style.css">
+    <link rel="stylesheet" href=".../estilos/stylepedido.css">
+    
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<!-- ===================== CABEÇALHO ===================== -->
+<header id="cabecalho">
+    <h1>
+        <span class="spann">N</span>
+        <span class="span-texto">
+            <span class="spannabrasa">A BRASAS</span>
+            <span class="spanhamburgueria">HAMBURGUERIA</span>
+        </span>
+    </h1>
+    <nav>
+        <ul>
+            <li><a href="index.html"><i class="fa-solid fa-arrow-left"></i> Voltar ao Início</a></li>
+        </ul>
+    </nav>
+</header>
+
+<!-- ===================== SEÇÃO DE PEDIDOS ===================== -->
+<section class="secao">
+    <h2>Monte seu Pedido</h2>
+    <p class="subtitulo-pedido">Escolha seus lanches favoritos e adicione ao carrinho.</p>
+
+    <div class="cards-planos">
+        <!-- Lanche 1 -->
+        <div class="card-premium">
+            <img src="imagens/lanches/3.png" alt="Soberano" class="card-imagem">
+            <h3><i class="fa-solid fa-crown"></i> Na Brasa's Soberano</h3>
+            <p class="preco">R$ 35,00</p>
+            <ul>
+                <li>✔ Pão, maionese e molho barbecue</li>
+                <li>✔ 2 Hambúrgueres bovinos, frango e 3 queijos</li>
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Soberano', 35.00)">Adicionar</button>
+        </div>
+
+        <!-- Lanche 2 -->
+        <div class="card-premium">
+            <img src="imagens/lanches/1.png" alt="Duplo" class="card-imagem">
+            <h3><i class="fa-solid fa-star"></i> Na Brasa's Burguer Duplo</h3>
+            <p class="preco">R$ 26,00</p>
+            <ul>
+                <li>✔ Pão, maionese e molho barbecue</li>
+                <li>✔ 2 Hambúrgueres bovinos e 2 queijos</li>
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer Duplo', 26.00)">Adicionar</button>
+        </div>
+
+        <!-- Lanche 3 -->
+        <div class="card-premium">
+            <img src="imagens/lanches/2.png" alt="Triplo" class="card-imagem">
+            <h3><i class="fa-solid fa-star"></i> Na Brasa's Burguer Triplo</h3>
+            <p class="preco">R$ 35,00</p>
+            <ul>
+                <li>✔ Pão, maionese e molho barbecue</li>
+                <li>✔ 3 Hambúrgueres bovinos e 3 queijos</li>
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer Triplo', 35.00)">Adicionar</button>
+        </div>
+
+        <!-- Lanche 4 -->
+        <div class="card-premium">
+            <img src="imagens/lanches/4.png" alt="Tem Como" class="card-imagem">
+            <h3><i class="fa-solid fa-star"></i> Na Brasas's Burguer Tem Como</h3>
+            <p class="preco">R$ 35,00</p>
+            <ul>
+                <li>✔ 2 Hambúrgueres, frango, calabresa e bacon</li>
+                <li>✔ O dobro de queijo e cebola roxa</li>
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasas\'s Burguer Tem Como', 35.00)">Adicionar</button>
+        </div>
+
+        <!-- Lanche 5 -->
+        <div class="card">
+            <img src="imagens/lanches/burguersimples.png" alt="Simples" class="card-imagem">
+            <h3>Na Brasa's Burguer</h3>
+            <p class="preco">R$ 15,00</p>
+            <ul>
+                <li>✔ Pão, maionese e molho barbecue</li>
+                <li>✔ 1 Hambúrguer e queijo</li>
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer', 15.00)">Adicionar</button>
+        </div>
+
+        <!-- Lanche 6 -->
+        <div class="card">
+            <img src="imagens/lanches/burguersalada.png" alt="Salada" class="card-imagem">
+            <h3>Na Brasa's Burguer Salada</h3>
+            <p class="preco">R$ 18,00</p>
+            <ul>
+                <li>✔ Pão, alface, tomate e maionese</li>
+                <li>✔ 1 Hambúrguer e queijo</li>
+            </ul>
+            <button class="btn-amarelo" onclick="adicionarAoCarrinho('Na Brasa\'s Burguer Salada', 18.00)">Adicionar</button>
+        </div>
+        
+        <!-- Adicione os outros lanches (Toscana, Calabresa, Frango, Bacon) aqui seguindo o mesmo padrão -->
+    </div>
+</section>
+
+<!-- ===================== BOTÃO DO CARRINHO (FLUTUANTE) ===================== -->
+<button id="btn-carrinho" onclick="abrirCarrinho()">
+    <i class="fa-solid fa-bag-shopping"></i>
+    <span id="badge-carrinho" class="escondido">0</span>
+</button>
+
+<!-- ===================== MODAL DO CARRINHO ===================== -->
+<div id="modal-carrinho" class="modal-overlay">
+    <div class="modal-conteudo">
+        <div class="modal-header">
+            <h3>Seu Pedido</h3>
+            <button class="fechar-modal" onclick="fecharCarrinho()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <div id="lista-carrinho">
+            <!-- Os itens vão aparecer aqui via JS -->
+        </div>
+
+        <div class="modal-footer">
+            <div class="total-carrinho">
+                <span>Total:</span>
+                <strong id="total-carrinho-valor">R$ 0,00</strong>
+            </div>
+            
+            <div class="form-cliente">
+                <input type="text" id="nome-cliente" placeholder="Seu Nome (Obrigatório)" required>
+                <input type="tel" id="tel-cliente" placeholder="Seu WhatsApp (Opcional)">
+            </div>
+
+            <button class="btn-amarelo btn-enviar" onclick="enviarPedido()">
+                <i class="fa-solid fa-paper-plane"></i> Enviar Pedido
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== SCRIPTS ===================== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="script/pedidos.js"></script>
+</body>
+</html>

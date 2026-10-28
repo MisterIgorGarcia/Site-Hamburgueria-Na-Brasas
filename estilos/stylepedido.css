@@ -1,0 +1,229 @@
+/* ===================== AJUSTES DA PÁGINA DE PEDIDOS ===================== */
+.subtitulo-pedido {
+    color: var(--cor-texto-mutado);
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+/* Ajuste para o cabeçalho voltar pro index */
+#cabecalho nav ul {
+    display: flex;
+    gap: 20px;
+}
+
+#cabecalho nav a {
+    color: var(--cor-secundaria);
+    font-weight: bold;
+}
+
+/* ===================== CARRINHO FLUTUANTE ===================== */
+#btn-carrinho {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background-color: var(--cor-secundaria);
+    color: var(--cor-primaria);
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    z-index: 998;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#btn-carrinho:hover {
+    transform: scale(1.1);
+}
+
+#badge-carrinho {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background-color: #ef4444;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: bold;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--cor-primaria);
+}
+
+#badge-carrinho.escondido {
+    display: none;
+}
+
+/* ===================== MODAL DO CARRINHO ===================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    z-index: 2000;
+    display: flex;
+    align-items: flex-end; /* Faz subir por baixo */
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.modal-overlay.ativo {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-conteudo {
+    background-color: var(--cor-card);
+    width: 100%;
+    max-width: 500px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 25px;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-overlay.ativo .modal-conteudo {
+    transform: translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.modal-header h3 {
+    color: var(--cor-secundaria);
+    font-size: 1.4rem;
+}
+
+.fechar-modal {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+#lista-carrinho {
+    overflow-y: auto;
+    flex: 1;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 5px; /* Para a barra de rolagem */
+}
+
+.item-carrinho {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--cor-primaria);
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: 1px solid #2a2a2a;
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.item-nome {
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.item-preco {
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.item-controles {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: #222;
+    padding: 5px 10px;
+    border-radius: 8px;
+}
+
+.item-controles button {
+    background-color: transparent;
+    color: var(--cor-secundaria);
+    border: none;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.item-controles span {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #333;
+    padding-top: 20px;
+}
+
+.total-carrinho {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+}
+
+.total-carrinho strong {
+    color: var(--cor-secundaria);
+    font-size: 1.8rem;
+}
+
+.form-cliente {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.form-cliente input {
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background-color: var(--cor-primaria);
+    color: white;
+    font-size: 1rem;
+}
+
+.form-cliente input:focus {
+    outline: none;
+    border-color: var(--cor-secundaria);
+}
+
+.btn-enviar {
+    width: 100%;
+    font-size: 1.1rem;
+    padding: 16px;
+}

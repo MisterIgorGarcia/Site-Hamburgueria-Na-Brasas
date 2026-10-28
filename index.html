@@ -22,6 +22,10 @@
     <meta name="twitter:title" content="Na Brasas Hamburgueria – Sabor, Qualidade e Tradição">
     <meta name="twitter:description" content="Venha saborear na Na Brasas em Cruzeiro - SP. Hambúrgueres artesanais na brasa, ingredientes selecionados e um ambiente acolhedor.">
     <meta name="twitter:image" content="https://misterigorgarcia.github.io/Site-Hamburgueria-Na-Brasas/imagens/preview.jpg">
+
+    <!-- ===================== VERCEL ANALYTICS ===================== -->
+    <script defer src="/_vercel/insights/script.js"></script>
+
 </head>
 
 <body>
@@ -46,7 +50,7 @@
         <ul>
             <li><a href="#localizacao">Localização e Contato</a></li>
             <li><a href="#sobre">Diferenciais</a></li>
-            <li><a href="#planos">Lanches</a></li>
+            <li><a href="pedidos.html"><strong>Fazer Pedido</strong></a></li>
             <li><a href="#horario">Horários</a></li>
         </ul>
     </nav>
@@ -70,10 +74,10 @@
         <p>A hamburgueria perfeita para você e sua família em Cruzeiro - SP.</p>
 
         <div class="hero-botoes">
-            <button class="btn-amarelo"
-                    onclick="document.getElementById('planos').scrollIntoView({ behavior: 'smooth' })">
+            <!-- Botão alterado para redirecionar à pagina de pedidos -->
+            <a href="pedidos.html" class="btn-amarelo" style="text-decoration: none;">
                 <i class="fa-solid fa-burger"></i> Faça já seu pedido.
-            </button>
+            </a>
         </div>
     </div>
 </section>
@@ -170,7 +174,9 @@
         </div>
     </div>
 </section>
+
 <hr class="separador">
+
 <!-- ===================== SEÇÃO COMBOS ===================== -->
 <section id="planos" class="secao">
     <h2>NOSSOS PRODUTOS</h2>
@@ -178,9 +184,7 @@
     <div class="cards-planos">
         <h3 class="titulo-grupo-planos">Todo nosso cardápio disponível de lanches, faça a sua escolha</h3>
         <div class="card-premium">
-            <img src="imagens/lanches/3.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/3.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3><i class="fa-solid fa-crown"></i> Na Brasa's Soberano</h3>
             <p class="preco">R$ 35,00<span>/unidade</span></p>
             <ul>
@@ -189,12 +193,11 @@
                 <li>✔ Batata palha, <span class="destaqueproduto">3 fatias de queijo</span></li>
                 <li>✔ Pedaços de frango assado na brasa</li>
             </ul>
-            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasa%27s%20Soberano%20-%20R%24%2035%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
+            <!-- Botão alterado para redirecionar à pagina de pedidos -->
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
         </div>
         <div class="card-premium">
-            <img src="imagens/lanches/1.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/1.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3><i class="fa-solid fa-star"></i> Na Brasa's Burguer Duplo</h3>
             <p class="preco">R$ 26,00<span>/unidade</span></p>
             <ul>
@@ -202,12 +205,10 @@
                 <li>✔ <span class="destaqueproduto">2 Hamburgueres bovinos</span> artesanais suculentos e assados na brasa</li>
                 <li>✔ Batata palha, <span class="destaqueproduto">2 fatias de queijo</span></li>
             </ul>
-            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasa%27s%20Burguer%20Duplo%20-%20R%24%2026%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
         </div>
         <div class="card-premium">
-            <img src="imagens/lanches/2.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/2.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3><i class="fa-solid fa-star"></i> Na Brasa's Burguer Triplo</h3>
             <p class="preco">R$ 35,00<span>/unidade</span></p>
             <ul>
@@ -215,12 +216,10 @@
                 <li>✔ <span class="destaqueproduto">3 Hamburgueres bovinos</span> artesanais suculentos e assados na brasa</li>
                 <li>✔ Batata palha, <span class="destaqueproduto">3 fatias de queijo</span></li>
             </ul>
-            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasa%27s%20Burguer%20Triplo%20-%20R%24%2035%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
         </div>
         <div class="card-premium">
-            <img src="imagens/lanches/4.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/4.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3><i class="fa-solid fa-star"></i> Na Brasas's Burguer Tem Como</h3>
             <p class="preco">R$ 35,00<span>/unidade</span></p>
             <ul>
@@ -229,12 +228,10 @@
                 <li>✔ Batata palha, o dobro de queijo, <span class="destaqueproduto">cebola roxa, bacon</span></li>
                 <li>✔ <span class="destaqueproduto">Pedaços de frango e calabresa assado na brasa</span></li>
             </ul>
-            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasas%27s%20Burguer%20Tem%20Como%20-%20R%24%2035%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
         </div>
         <div class="card">
-            <img src="imagens/lanches/burguersimples.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/burguersimples.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3>Na Brasa's Burguer</h3>
             <p class="preco">R$ 15,00<span>/unidade</span></p>
             <ul>
@@ -242,12 +239,10 @@
                 <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
                 <li>✔ Batata palha e queijo</li>
             </ul>
-            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasa%27s%20Burguer%20-%20R%24%2015%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
         </div>
         <div class="card">
-            <img src="imagens/lanches/burguersalada.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/burguersalada.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3>Na Brasa's Burguer Salada</h3>
             <p class="preco">R$ 18,00<span>/unidade</span></p>
             <ul>
@@ -255,12 +250,10 @@
                 <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
                 <li>✔ Batata palha e queijo</li>           
             </ul>
-            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasa%27s%20Burguer%20Salada%20-%20R%24%2018%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
         </div>
         <div class="card">
-            <img src="imagens/lanches/burguertoscana.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/burguertoscana.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3>Na Brasa's Toscana</h3>
             <p class="preco">R$ 18,00<span>/unidade</span></p>
             <ul>
@@ -268,12 +261,10 @@
                 <li>✔ 1 Linguiça toscana assada na brasa</li>
                 <li>✔ Batata palha e queijo</li>           
             </ul>
-            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasa%27s%20Toscana%20-%20R%24%2018%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
         </div>
         <div class="card">
-            <img src="imagens/lanches/burguercalabresa.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/burguercalabresa.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3>Na Brasa's Calabresa</h3>
             <p class="preco">R$ 25,00<span>/unidade</span></p>
             <ul>
@@ -281,12 +272,10 @@
                 <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
                 <li>✔ Batata palha, calabresa e queijo</li>           
             </ul>
-            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasa%27s%20Calabresa%20-%20R%24%2025%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
         </div>
         <div class="card">
-            <img src="imagens/lanches/burguerfrango.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/burguerfrango.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3>Na Brasa's Burguer Frango</h3>
             <p class="preco">R$ 25,00<span>/unidade</span></p>
             <ul>
@@ -294,23 +283,24 @@
                 <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
                 <li>✔ Batata palha, pedaços de frango e queijo</li>           
             </ul>
-      <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasa%27s%20Burguer%20Frango%20-%20R%24%2025%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
-     </div>
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
+        </div>
         <div class="card">
-            <img src="imagens/lanches/burguerbacon.png"
-                alt="Hambúrguer Clássico"
-                class="card-imagem">
+            <img src="imagens/lanches/burguerbacon.png" alt="Hambúrguer Clássico" class="card-imagem">
             <h3>Na Brasa's Burguer Bacon</h3>
             <p class="preco">R$ 25,00<span>/unidade</span></p>
             <ul>
                 <li>✔ Pão, maionese e molho barbecue</li>
                 <li>✔ 1 Hamburguer bovino artesanal suculento e assado na brasa</li>
                 <li>✔ Batata palha, pedaços de bacon e queijo</li>           
-            </ul>            </ul>
-            <button class="btn-amarelo" onclick="window.open('https://wa.me/5512982771364?text=Ol%C3%A1%21%20Desejo%20fazer%20um%20pedido%3A%20Na%20Brasa%27s%20Burguer%20Bacon%20-%20R%24%2025%2C00.%20Pode%20me%20atender%3F', '_blank')">Escolher</button>
+            </ul>
+            <button class="btn-amarelo" onclick="window.location.href='pedidos.html'">Escolher</button>
         </div>
+    </div>
 </section>
+
 <hr class="separador">
+
 <!-- ===================== SEÇÃO HORÁRIOS ===================== -->
 <section id="horario" class="secao">
     <h2>NOSSOS HORÁRIOS</h2>
@@ -325,10 +315,6 @@
         <p id="cronometro-texto">Carregando...</p>
     </div>
 
-    <!-- ---------- Cards dos dias (gerados automaticamente pelo JS) ----------
-         A fonte da verdade é o objeto HORARIOS_FUNCIONAMENTO no script.js.
-         Para fechar/abrir um dia, edite apenas o script.js — os cards,
-         a badge e o cronômetro se atualizam juntos. -->
     <div class="cards-horario" id="cards-horario"></div>
 </section>
 
@@ -362,7 +348,7 @@
             <ul>
                 <li><a href="#localizacao">Localização e Contato</a></li>
                 <li><a href="#sobre">Diferenciais</a></li>
-                <li><a href="#planos">Lanches</a></li>
+                <li><a href="pedidos.html">Fazer Pedido</a></li>
                 <li><a href="#horario">Horários</a></li>
             </ul>
         </div>
@@ -403,6 +389,7 @@
     <i class="fa-solid fa-arrow-up"></i>
 </button>
 
+<!-- O index.js agora cuida apenas das funções visuais (menu, horários, botão topo) -->
 <script src="script/index.js"></script>
 </body>
 </html>

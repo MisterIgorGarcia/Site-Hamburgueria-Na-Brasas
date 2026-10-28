@@ -2,8 +2,8 @@
    CONFIGURAÇÃO — troque pelos valores do SEU projeto Supabase
    (Project Settings → API)
    ===================================================================== */
-const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
-const SUPABASE_ANON_KEY = 'SUA-ANON-KEY-AQUI';
+const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* =====================================================================
