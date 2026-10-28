@@ -404,25 +404,26 @@
 
 /* ===================== NOTIFICAÇÃO NA ABA ===================== */
 .aba-btn {
-  position: relative; /* Necessário para posicionar a bolinha */
+  position: relative;
 }
 
 .badge-notif {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  background-color: var(--admin-vermelho);
-  color: white;
+  background-color: #ef4444 !important; /* Vermelho */
+  color: white !important;
   font-size: 0.7rem;
   font-weight: bold;
   padding: 2px 6px;
   border-radius: 10px;
-  border: 2px solid var(--admin-card); /* Para não colar no fundo */
+  margin-left: 6px; /* Dá um espacinho do texto Recentes */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   animation: pulse-notif 1.5s infinite;
 }
 
+/* FORÇA O SUMIÇO QUANDO A CLASSE FOR APLICADA */
 .badge-notif.escondido {
-  display: none;
+  display: none !important; 
 }
 
 @keyframes pulse-notif {

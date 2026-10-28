@@ -56,10 +56,10 @@ function mudarAba(aba) {
   document.querySelector(`.aba-btn[onclick="mudarAba('${aba}')"]`).classList.add('ativo');
   document.getElementById(`aba-${aba}`).classList.add('ativo');
 
-  // Zera a notificação ao entrar na aba de recentes
+  // Se entrou em recentes, ZERA a notificação imediatamente
   if (aba === 'recentes') {
     novasNotificacoes = 0;
-    atualizarBadgeNotificacao();
+    atualizarBadgeNotificacao(); // Atualiza o visual
     carregarPedidos(paginaAtualRecentes); 
   }
   
@@ -73,11 +73,13 @@ function atualizarBadgeNotificacao() {
   const badge = document.getElementById('badge-notificacao');
   if (!badge) return;
 
+  // Se tem notificação E não está na aba recentes, mostra. Senão, esconde.
   if (novasNotificacoes > 0 && abaAtiva !== 'recentes') {
     badge.textContent = novasNotificacoes;
     badge.classList.remove('escondido');
   } else {
     badge.classList.add('escondido');
+    badge.textContent = '0'; // Reseta o texto interno
   }
 }
 
@@ -201,11 +203,18 @@ function criarCardPedido(pedido, lista, novo) {
   return card;
 }
 
+/* ===================== REMOÇÃO DE PEDIDO ===================== */
 function removerPedidoDaTela(id) {
   const el = document.querySelector(`[data-pedido="${id}"]`);
   if (el) el.remove();
   pedidosNaTela.delete(id);
   
+  // Se a notificação estiver ativa, diminui 1 ao apagar um pedido
+  if (novasNotificacoes > 0) {
+    novasNotificacoes--;
+    atualizarBadgeNotificacao();
+  }
+
   const lista = document.getElementById('lista-pedidos');
   if (lista && lista.children.length === 0) {
     lista.innerHTML = '<div class="vazio">Nenhum pedido ainda. Aguardando...</div>';
