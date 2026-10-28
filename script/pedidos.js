@@ -423,6 +423,7 @@ function configurarBuscaCEP() {
 /* ===================== BUSCA DE CEP PELA RUA (REVERSO) ===================== */
 async function buscarEnderecoPorRua() {
     const ruaInput = document.getElementById('rua-cliente');
+    const btnBusca = document.getElementById('btn-buscar-rua');
     const rua = ruaInput.value.trim();
 
     if (rua.length < 3) {
@@ -431,17 +432,21 @@ async function buscarEnderecoPorRua() {
         return;
     }
 
-    const btn = ruaInput.nextElementSibling;
-    const iconeOriginal = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; // Efeito de carregando
+    // Salva o ícone original e coloca o spinner
+    const iconeOriginal = btnBusca.innerHTML;
+    btnBusca.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    btnBusca.disabled = true; // Evita cliques duplos
 
     try {
-        // ATENÇÃO: Estamos fixando a busca para Cruzeiro - SP.
-        // Se o seu comércio atende outras cidades frequentemente, o cliente terá que digitar o CEP.
         // A URL exige (Estado/Cidade/Rua)
         const url = `https://viacep.com.br/ws/SP/Cruzeiro/${encodeURIComponent(rua)}/json/`;
         
         const res = await fetch(url);
+        
+        if (!res.ok) {
+            throw new Error("Erro na resposta da API");
+        }
+
         const data = await res.json();
 
         if (data && data.length > 0) {
@@ -450,20 +455,23 @@ async function buscarEnderecoPorRua() {
             
             // Preenche os campos
             document.getElementById('cep-cliente').value = resultado.cep;
-            document.getElementById('rua-cliente').value = resultado.logradouro; // Preenche o nome completo
+            // As vezes a API retorna nomes ligeiramente diferentes, usamos o oficial
+            document.getElementById('rua-cliente').value = resultado.logradouro; 
             document.getElementById('bairro-cliente').value = resultado.bairro;
             document.getElementById('cidade-cliente').value = `${resultado.localidade} - ${resultado.uf}`;
             
             // Foca no número para o cliente terminar
             document.getElementById('num-cliente').focus();
         } else {
-            // Se não achar em Cruzeiro, avisa o cliente
             alert("Não encontramos essa rua em Cruzeiro - SP.\nPor favor, digite o CEP ou preencha o endereço manualmente.");
         }
     } catch (err) {
         console.error("Erro na busca por rua:", err);
-        alert("Erro de conexão ao buscar. Digite o CEP manualmente.");
+        alert("Não foi possível buscar o CEP agora. Verifique sua internet ou digite o CEP manualmente.");
     } finally {
-        btn.innerHTML = iconeOriginal; // Restaura a lupa
+        // O bloco finally SEMPRE roda, com erro ou sucesso.
+        // Isso garante que o botão não fique travado no spinner.
+        btnBusca.innerHTML = iconeOriginal;
+        btnBusca.disabled = false;
     }
 }
