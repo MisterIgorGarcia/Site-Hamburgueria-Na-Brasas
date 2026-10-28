@@ -22,11 +22,17 @@
       <h1>Painel Admin</h1>
       <div class="user-info" id="user-info">Carregando...</div>
     </div>
-    <div class="botoes">
-        <button class="btn-admin" id="btn-conectar">🔗 Bluetooth</button>
-        <button class="btn-admin" id="btn-conectar-usb">🔌 USB</button>
-        <button class="btn-admin btn-admin-perigo" onclick="sair()">Sair</button>
-    </div>
+        <!-- Botão Bluetooth -->
+        <button class="btn-admin tooltip" id="btn-conectar" data-tooltip="Conectar via Bluetooth (Celular)">
+        🔗 Bluetooth
+        </button>
+        <!-- Botão USB -->
+        <button class="btn-admin tooltip" id="btn-conectar-usb">
+        🔗 USB
+        <span class="tooltip-content">
+        Conectar via Cabo USB (PC usando o aplicativo <a href="https://zadig.akeo.ie" target="_blank">Zadig</a>)
+        </span>
+        </button>
   </header>
 
   <div class="status-impressora" id="status-impressora">

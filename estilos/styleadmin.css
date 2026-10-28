@@ -447,6 +447,59 @@ button.btn-admin:disabled {
     width: 100%;
 }
 
+/* ===================== TOOLTIPS ===================== */
+.tooltip {
+    position: relative;
+}
+
+/* O balão de texto */
+.tooltip::after {
+    content: attr(data-tooltip); /* Pega o texto do HTML */
+    position: absolute;
+    bottom: 130%; /* Fica acima do botão */
+    left: 50%;
+    transform: translateX(-50%) translateY(10px); /* Efeito de subida */
+    background-color: #222;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: normal;
+    white-space: nowrap; /* Não deixa o texto quebrar */
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease-in-out;
+    pointer-events: none; /* O mouse ignora o balão */
+    z-index: 100;
+    border: 1px solid #444;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+/* A setinha embaixo do balão */
+.tooltip::before {
+    content: "";
+    position: absolute;
+    bottom: 110%; /* Fica colado no botão */
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    border-width: 6px;
+    border-style: solid;
+    border-color: #222 transparent transparent transparent;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease-in-out;
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* Quando passa o mouse no botão, mostra o balão */
+.tooltip:hover::after,
+.tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
 /* ===================== RESPONSIVO ===================== */
 @media (max-width: 600px) {
   #view-dash header { padding: 12px 16px; }
