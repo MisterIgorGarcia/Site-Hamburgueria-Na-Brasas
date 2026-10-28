@@ -10,6 +10,20 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ===================== ESTADO DO CARRINHO ===================== */
 let carrinho = [];
 
+/* ===================== NAVEGAÇÃO DE CATEGORIAS ===================== */
+function mudarCategoria(categoria) {
+    // 1. Remove a classe 'ativo' de todos os botões e conteúdos
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('ativo'));
+    document.querySelectorAll('.categoria-conteudo').forEach(conteudo => conteudo.classList.remove('ativo'));
+
+    // 2. Adiciona 'ativo' apenas no botão e conteúdo clicado
+    const botaoClicado = document.querySelector(`.tab-btn[onclick="mudarCategoria('${categoria}')"]`);
+    if (botaoClicado) botaoClicado.classList.add('ativo');
+    
+    const conteudoAlvo = document.getElementById(`cat-${categoria}`);
+    if (conteudoAlvo) conteudoAlvo.classList.add('ativo');
+}
+
 /* ===================== CARREGAR PRODUTOS DO BANCO ===================== */
 document.addEventListener('DOMContentLoaded', async () => {
     // Carrega o HTML dos produtos assim que a página abre
