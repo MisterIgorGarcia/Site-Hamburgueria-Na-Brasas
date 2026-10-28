@@ -8,7 +8,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let subscriptionPedidos = null;
 const pedidosNaTela = new Map();
 let abaAtiva = 'recentes'; 
-let novasNotificacoes = 0; // Variável para contar pedidos novos
+let novasNotificacoes = 0; 
 
 // Variáveis de Controle de Paginação
 const ITENS_POR_PAGINA = 10;
@@ -56,14 +56,10 @@ function mudarAba(aba) {
   document.querySelector(`.aba-btn[onclick="mudarAba('${aba}')"]`).classList.add('ativo');
   document.getElementById(`aba-${aba}`).classList.add('ativo');
 
-  // Se entrou em recentes, ZERA a notificação e esconde o número
+  // Se entrou em recentes, ZERA a notificação e esconde a bolinha
   if (aba === 'recentes') {
     novasNotificacoes = 0;
-    const badge = document.getElementById('badge-notificacao');
-    if (badge) {
-        badge.classList.add('escondido');
-        badge.textContent = '0';
-    }
+    atualizarBadgeNotificacao(); 
     carregarPedidos(paginaAtualRecentes); 
   }
   
@@ -77,13 +73,13 @@ function atualizarBadgeNotificacao() {
   const badge = document.getElementById('badge-notificacao');
   if (!badge) return;
 
-  // Se tem notificação E não está na aba recentes, mostra. Senão, esconde.
+  // Se tem notificação E o usuário NÃO está na aba recentes
   if (novasNotificacoes > 0 && abaAtiva !== 'recentes') {
     badge.textContent = novasNotificacoes;
     badge.classList.remove('escondido');
   } else {
     badge.classList.add('escondido');
-    badge.textContent = '0'; // Reseta o texto interno
+    badge.textContent = '0';
   }
 }
 
@@ -92,32 +88,24 @@ function escutarNovosPedidos() {
   subscriptionPedidos = supabaseClient
     .channel('mudancas-gerais')
     
-    // Quando um pedido NOVO chega
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
-      
       if (abaAtiva === 'recentes' && paginaAtualRecentes === 1) {
-        // Se já está vendo a lista, insere o pedido no topo
         adicionarPedidoNoTopo(payload.new);
       } else {
-        // Se estiver em outra aba, conta a notificação
         novasNotificacoes++;
         atualizarBadgeNotificacao();
       }
-      
       if (abaAtiva === 'graficos') gerarGraficos();
     })
     
-    // Quando um pedido é DELETADO
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
       removerPedidoDaTela(payload.old.id);
     })
 
-    // Quando um pedido vai para o HISTÓRICO
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_arquivados' }, (payload) => {
       if (abaAtiva === 'historico') carregarHistorico(paginaAtualHistorico);
       if (abaAtiva === 'graficos') gerarGraficos();
     })
-
     .subscribe();
 }
 
@@ -150,7 +138,6 @@ async function carregarPedidos(pagina = 1) {
   } else {
     data.forEach(p => criarCardPedido(p, lista, false));
   }
-
   renderizarPaginacao('recentes', paginaAtualRecentes, totalPaginasRecentes);
 }
 
@@ -207,13 +194,12 @@ function criarCardPedido(pedido, lista, novo) {
   return card;
 }
 
-/* ===================== REMOÇÃO DE PEDIDO ===================== */
+/* ===================== REMOÇÃO E APAGAR ===================== */
 function removerPedidoDaTela(id) {
   const el = document.querySelector(`[data-pedido="${id}"]`);
   if (el) el.remove();
   pedidosNaTela.delete(id);
   
-  // Se o usuário apagar um pedido, diminui a notificação (caso tenha alguma)
   if (novasNotificacoes > 0) {
     novasNotificacoes--;
     atualizarBadgeNotificacao();
@@ -225,6 +211,18 @@ function removerPedidoDaTela(id) {
   }
 }
 
+// FUNÇÃO QUE ESTAVA FALTANDO E QUEBRAVA A LIXEIRA
+async function apagarPedidoRecente(id) {
+  if (!confirm("Tem certeza que deseja APAGAR este pedido?")) return;
+
+  removerPedidoDaTela(id);
+
+  const { error } = await supabaseClient.from('pedidos_recentes').delete().eq('id', id);
+  if (error) { 
+    alert("Erro ao apagar: " + error.message); 
+    carregarPedidos(paginaAtualRecentes);
+  }
+}
 
 /* ===================== ABA 2: HISTÓRICO ===================== */
 async function carregarHistorico(pagina = 1) {
@@ -272,7 +270,6 @@ async function carregarHistorico(pagina = 1) {
       `;
     });
   }
-
   renderizarPaginacao('historico', paginaAtualHistorico, totalPaginasHistorico);
 }
 
@@ -376,15 +373,9 @@ async function carregarFuncionarios() {
     .eq('tipo', 'funcionario')
     .order('login', { ascending: true });
 
-  if (error) {
-    lista.innerHTML = '<div class="vazio">Erro ao carregar funcionários.</div>';
-    return;
-  }
+  if (error) { lista.innerHTML = '<div class="vazio">Erro ao carregar funcionários.</div>'; return; }
 
-  if (data.length === 0) {
-    lista.innerHTML = '<div class="vazio">Nenhum funcionário cadastrado.</div>';
-    return;
-  }
+  if (data.length === 0) { lista.innerHTML = '<div class="vazio">Nenhum funcionário cadastrado.</div>'; return; }
 
   lista.innerHTML = '';
   data.forEach(func => {
