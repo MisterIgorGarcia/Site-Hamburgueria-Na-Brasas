@@ -8,12 +8,11 @@
     <!-- Carrega os estilos -->
     <link rel="stylesheet" href="../estilos/style.css">
     <link rel="stylesheet" href="../estilos/styleadmin.css">
-    <!-- FontAwesome para o ícone de voltar -->
+    <!-- FontAwesome para o ícone -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
     <script defer src="/_vercel/insights/script.js"></script>
 
-    <!-- Estilo extra para forçar a centralização e o botão de voltar -->
     <style>
         body {
             display: flex;
@@ -30,22 +29,29 @@
             justify-content: center;
         }
 
-        /* Novo estilo do botão voltar (embaixo do Entrar) */
+        /* Estilo do botão voltar copiando o botão original */
         .btn-voltar {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            margin-top: 20px;
-            color: #999;
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: color 0.3s;
             width: 100%;
+            padding: 14px;
+            background: var(--cor-secundaria);
+            color: var(--cor-primaria);
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            text-decoration: none;
+            margin-top: 12px; /* Espaço entre o Entrar e o Voltar */
+            transition: background 0.2s;
+            cursor: pointer;
         }
         
+        /* Efeito hover idêntico ao do botão de entrar */
         .btn-voltar:hover {
-            color: var(--cor-secundaria);
+            background: #ffe066;
         }
     </style>
 </head>
@@ -66,7 +72,7 @@
       <div class="erro" id="login-erro"></div>
     </form>
 
-    <!-- Botão de Voltar agora fica aqui dentro da caixa -->
+    <!-- Botão Voltar com o mesmo estilo do Entrar -->
     <a href="../index.html" class="btn-voltar">
         <i class="fa-solid fa-arrow-left"></i> Voltar ao Início
     </a>
