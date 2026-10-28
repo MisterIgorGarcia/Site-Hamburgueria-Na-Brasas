@@ -3,39 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel — Na Brasas</title>
-<!-- Caminho ajustado para a sua pasta estilos -->
+<title>Painel Admin — Na Brasas</title>
 <link rel="stylesheet" href="../estilos/style.css">
 <link rel="stylesheet" href="../estilos/styleadmin.css">
 </head>
 <body>
 
-<!-- ===================== LOGIN ===================== -->
-<div id="view-login">
-  <div class="login-box">
-    <h1>Painel — Na Brasas</h1>
-    <p>Acesso restrito a administradores e funcionários</p>
-    <form id="form-login">
-      <label>Login</label>
-      <input type="text" id="inp-login" required autocomplete="username">
-      <label>Senha</label>
-      <input type="password" id="inp-senha" required autocomplete="current-password">
-      <button type="submit" id="btn-entrar">Entrar</button>
-      <div class="erro" id="login-erro"></div>
-    </form>
-  </div>
-</div>
-
-<!-- ===================== DASHBOARD ===================== -->
-<div id="view-dash">
+<div id="view-dash" class="ativo">
   <header>
     <div>
-      <h1>Painel — Na Brasas</h1>
-      <div class="user-info" id="user-info"></div>
+      <h1>Painel Admin</h1>
+      <div class="user-info" id="user-info">Carregando...</div>
     </div>
     <div class="botoes">
-      <button class="btn" id="btn-conectar">🔌 Conectar Impressora</button>
-      <button class="btn btn-perigo" id="btn-sair">Sair</button>
+      <button class="btn-admin" id="btn-conectar">🔌 Conectar Impressora</button>
+      <button class="btn-admin btn-admin-perigo" onclick="sair()">Sair</button>
     </div>
   </header>
 
@@ -45,16 +27,14 @@
   </div>
 
   <main>
-    <h2>Pedidos recentes</h2>
+    <h2>Pedidos recentes (Admin)</h2>
     <div id="lista-pedidos">
-      <div class="vazio">Nenhum pedido ainda. Aguardando...</div>
+      <div class="vazio">Nenhum pedido ainda...</div>
     </div>
   </main>
 </div>
 
-<!-- ===================== SUPABASE SDK ===================== -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Caminho ajustado para a sua pasta script -->
 <script src="../script/admin-dashboard.js"></script>
 </body>
 </html>

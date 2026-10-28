@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Funcionário — Na Brasas</title>
+<link rel="stylesheet" href="estilos/style.css">
+<link rel="stylesheet" href="estilos/styleadmin.css">
+</head>
+<body>
+
+<div class="ativo">
+  <header>
+    <div>
+      <h1>Painel do Funcionário</h1>
+      <div class="user-info" id="user-info">Carregando...</div>
+    </div>
+    <div class="botoes">
+      <button class="btn-admin btn-admin-perigo" onclick="sair()">Sair</button>
+    </div>
+  </header>
+
+  <main style="text-align: center; margin-top: 50px;">
+    <h2>Bem-vindo à Cozinha!</h2>
+    <p style="color: #999; margin-top: 20px;">Aqui você poderá ver os pedidos e marcar como prontos.</p>
+  </main>
+</div>
+
+<script>
+  // Verifica se está logado como funcionário
+  document.addEventListener('DOMContentLoaded', () => {
+    const sessaoSalva = localStorage.getItem('nabrasas_sessao');
+    
+    if (!sessaoSalva) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const sessao = JSON.parse(sessaoSalva);
+    if (sessao.tipo !== 'funcionario') {
+      window.location.href = 'login.html'; // Se for admin tentando acessar área de func, expulsa
+      return;
+    }
+
+    document.getElementById('user-info').textContent = `Logado como: ${sessao.nome} (Funcionário)`;
+  });
+
+  function sair() {
+    localStorage.removeItem('nabrasas_sessao');
+    window.location.href = 'login.html';
+  }
+</script>
+</body>
+</html>
