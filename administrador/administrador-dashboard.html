@@ -7,6 +7,9 @@
 <link rel="stylesheet" href="../estilos/style.css">
 <link rel="stylesheet" href="../estilos/styleadmin.css">
 
+<!-- FontAwesome para os ícones de paginação e lixeira -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 <!-- Carrega o Google Charts -->
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script defer src="/_vercel/insights/script.js"></script>
@@ -44,6 +47,8 @@
       <div id="lista-pedidos">
         <div class="vazio">Nenhum pedido ainda. Aguardando...</div>
       </div>
+      <!-- Controles de Paginação dos Recentes -->
+      <div id="paginacao-recentes" class="paginacao-container"></div>
     </div>
 
     <!-- ABA 2: HISTÓRICO -->
@@ -52,6 +57,8 @@
       <div id="lista-historico">
         <div class="vazio">Carregando histórico...</div>
       </div>
+      <!-- Controles de Paginação do Histórico -->
+      <div id="paginacao-historico" class="paginacao-container"></div>
     </div>
 
     <!-- ABA 3: GRÁFICOS -->
@@ -68,6 +75,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Mantive o seu arquivo unificado, mas lembre-se que você pode separar o código da impressora depois -->
 <script src="../script/admin-dashboard.js"></script>
 </body>
 </html>

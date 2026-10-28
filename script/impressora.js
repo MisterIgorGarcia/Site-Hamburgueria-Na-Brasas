@@ -5,7 +5,6 @@
 let impressoraChar = null;
 let impressoraDevice = null;
 
-// Configura o botão de conectar
 const btnConectar = document.getElementById('btn-conectar');
 if (btnConectar) {
   btnConectar.addEventListener('click', async () => {
@@ -87,7 +86,7 @@ async function imprimirEArquivar(pedido, botao) {
     const bytes = gerarRecibo(pedido);
     await enviarBytes(char, bytes);
 
-    // 2. Arquiva no banco (usa o supabaseClient global)
+    // 2. Arquiva no banco
     const { error: errInsert } = await supabaseClient
       .from('pedidos_arquivados')
       .insert({
@@ -111,7 +110,7 @@ async function imprimirEArquivar(pedido, botao) {
       console.warn('Pedido ficou duplicado (arquivado + recente):', pedido.id);
     }
 
-    // 4. Remove da tela (usa a função do admin-dashboard.js)
+    // 4. Remove da tela (função do admin-dashboard.js)
     removerPedidoDaTela(pedido.id);
     
   } catch (err) {

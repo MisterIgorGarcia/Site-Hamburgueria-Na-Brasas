@@ -306,12 +306,18 @@ button.btn-admin:disabled {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  align-items: center;
   flex-wrap: wrap;
 }
 
 .pedido-acoes button {
   flex: 1 1 auto;
   min-width: 130px;
+}
+
+.pedido-acoes .btn-imprimir {
+    flex: 1; /* O botão de imprimir ocupa o resto do espaço */
+    min-width: 130px;
 }
 
 /* ===================== ABAS DE NAVEGAÇÃO ===================== */
@@ -400,12 +406,16 @@ button.btn-admin:disabled {
     font-weight: bold;
 }
 
+/* ===================== BOTÃO LIXEIRA ===================== */
 .btn-lixeira {
-    background: transparent;
-    color: #ef4444;
-    border: 1px solid #ef4444;
-    width: 40px;
-    height: 40px;
+    background-color: transparent !important;
+    color: #ef4444 !important;
+    border: 1px solid #ef4444 !important;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important; /* Impede de esticar */
+    max-width: 42px !important;
+    flex: 0 0 42px !important;  /* Impede o flexbox de esticar */
     border-radius: 8px;
     cursor: pointer;
     display: flex;
@@ -413,13 +423,21 @@ button.btn-admin:disabled {
     justify-content: center;
     font-size: 1.1rem;
     transition: all 0.2s;
+    padding: 0;
+    margin: 0;
+}
+
+.btn-lixeira i {
+    color: inherit;
+    pointer-events: none;
 }
 
 .btn-lixeira:hover {
-    background: #ef4444;
-    color: #fff;
+    background-color: #ef4444 !important;
+    color: #fff !important;
 }
 
+/* Garante que o container alinhe o botão de imprimir e a lixeira */
 /* ===================== GRÁFICOS ===================== */
 .grafico-container {
     background: var(--admin-card);

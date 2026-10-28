@@ -1,5 +1,5 @@
 /* =====================================================================
-   CONEXÃO E VARIÁVEIS GLOBAIS
+   DASHBOARD DO ADMIN (INTERFACE, DADOS E PAGINAÇÃO)
    ===================================================================== */
 const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co'; 
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
@@ -8,6 +8,13 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let subscriptionPedidos = null;
 const pedidosNaTela = new Map();
 let graficosDesenhados = false;
+
+// Variáveis de Controle de Paginação
+const ITENS_POR_PAGINA = 10;
+let paginaAtualRecentes = 1;
+let totalPaginasRecentes = 1;
+let paginaAtualHistorico = 1;
+let totalPaginasHistorico = 1;
 
 /* ===================== VERIFICAÇÃO DE LOGIN ===================== */
 document.addEventListener('DOMContentLoaded', () => {
@@ -29,7 +36,7 @@ function sair() {
 
 /* ===================== INICIAR PAINEL ===================== */
 function iniciarPainel() {
-  carregarPedidos();
+  carregarPedidos(1);
   escutarNovosPedidos();
   arquivarAntigos();
   
@@ -46,35 +53,51 @@ function mudarAba(aba) {
   document.querySelector(`.aba-btn[onclick="mudarAba('${aba}')"]`).classList.add('ativo');
   document.getElementById(`aba-${aba}`).classList.add('ativo');
 
-  if (aba === 'historico') carregarHistorico();
+  if (aba === 'historico') carregarHistorico(1);
   if (aba === 'graficos' && !graficosDesenhados) {
     gerarGraficos();
     graficosDesenhados = true;
   }
 }
 
-/* ===================== ABA 1: PEDIDOS RECENTES ===================== */
-async function carregarPedidos() {
-  const { data, error } = await supabaseClient.from('pedidos_recentes').select('*').order('created_at', { ascending: true });
+/* ===================== ABA 1: PEDIDOS RECENTES (PAGINADO) ===================== */
+async function carregarPedidos(pagina = 1) {
+  paginaAtualRecentes = pagina;
+  const inicio = (pagina - 1) * ITENS_POR_PAGINA;
+  const fim = inicio + ITENS_POR_PAGINA - 1;
+
+  const { data, error, count } = await supabaseClient
+    .from('pedidos_recentes')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: true })
+    .range(inicio, fim);
+
   if (error) return;
+
+  totalPaginasRecentes = Math.ceil((count || 0) / ITENS_POR_PAGINA) || 1;
+
+  if (paginaAtualRecentes > totalPaginasRecentes) {
+    return carregarPedidos(totalPaginasRecentes);
+  }
 
   const lista = document.getElementById('lista-pedidos');
   lista.innerHTML = '';
+  pedidosNaTela.clear();
 
   if (!data || data.length === 0) {
-    lista.innerHTML = '<div class="vazio">Nenhum pedido ainda. Aguardando...</div>';
-    return;
+    lista.innerHTML = '<div class="vazio">Nenhum pedido nesta página.</div>';
+  } else {
+    data.forEach(p => adicionarPedidoNaTela(p, false));
   }
-  data.forEach(p => adicionarPedidoNaTela(p, false));
+
+  renderizarPaginacao('recentes', paginaAtualRecentes, totalPaginasRecentes);
 }
 
 function escutarNovosPedidos() {
   subscriptionPedidos = supabaseClient
     .channel('pedidos-recentes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
-        if (payload.eventType === 'INSERT') adicionarPedidoNaTela(payload.new, true);
-        else if (payload.eventType === 'DELETE') removerPedidoDaTela(payload.old.id);
-        else if (payload.eventType === 'UPDATE') pedidosNaTela.set(payload.new.id, payload.new);
+        carregarPedidos(paginaAtualRecentes);
     }).subscribe();
 }
 
@@ -108,6 +131,10 @@ function adicionarPedidoNaTela(pedido, novo) {
       <span>Total</span><span class="valor">R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}</span>
     </div>
     <div class="pedido-acoes">
+      <!-- NOVO BOTÃO DE LIXEIRA AQUI -->
+      <button class="btn-lixeira" onclick="apagarPedidoRecente('${pedido.id}')" title="Apagar este pedido">
+        <i class="fa-solid fa-trash"></i>
+      </button>
       <button class="btn-admin btn-admin-primario btn-imprimir">🖨️ Imprimir e arquivar</button>
     </div>
   `;
@@ -115,7 +142,6 @@ function adicionarPedidoNaTela(pedido, novo) {
   card.querySelector('.btn-imprimir').addEventListener('click', (ev) => {
     ev.currentTarget.disabled = true;
     ev.currentTarget.textContent = 'Imprimindo...';
-    // Chama a função que está no impressora.js
     imprimirEArquivar(pedido, ev.currentTarget);
   });
 
@@ -126,48 +152,73 @@ function removerPedidoDaTela(id) {
   const el = document.querySelector(`[data-pedido="${id}"]`);
   if (el) el.remove();
   pedidosNaTela.delete(id);
-  if (document.getElementById('lista-pedidos').children.length === 0) {
-    document.getElementById('lista-pedidos').innerHTML = '<div class="vazio">Nenhum pedido ainda.</div>';
-  }
 }
 
-/* ===================== ABA 2: HISTÓRICO (ARQUIVADOS) ===================== */
-async function carregarHistorico() {
+async function apagarPedidoRecente(id) {
+  if (!confirm("Tem certeza que deseja APAGAR este pedido? Ele NÃO será impresso e NÃO irá para o histórico.")) return;
+
+  const { error } = await supabaseClient.from('pedidos_recentes').delete().eq('id', id);
+  
+  if (error) { 
+    alert("Erro ao apagar: " + error.message); 
+    return; 
+  }
+
+  // O Realtime vai detectar a exclusão e a tela vai se atualizar sozinha.
+}
+
+/* ===================== ABA 2: HISTÓRICO (PAGINADO) ===================== */
+async function carregarHistorico(pagina = 1) {
+  paginaAtualHistorico = pagina;
+  const inicio = (pagina - 1) * ITENS_POR_PAGINA;
+  const fim = inicio + ITENS_POR_PAGINA - 1;
+
   const lista = document.getElementById('lista-historico');
   lista.innerHTML = '<div class="vazio">Buscando histórico...</div>';
 
-  const { data, error } = await supabaseClient.from('pedidos_arquivados').select('*').order('archived_at', { ascending: false }).limit(50);
+  const { data, error, count } = await supabaseClient
+    .from('pedidos_arquivados')
+    .select('*', { count: 'exact' })
+    .order('archived_at', { ascending: false })
+    .range(inicio, fim);
 
   if (error || !data) {
     lista.innerHTML = '<div class="vazio">Erro ao carregar histórico.</div>';
     return;
   }
 
-  if (data.length === 0) {
-    lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
-    return;
+  totalPaginasHistorico = Math.ceil((count || 0) / ITENS_POR_PAGINA) || 1;
+
+  if (data.length === 0 && pagina > 1) {
+    return carregarHistorico(pagina - 1);
   }
 
   lista.innerHTML = '';
-  data.forEach(p => {
-    const dataObj = new Date(p.created_at);
-    const dataStr = dataObj.toLocaleString('pt-BR');
+  if (data.length === 0) {
+    lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
+  } else {
+    data.forEach(p => {
+      const dataObj = new Date(p.created_at);
+      const dataStr = dataObj.toLocaleString('pt-BR');
 
-    lista.innerHTML += `
-      <div class="card-historico" id="hist-${p.id}">
-        <div class="info">
-          <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
-          <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
+      lista.innerHTML += `
+        <div class="card-historico" id="hist-${p.id}">
+          <div class="info">
+            <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
+            <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
+          </div>
+          <div class="acoes">
+            <span class="badge-impresso">✔ Impresso</span>
+            <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
         </div>
-        <div class="acoes">
-          <span class="badge-impresso">✔ Impresso</span>
-          <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-      </div>
-    `;
-  });
+      `;
+    });
+  }
+
+  renderizarPaginacao('historico', paginaAtualHistorico, totalPaginasHistorico);
 }
 
 async function apagarHistorico(id) {
@@ -177,10 +228,35 @@ async function apagarHistorico(id) {
   
   if (error) { alert("Erro ao apagar: " + error.message); return; }
 
-  document.getElementById(`hist-${id}`).remove();
-  if (document.getElementById('lista-historico').children.length === 0) {
-    document.getElementById('lista-historico').innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
+  carregarHistorico(paginaAtualHistorico);
+}
+
+/* ===================== CONTROLE DE PAGINAÇÃO (UI) ===================== */
+function renderizarPaginacao(aba, paginaAtual, totalPaginas) {
+  const container = document.getElementById(`paginacao-${aba}`);
+  if (!container) return;
+
+  if (totalPaginas <= 1) {
+    container.innerHTML = ''; 
+    return;
   }
+
+  let html = `
+    <button class="btn-pag" onclick="mudarPagina('${aba}', ${paginaAtual - 1})" ${paginaAtual === 1 ? 'disabled' : ''}>
+      <i class="fa-solid fa-chevron-left"></i> Anterior
+    </button>
+    <span class="texto-pag">Página ${paginaAtual} de ${totalPaginas}</span>
+    <button class="btn-pag" onclick="mudarPagina('${aba}', ${paginaAtual + 1})" ${paginaAtual === totalPaginas ? 'disabled' : ''}>
+      Próxima <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  `;
+
+  container.innerHTML = html;
+}
+
+function mudarPagina(aba, novaPagina) {
+  if (aba === 'recentes') carregarPedidos(novaPagina);
+  if (aba === 'historico') carregarHistorico(novaPagina);
 }
 
 /* ===================== ABA 3: GRÁFICOS ===================== */
