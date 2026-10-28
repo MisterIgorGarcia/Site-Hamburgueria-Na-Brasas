@@ -327,11 +327,20 @@ async function enviarBytesParaImpressora(bytes) {
 /* ===================== IMPRESSÃO E ARQUIVAMENTO ===================== */
 async function imprimirEArquivar(pedido, botao) {
   try {
-    if (!modoImpressao) throw new Error('Conecte uma impressora primeiro.');
-
+    // 1. Imprime
+    const char = await garantirConexao();
     const bytes = gerarRecibo(pedido);
     await enviarBytesParaImpressora(bytes);
 
+    // 2. Descobre quem está logado
+    const sessaoSalva = localStorage.getItem('nabrasas_sessao');
+    let quemImprimiu = 'Admin';
+    if (sessaoSalva) {
+        const sessao = JSON.parse(sessaoSalva);
+        quemImprimiu = sessao.nome;
+    }
+
+    // 3. Arquiva no banco com o nome de quem imprimiu
     const { error: errInsert } = await supabaseClient
       .from('pedidos_arquivados')
       .insert({
@@ -342,17 +351,22 @@ async function imprimirEArquivar(pedido, botao) {
         itens: pedido.itens,
         total: pedido.total,
         status: 'impresso',
+        impresso_por: quemImprimiu, // <-- NOVO CAMPO AQUI
         created_at: pedido.created_at
       });
     if (errInsert) throw new Error('Falha ao arquivar: ' + errInsert.message);
 
+    // 4. Remove da fila de recentes
     const { error: errDelete } = await supabaseClient
       .from('pedidos_recentes')
       .delete()
       .eq('id', pedido.id);
       
-    if (errDelete) console.warn('Pedido duplicado:', pedido.id);
+    if (errDelete) {
+      console.warn('Pedido ficou duplicado (arquivado + recente):', pedido.id);
+    }
 
+    // 5. Remove da tela
     removerPedidoDaTela(pedido.id);
     
   } catch (err) {

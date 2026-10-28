@@ -324,23 +324,32 @@ async function carregarHistorico(pagina = 1) {
     lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
   } else {
     data.forEach(p => {
-      const dataObj = new Date(p.created_at);
-      const dataStr = dataObj.toLocaleString('pt-BR');
-      lista.innerHTML += `
-        <div class="card-historico" id="hist-${p.id}">
-          <div class="info">
-            <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
-            <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
-          </div>
-          <div class="acoes">
-            <span class="badge-impresso">✔ Impresso</span>
-            <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
+    const dataObj = new Date(p.created_at);
+    const dataStr = dataObj.toLocaleString('pt-BR');
+
+    // Se a coluna estiver vazia (pedidos antigos), mostra 'Não registrado'
+    const nomeFuncionario = p.impresso_por || 'Não registrado';
+
+    lista.innerHTML += `
+      <div class="card-historico" id="hist-${p.id}">
+        <div class="info">
+          <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
+          <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
+          
+          <p style="font-size: 0.8rem; color: var(--cor-secundaria); margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+            <i class="fa-solid fa-user-check"></i> Impresso por: <strong>${nomeFuncionario}</strong>
+          </p>
+
         </div>
-      `;
-    });
+        <div class="acoes">
+          <span class="badge-impresso">✔ Impresso</span>
+          <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  });
   }
   renderizarPaginacao('historico', paginaAtualHistorico, totalPaginasHistorico);
 }
