@@ -90,6 +90,7 @@ if (btnConectarUSB) {
       alert("Seu navegador não suporta WebUSB. Use o Chrome ou Edge.");
       return;
     }
+    
     try {
       if (modoImpressao === 'bluetooth') {
         await desconectarImpressoraAtual();
@@ -101,7 +102,12 @@ if (btnConectarUSB) {
       const device = await navigator.usb.requestDevice({ filters: [] });
       await configurarConexaoUSB(device);
     } catch (err) {
-      alert('Falha ao conectar USB: ' + err.message);
+      // IGNORA O ERRO SE O USUÁRIO CANCELAR A JANELA
+      if (err.name === 'NotFoundError' || err.message.includes('cancel')) {
+        console.log('Usuário cancelou a conexão USB.');
+      } else {
+        alert('Falha ao conectar USB: ' + err.message);
+      }
     } finally {
       btnConectarUSB.disabled = false;
       atualizarStatusImpressora(); 
@@ -161,10 +167,14 @@ if (btnConectar) {
       btnConectar.disabled = true;
       document.getElementById('txt-bt').textContent = 'Conectando...';
       
-      // Passa 'true' para forçar a abertura do seletor do Chrome
       await garantirConexaoBluetooth(true); 
     } catch (err) {
-      alert('Falha ao conectar Bluetooth: ' + err.message);
+      // IGNORA O ERRO SE O USUÁRIO CANCELAR A JANELA
+      if (err.name === 'NotFoundError' || err.message.includes('cancel')) {
+        console.log('Usuário cancelou a conexão Bluetooth.');
+      } else {
+        alert('Falha ao conectar Bluetooth: ' + err.message);
+      }
     } finally {
       btnConectar.disabled = false;
       atualizarStatusImpressora();
@@ -264,34 +274,29 @@ function atualizarStatusImpressora() {
   const btnUSB = document.getElementById('btn-conectar-usb');
   const txtBT = document.getElementById('txt-bt');
   const txtUSB = document.getElementById('txt-usb');
-  const tipBT = document.getElementById('tip-bt');
-  const tipUSB = document.getElementById('tip-usb');
 
   if (!wrap || !txt) return;
 
   let conectado = false;
   let nome = '';
 
+  // Reseta o visual dos botões para o padrão (mantendo os ícones)
   btnBT.classList.remove('btn-admin-perigo');
   btnUSB.classList.remove('btn-admin-perigo');
-  txtBT.textContent = '🔌 Conectar Bluetooth';
-  txtUSB.textContent = '🔗 Conectar USB';
-  tipBT.innerHTML = 'Conectar via Bluetooth (Celular)';
-  tipUSB.innerHTML = 'Conectar via Cabo USB (PC)<br>Use o app <a href="https://zadig.akeo.ie" target="_blank">Zadig</a> no Windows.';
+  txtBT.innerHTML = '<i class="fa-brands fa-bluetooth-b"></i> Conectar Bluetooth';
+  txtUSB.innerHTML = '<i class="fa-solid fa-plug"></i> Conectar USB';
 
   if (modoImpressao === 'bluetooth' && impressoraChar && impressoraDevice?.gatt?.connected) {
     conectado = true;
     nome = impressoraDevice.name || 'POS-58 (Bluetooth)';
     btnBT.classList.add('btn-admin-perigo'); 
-    txtBT.textContent = '❌ Desconectar Bluetooth';
-    tipBT.innerHTML = 'Clique para desconectar o Bluetooth';
+    txtBT.innerHTML = '<i class="fa-solid fa-xmark"></i> Desconectar Bluetooth';
   } 
   else if (modoImpressao === 'usb' && usbDevice && usbDevice.opened) {
     conectado = true;
     nome = usbDevice.productName || 'POS-58 (USB)';
     btnUSB.classList.add('btn-admin-perigo'); 
-    txtUSB.textContent = '❌ Desconectar USB';
-    tipUSB.innerHTML = 'Clique para desconectar o cabo USB';
+    txtUSB.innerHTML = '<i class="fa-solid fa-xmark"></i> Desconectar USB';
   }
 
   if (conectado) {
