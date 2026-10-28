@@ -447,57 +447,62 @@ button.btn-admin:disabled {
     width: 100%;
 }
 
-/* ===================== TOOLTIPS ===================== */
+/* ===================== TOOLTIPS COM HTML ===================== */
 .tooltip {
     position: relative;
 }
 
-/* O balão de texto */
-.tooltip::after {
-    content: attr(data-tooltip); /* Pega o texto do HTML */
+/* O balão do tooltip (agora é uma tag span de verdade) */
+.tooltip-content {
     position: absolute;
-    bottom: 130%; /* Fica acima do botão */
+    bottom: 130%;
     left: 50%;
-    transform: translateX(-50%) translateY(10px); /* Efeito de subida */
+    transform: translateX(-50%) translateY(10px);
     background-color: #222;
     color: #fff;
     padding: 8px 12px;
     border-radius: 6px;
     font-size: 0.75rem;
     font-weight: normal;
-    white-space: nowrap; /* Não deixa o texto quebrar */
+    white-space: nowrap;
     opacity: 0;
     visibility: hidden;
     transition: all 0.2s ease-in-out;
-    pointer-events: none; /* O mouse ignora o balão */
     z-index: 100;
     border: 1px solid #444;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    pointer-events: none; /* O mouse ignora o balão até ele abrir */
 }
 
 /* A setinha embaixo do balão */
-.tooltip::before {
+.tooltip-content::before {
     content: "";
     position: absolute;
-    bottom: 110%; /* Fica colado no botão */
+    top: 100%; /* Fica colado na parte de baixo do balão */
     left: 50%;
-    transform: translateX(-50%) translateY(10px);
+    transform: translateX(-50%);
     border-width: 6px;
     border-style: solid;
     border-color: #222 transparent transparent transparent;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.2s ease-in-out;
-    pointer-events: none;
-    z-index: 100;
 }
 
 /* Quando passa o mouse no botão, mostra o balão */
-.tooltip:hover::after,
-.tooltip:hover::before {
+.tooltip:hover .tooltip-content {
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
+    pointer-events: auto; /* Agora o mouse pode clicar no link! */
+}
+
+/* Estilo do link dentro do tooltip */
+.tooltip-content a {
+    color: var(--cor-secundaria);
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+.tooltip-content a:hover {
+    color: var(--amarelo-claro);
 }
 
 /* ===================== RESPONSIVO ===================== */
