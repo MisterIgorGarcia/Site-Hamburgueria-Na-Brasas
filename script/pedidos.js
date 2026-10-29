@@ -217,7 +217,8 @@ function configurarMascaraTelefone() {
 }
 
 function configurarMascaraCPF() {
-    const cpfInput = document.getElementById('cpf-cliente');
+    // Agora aponta para o campo dentro do modal de pagamento
+    const cpfInput = document.getElementById('cpf-online');
     if(cpfInput) {
         cpfInput.addEventListener('input', function(e) {
             let val = e.target.value.replace(/\D/g, '');
@@ -228,6 +229,22 @@ function configurarMascaraCPF() {
             e.target.value = val;
         });
     }
+}
+
+function validarCPF(cpf) {
+    cpf = cpf.replace(/\D/g, '');
+    if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let soma = 0, resto;
+    for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i-1, i)) * (11 - i);
+    resto = (soma * 10) % 11;
+    if ((resto === 10) || (resto === 11)) resto = 0;
+    if (resto !== parseInt(cpf.substring(9, 10))) return false;
+    soma = 0;
+    for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i-1, i)) * (12 - i);
+    resto = (soma * 10) % 11;
+    if ((resto === 10) || (resto === 11)) resto = 0;
+    if (resto !== parseInt(cpf.substring(10, 11))) return false;
+    return true;
 }
 
 function configurarBuscaCEP() {
@@ -294,7 +311,6 @@ async function buscarEnderecoPorRua() {
 async function enviarPedido() {
     const nome = document.getElementById('nome-cliente').value.trim();
     const telefone = document.getElementById('tel-cliente').value.trim();
-    const cpf = document.getElementById('cpf-cliente').value.replace(/\D/g, '');
     const cep = document.getElementById('cep-cliente').value.trim();
     const rua = document.getElementById('rua-cliente').value.trim();
     const num = document.getElementById('num-cliente').value.trim();
@@ -311,7 +327,7 @@ async function enviarPedido() {
     pedidoPendente = {
         cliente_nome: nome,
         cliente_telefone: telefone,
-        cliente_cpf: cpf || null,
+        cliente_cpf: null, // Será preenchido se for online
         cliente_endereco: enderecoCompleto,
         itens: itensFormatados,
         total: total,
@@ -337,11 +353,24 @@ function selecionarOpcaoPagamento(opcao, elementoBotao) {
     document.querySelectorAll('.btn-pgto-entrega').forEach(btn => btn.classList.remove('ativo'));
     if (elementoBotao) elementoBotao.classList.add('ativo');
 
-    if (opcao === 'dinheiro') {
-        document.getElementById('container-troco').style.display = 'block';
+    const containerCpf = document.getElementById('container-cpf-online');
+    const containerTroco = document.getElementById('container-troco');
+
+    // Se for online, mostra o CPF e esconde o troco
+    if (opcao.includes('online')) {
+        containerCpf.style.display = 'block';
+        containerTroco.style.display = 'none';
+    } 
+    // Se for dinheiro, mostra o troco e esconde o CPF
+    else if (opcao === 'dinheiro') {
+        containerCpf.style.display = 'none';
+        containerTroco.style.display = 'block';
         document.getElementById('input-troco').focus();
-    } else {
-        document.getElementById('container-troco').style.display = 'none';
+    } 
+    // Outros (cartão/pix na entrega), esconde os dois
+    else {
+        containerCpf.style.display = 'none';
+        containerTroco.style.display = 'none';
     }
 }
 
@@ -360,9 +389,15 @@ async function confirmarPagamento() {
             await processarEnvioBanco(pedidoPendente);
         } 
         else if (metodoPagamento.includes('online')) {
-            if (!pedidoPendente.cliente_cpf || pedidoPendente.cliente_cpf.length !== 11) {
-                throw new Error("CPF é obrigatório e deve ter 11 dígitos para pagamento online.");
+            // Pega o CPF do campo novo no modal de pagamento
+            const cpfInput = document.getElementById('cpf-online').value;
+            const cpfLimpo = cpfInput.replace(/\D/g, '');
+            
+            // Validação matemática
+            if (!validarCPF(cpfLimpo)) {
+                throw new Error("CPF inválido. Por favor, digite um CPF real.");
             }
+            pedidoPendente.cliente_cpf = cpfLimpo;
 
             if (metodoPagamento === 'pix-online') {
                 await pagarComPix(pedidoPendente);
@@ -371,7 +406,6 @@ async function confirmarPagamento() {
             }
         } 
         else {
-            // Pagamento na entrega (Cartão/PIX)
             if (metodoPagamento === 'cartao-debito') pedidoPendente.pagamento = "Pagar na Entrega (Cartão de Débito) - Levar Máquina";
             if (metodoPagamento === 'cartao-credito') pedidoPendente.pagamento = "Pagar na Entrega (Cartão de Crédito) - Levar Máquina";
             if (metodoPagamento === 'pix') pedidoPendente.pagamento = "Pagar na Entrega (PIX) - Enviar Chave";
@@ -392,7 +426,21 @@ async function chamarApiPagBank(action, payload) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, payload })
     });
-    return await response.json();
+    
+    const data = await response.json();
+    
+    // Tratamento de erro melhorado: pega a mensagem exata do PagBank
+    if (!response.ok) {
+        let msgErro = 'Erro desconhecido no PagBank.';
+        if (data.error_messages && data.error_messages.length > 0) {
+            msgErro = data.error_messages.map(e => e.description).join(' | ');
+        } else if (data.message) {
+            msgErro = data.message;
+        }
+        throw new Error(msgErro);
+    }
+    
+    return data;
 }
 
 async function pagarComPix(pedido) {
@@ -400,7 +448,7 @@ async function pagarComPix(pedido) {
         reference_id: `pedido_${Date.now()}`,
         customer: {
             name: pedido.cliente_nome,
-            email: 'cliente@email.com', // PagBank exige email, você pode adicionar um campo se quiser
+            email: 'cliente@email.com', // Troque por um e-mail válido se o PagBank reclamar
             tax_id: pedido.cliente_cpf,
             phones: [{ country: '55', area: '12', number: pedido.cliente_telefone.replace(/\D/g, '').slice(2), type: 'MOBILE' }]
         },
@@ -408,7 +456,7 @@ async function pagarComPix(pedido) {
             reference_id: item.nome,
             name: item.nome,
             quantity: item.qtd,
-            unit_amount: Math.round(item.preco * 100) // Valor em centavos
+            unit_amount: Math.round(item.preco * 100) 
         })),
         qr_codes: [{ amount: { value: Math.round(pedido.total * 100) } }],
         notification_urls: [`https://${window.location.hostname}/api/webhook-pagbank`]
@@ -419,16 +467,13 @@ async function pagarComPix(pedido) {
     if (result.qr_codes && result.qr_codes.length > 0) {
         const qrCodeText = result.qr_codes[0].text;
         
-        // Salva o pedido no banco com status pendente
         pedido.pagamento = "Pagamento Antecipado (PIX) - Aguardando Pagamento";
         pedido.pagbank_id = result.id;
-        await processarEnvioBanco(pedido, false); // false = não limpa a tela ainda
+        await processarEnvioBanco(pedido, false); 
 
-        // Exibe o Modal do QR Code
         document.getElementById('modal-pagamento').classList.remove('ativo');
         document.getElementById('modal-pix').classList.add('ativo');
         
-        // Gera o QR Code visual
         document.getElementById('qrcode-container').innerHTML = '';
         new QRCode(document.getElementById('qrcode-container'), {
             text: qrCodeText,
@@ -465,12 +510,11 @@ async function pagarComCartao(pedido) {
     if (result.links && result.links.length > 0) {
         const linkPagamento = result.links.find(l => l.rel === 'PAY').href;
         
-        // Salva o pedido no banco antes de sair
         pedido.pagamento = `Pagamento Antecipado (${metodoPagamento === 'cartao-credito-online' ? 'Crédito' : 'Débito'}) - Redirecionado`;
         pedido.pagbank_id = result.id;
         await processarEnvioBanco(pedido, false);
 
-        window.location.href = linkPagamento; // Redireciona para o PagBank
+        window.location.href = linkPagamento;
     } else {
         throw new Error("Erro ao gerar link de pagamento no PagBank.");
     }
@@ -489,22 +533,22 @@ async function processarEnvioBanco(pedidoFinal, limparTela = true) {
         const { error } = await supabaseClient.from('pedidos_recentes').insert([pedidoFinal]);
         if (error) throw error;
 
+        carrinho = [];
+        atualizarCarrinhoUI();
+        
+        document.getElementById('nome-cliente').value = '';
+        document.getElementById('tel-cliente').value = '';
+        document.getElementById('cep-cliente').value = '';
+        document.getElementById('num-cliente').value = '';
+        document.getElementById('rua-cliente').value = '';
+        document.getElementById('bairro-cliente').value = '';
+        document.getElementById('cidade-cliente').value = '';
+        document.getElementById('input-troco').value = '';
+        document.getElementById('cpf-online').value = ''; // Limpa o CPF novo
+        metodoPagamento = "";
+
         if (limparTela) {
             alert("Pedido enviado com sucesso!");
-            carrinho = [];
-            atualizarCarrinhoUI();
-            
-            // Limpa os campos
-            document.getElementById('nome-cliente').value = '';
-            document.getElementById('tel-cliente').value = '';
-            document.getElementById('cpf-cliente').value = '';
-            document.getElementById('cep-cliente').value = '';
-            document.getElementById('num-cliente').value = '';
-            document.getElementById('rua-cliente').value = '';
-            document.getElementById('bairro-cliente').value = '';
-            document.getElementById('cidade-cliente').value = '';
-            document.getElementById('input-troco').value = '';
-            metodoPagamento = "";
             fecharCarrinho();
             document.getElementById('modal-pagamento').classList.remove('ativo');
         }
