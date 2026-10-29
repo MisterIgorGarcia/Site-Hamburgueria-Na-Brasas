@@ -188,8 +188,58 @@ footer { background-color: #000; border-top: 3px solid var(--cor-secundaria); co
     #menu-nav ul li { width: 100%; text-align: center; border-bottom: 1px solid #222; }
     #menu-nav ul li a { display: block; padding: 15px 20px; }
     
-    .hero { flex-direction: column-reverse; padding: 40px 20px; text-align: center; }
-    .hero-botoes .btn-amarelo { flex: 1 1 100%; }
+    /* CORREÇÃO DA SEÇÃO HERO NO CELULAR */
+    .hero {
+        flex-direction: column;
+        padding: 30px 20px;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .hero-texto {
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .hero h2 {
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+    }
+
+    .hero p {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+
+    .hero-imagem {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .hero-imagem img {
+        max-width: 250px;
+    }
+
+    .hero-imagem::before {
+        width: min(200px, 60vw);
+        height: min(200px, 60vw);
+    }
+
+    .hero-botoes {
+        justify-content: center;
+        width: 100%;
+        margin-top: 15px;
+    }
+
+    .hero-botoes .btn-amarelo {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    /* Outros ajustes do mobile */
     .secao { padding: 40px 20px; }
     .card, .card-premium, .card-sobre { width: 100%; max-width: 320px; }
     
