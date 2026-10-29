@@ -7,7 +7,7 @@
 ![GitHub repo size](https://img.shields.io/github/repo-size/MisterIgorGarcia/Site-Hamburgueria-Na-Brasas?style=for-the-badge)
 ![GitHub last commit](https://img.shields.io/github/last-commit/MisterIgorGarcia/Site-Hamburgueria-Na-Brasas?style=for-the-badge)
 
-**Site institucional para a hamburgueria Na Brasas, localizada em Cruzeiro - SP.**
+**Site institucional e sistema de pedidos para a hamburgueria Na Brasas, localizada em Cruzeiro - SP.**
 
 [🌐 Visite o site](https://nabrasas-hamburgueria.vercel.app/) · [📂 Repositório](https://github.com/MisterIgorGarcia/Site-Hamburgueria-Na-Brasas) · [🐛 Reportar um problema](https://github.com/MisterIgorGarcia/Site-Hamburgueria-Na-Brasas/issues)
 
@@ -17,53 +17,52 @@
 
 ## 📖 Sobre o Projeto
 
-A **Na Brasas** é uma hamburgueria artesanal que une sabor de verdade e ambiente acolhedor. Este site foi desenvolvido para apresentar a hamburgueria, seu cardápio, horários de funcionamento e formas de contato de maneira moderna, responsiva e atrativa.
+A **Na Brasas** é uma hamburgueria artesanal que une sabor de verdade e ambiente acolhedor. Este projeto começou como um site institucional, mas evoluiu para um **Sistema Completo de Pedidos (PDV)**. 
 
-O projeto foi construído com **HTML, CSS e JavaScript puros**, sem frameworks ou bibliotecas de terceiros, garantindo leveza e performance. O design utiliza uma paleta de cores escuras com detalhes em amarelo, transmitindo aconchego e sofisticação.
+Agora, o cliente pode montar seu carrinho, escolher adicionais, informar o endereço (com busca automática por CEP) e escolher a forma de pagamento. Do outro lado, a hamburgueria conta com um **Painel Administrativo em Tempo Real** e um **Painel para Funcionários**, que recebem os pedidos instantaneamente e os imprimem em uma impressora térmica via Bluetooth ou USB.
+
+O projeto foi construído com **HTML, CSS e JavaScript puros**, utilizando o **Supabase** como banco de dados e autenticação, garantindo leveza, performance e comunicação em tempo real.
 
 ---
 
 ## ✨ Funcionalidades
 
-- **🎨 Design Responsivo:** Layout adaptável para desktop, tablet e celular.
-- **📊 Status de Funcionamento em Tempo Real:** Componente inteligente que calcula se a hamburgueria está aberta ou fechada com base no horário atual, exibindo um cronômetro regressivo até a próxima abertura ou fechamento.
-- **🗺️ Integração com Google Maps:** Mapa incorporado mostrando a localização exata da hamburgueria.
-- **💬 Links Diretos para Contato:** Botões para WhatsApp e Instagram, facilitando a comunicação.
-- **📱 Menu Hambúrguer:** Navegação otimizada para dispositivos móveis.
-- **🏷️ Open Graph Tags:** Preview personalizado ao compartilhar o link em redes sociais e mensageiros.
-- **⏰ Seção de Horários:** Cards informativos com os horários de funcionamento de cada dia da semana, com destaque para dias fechados e para o dia atual.
-- **🍔 Cardápio de Lanches:** Cards organizados com nome, preço, ingredientes e botão direto para pedido via WhatsApp.
-- **☕ Diferenciais em Destaque:** Seção "Sobre" mostrando os pontos fortes da hamburgueria.
-- **⬆️ Botão Voltar ao Topo:** Facilita a navegação em páginas mais longas.
+### 🛒 Para o Cliente
+- **Cardápio Digital Dinâmico:** Lanches, Bebidas e Doces são puxados diretamente do banco de dados, permitindo alteração de preços e produtos sem mexer no código.
+- **Carrinho Inteligente:** Adição de itens, cálculo de total em tempo real e seleção de **Adicionais** (Bacon, Cheddar, etc.) com atualização de preço automática.
+- **Checkout Completo:** Captura de Nome, WhatsApp e Endereço.
+- **Busca por CEP e Reversa:** Integração com a API do ViaCEP para autocompletar o endereço ao digitar o CEP, ou buscar o CEP ao digitar a rua.
+- **Sistema de Pagamento:** Opção de pagar na entrega (Dinheiro com cálculo de troco, Cartão de Débito/Crédito ou PIX) ou pagamento antecipado.
+- **Design Responsivo:** Layout adaptável, com foco em uma experiência fluida no celular.
+
+### 🛡️ Para o Administrador
+- **Login Seguro:** Acesso restrito via banco de dados (Supabase) com separação de cargos (Admin e Funcionário).
+- **Notificações em Tempo Real:** Aviso visual (bolinha vermelha) e sonoro (via WebSocket) sempre que um novo pedido chega.
+- **Gestão de Pedidos:** Visualização de Delivery (com mapa incorporado do endereço) e Pedidos de Mesa.
+- **Criação de Pedido Manual:** Lançamento de pedidos de mesa diretamente pelo painel, com suporte a adicionais.
+- **Impressão Térmica (ESC/POS):** Conexão e impressão direta em impressoras térmicas (POS-58) via Web Bluetooth ou Web USB.
+- **Histórico Completo:** Arquivamento automático de pedidos, exibindo quem imprimiu, o tipo de pedido, endereço e status do pagamento.
+- **Dashboard Financeiro (Google Charts):** Gráficos de faturamento diário, lanches mais vendidos (pizza) e contador de **Faturamento Total**.
+- **Gestão de Funcionários:** Criação, edição e exclusão de contas de funcionários com acesso restrito.
+- **Terminal de Logs:** Console interno no painel para acompanhar o status do WebSocket e falhas de conexão.
+
+### 🖨️ Hardware e Integrações
+- **Web Bluetooth & WebUSB:** Comunicação direta com a impressora térmica, com sistema de reconexão automática caso a página seja atualizada.
+- **Formatação de Recibo:** O recibo impresso destaca em negrito se o pedido é de **Entrega** ou **Mesa**, imprime o endereço formatado e detalha a forma de pagamento e o troco.
+- **Vercel Analytics:** Monitoramento de acessos integrado ao deploy.
 
 ---
 
-## 🍔 Cardápio
+## 🍔 Cardápio (Banco de Dados)
 
-| Lanche | Preço |
-|--------|-------|
-| Na Brasa's Soberano | R$ 35,00 |
-| Na Brasa's Burguer Duplo | R$ 26,00 |
-| Na Brasa's Burguer Triplo | R$ 35,00 |
-| Na Brasas's Burguer Tem Como | R$ 35,00 |
-| Na Brasa's Burguer | R$ 15,00 |
-| Na Brasa's Burguer Salada | R$ 18,00 |
-| Na Brasa's Toscana | R$ 18,00 |
-| Na Brasa's Calabresa | R$ 25,00 |
-| Na Brasa's Burguer Frango | R$ 25,00 |
-| Na Brasa's Burguer Bacon | R$ 25,00 |
+*O cardápio abaixo é apenas uma prévia. Todos os itens, descrições e preços são gerenciados no banco de dados (Supabase) e podem ser alterados em tempo real pelo administrador.*
 
-Todos os botões de pedido enviam uma mensagem pronta para o WhatsApp **(12) 98277-1364**.
-
----
-
-## 🥩 Diferenciais
-
-- **Peça pelo celular:** Cardápio digital completo com fotos e descrições.
-- **Chapa na brasa:** Equipamentos novos e de alta qualidade para o preparo perfeito.
-- **Delivery & iFood:** Parcerias integradas para você saborear onde estiver.
-- **Não usamos óleo:** Hambúrgueres preparados na chapa quente, sem óleo adicionado.
-- **A opção mais saudável:** Ingredientes frescos, sem conservantes e preparo na brasa.
+| Categoria | Itens em Destaque | Preço Base |
+|-----------|-------------------|------------|
+| **Lanches** | Na Brasa's Soberano, Duplo, Triplo, Bacon, Frango | A partir de R$ 15,00 |
+| **Bebidas** | Refrigerantes, Cervejas, Sucos, Águas, Copões | A partir de R$ 3,00 |
+| **Doces** | Trufas, Bolo de pote, Picolé, Paçoca | A partir de R$ 2,00 |
+| **Adicionais** | Bacon, Cheddar, Catupiry, Cebola Roxa, Frango | A partir de R$ 3,00 |
 
 ---
 
@@ -71,12 +70,15 @@ Todos os botões de pedido enviam uma mensagem pronta para o WhatsApp **(12) 982
 
 | Tecnologia | Descrição |
 |------------|-----------|
-| **HTML5** | Estruturação semântica do conteúdo. |
-| **CSS3** | Estilização, layout responsivo (Flexbox, Grid) e animações. |
-| **JavaScript** | Interatividade, cálculo de horários e atualização dinâmica do status. |
-| **Font Awesome** | Biblioteca de ícones para redes sociais e elementos visuais. |
-| **Google Maps Embed** | Integração do mapa de localização. |
-| **Vercel** | Plataforma de hospedagem e deploy contínuo. |
+| **HTML5 & CSS3** | Estruturação semântica, layout responsivo (Flexbox, Grid) e animações. |
+| **JavaScript (Vanilla)** | Interatividade, manipulação de DOM, cálculo de horários, carrinho e lógica de impressão. |
+| **Supabase** | Banco de dados PostgreSQL, Autenticação, Realtime (WebSockets) e Row Level Security (RLS). |
+| **Web Bluetooth & WebUSB API** | Comunicação direta e envio de dados ESC/POS para a impressora térmica. |
+| **ViaCEP API** | Busca e autocompletar de endereços e CEPs. |
+| **Google Charts** | Renderização dos gráficos de pizza e linhas no painel administrativo. |
+| **Font Awesome** | Biblioteca de ícones. |
+| **Google Maps Embed** | Integração de mapas no site e no painel de delivery. |
+| **Vercel** | Plataforma de hospedagem, deploy contínuo e Analytics. |
 
 ---
 
@@ -84,20 +86,27 @@ Todos os botões de pedido enviam uma mensagem pronta para o WhatsApp **(12) 982
 
 ```text
 Site-Hamburgueria-Na-Brasas/
+├── administrador/
+│   ├── administrador-dashboard.html
+│   ├── funcionario-dashboard.html
+│   └── login.html
+├── api/ (configurações Vercel)
+├── estilos/
+│   ├── style.css
+│   ├── styleadmin.css
+│   └── stylepedido.css
+├── imagens/
+│   ├── logo3d.webp
+│   ├── preview.jpg
+│   └── lanches/ (fotos em WebP)
+├── pedidos/
+│   └── pedidos.html
+├── script/
+│   ├── admin-dashboard.js
+│   ├── funcionario-dashboard.js
+│   ├── impressora.js
+│   ├── index.js
+│   ├── login.js
+│   └── pedidos.js
 ├── index.html
-├── style.css
-├── script.js
-└── imagens/
-    ├── avatar.png
-    ├── preview.jpg
-    └── lanches/
-        ├── 1.png
-        ├── 2.png
-        ├── 3.png
-        ├── 4.png
-        ├── burguersimples.png
-        ├── burguersalada.png
-        ├── burguertoscana.png
-        ├── burguercalabresa.png
-        ├── burguerfrango.png
-        └── burguerbacon.png
+└── README.md
