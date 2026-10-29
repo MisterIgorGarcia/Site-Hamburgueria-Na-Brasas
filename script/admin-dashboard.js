@@ -333,21 +333,47 @@ async function carregarHistorico(pagina = 1) {
   if (data.length === 0) {
     lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
   } else {
-    data.forEach(p => {
+      data.forEach(p => {
     const dataObj = new Date(p.created_at);
     const dataStr = dataObj.toLocaleString('pt-BR');
     const nomeFuncionario = p.impresso_por || 'Não registrado';
 
+    // Descobre se é entrega ou mesa
+    const isEntrega = p.cliente_endereco && p.cliente_endereco.trim() !== '';
+    const isMesa = p.cliente_telefone === 'Pedido da Mesa' || p.cliente_telefone === 'Pedido Interno';
+
+    // Cria a tag visual
+    let tagTipoHTML = '';
+    if (isEntrega) {
+        tagTipoHTML = `<span class="badge-tipo pedido-entrega" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-motorcycle"></i> Entrega</span>`;
+    } else if (isMesa) {
+        tagTipoHTML = `<span class="badge-tipo pedido-mesa" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-utensils"></i> Mesa</span>`;
+    }
+
+    // Se for entrega, mostra o endereço
+    let enderecoHTML = '';
+    if (isEntrega) {
+        enderecoHTML = `
+          <p style="font-size: 0.85rem; color: #ccc; margin-top: 8px; background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 6px; display: inline-block;">
+              <i class="fa-solid fa-location-dot" style="color:var(--cor-secundaria)"></i> ${p.cliente_endereco}
+          </p>
+        `;
+    }
+
     lista.innerHTML += `
       <div class="card-historico" id="hist-${p.id}">
         <div class="info">
-          <h4>#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap;">
+            ${tagTipoHTML}
+            <h4 style="margin: 0;">#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
+          </div>
           <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
           
-          <p style="font-size: 0.8rem; color: var(--cor-secundaria); margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+          ${enderecoHTML}
+          
+          <p style="font-size: 0.8rem; color: var(--cor-secundaria); margin-top: 8px; display: flex; align-items: center; gap: 5px;">
             <i class="fa-solid fa-user-check"></i> Impresso por: <strong>${nomeFuncionario}</strong>
           </p>
-
         </div>
         <div class="acoes">
           <span class="badge-impresso">✔ Impresso</span>

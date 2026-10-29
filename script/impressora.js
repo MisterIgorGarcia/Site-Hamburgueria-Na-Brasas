@@ -422,11 +422,28 @@ function gerarRecibo(pedido) {
   txt(`Cliente: ${pedido.cliente_nome}\n`);
   add(CMD.normal);
   
-  // Só imprime o telefone se não for um pedido de mesa (para não imprimir "Tel: Pedido da Mesa")
+  // Só imprime o telefone se não for um pedido de mesa
   if (pedido.cliente_telefone && !isMesa) {
       txt(`Tel: ${pedido.cliente_telefone}\n`);
   }
   txt(linha);
+
+  // ==========================================
+  // IMPRIMIR ENDEREÇO SE FOR ENTREGA
+  // ==========================================
+  if (isEntrega && pedido.cliente_endereco) {
+      add(CMD.bold);
+      txt(`ENDEREÇO DE ENTREGA:\n`);
+      add(CMD.normal);
+      
+      // Quebra o endereço em linhas de até 32 caracteres para não cortar no papel
+      const endereco = pedido.cliente_endereco;
+      for (let i = 0; i < endereco.length; i += 32) {
+          txt(endereco.substring(i, i + 32) + '\n');
+      }
+      txt(linha);
+  }
+  // ==========================================
 
   add(CMD.bold);
   txt('ITENS:\n');
