@@ -11,6 +11,7 @@ const originalError = console.error;
 const originalWarn = console.warn;
 
 let logsVisuais = [];
+let pedidosArquivadosGlobais = []; // Guarda os pedidos do histórico para a reimpressão
 
 function adicionarLogVisual(tipo, args) {
   if (!document.getElementById('terminal-container')) return;
@@ -250,7 +251,6 @@ function criarCardPedido(pedido, lista, novo) {
       tagTipoHTML = `<span class="badge-tipo pedido-mesa"><i class="fa-solid fa-utensils"></i> Pedido da Mesa</span>`;
   }
 
-  // NOVO: TAG DE PAGAMENTO NO CARD
   let tagPagamentoHTML = '';
   if (pedido.pagamento) {
       let corBadge = 'background: rgba(255,255,255,0.1); color: #fff; border: 1px solid #555;';
@@ -346,6 +346,9 @@ async function carregarHistorico(pagina = 1) {
   if (data.length === 0) {
     lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
   } else {
+      // SALVA OS PEDIDOS NA VARIÁVEL GLOBAL PARA PERMITIR A REIMPRESSÃO
+      pedidosArquivadosGlobais = data;
+
       data.forEach(p => {
         const dataObj = new Date(p.created_at);
         const dataStr = dataObj.toLocaleString('pt-BR');
@@ -361,7 +364,6 @@ async function carregarHistorico(pagina = 1) {
             tagTipoHTML = `<span class="badge-tipo pedido-mesa" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-utensils"></i> Mesa</span>`;
         }
 
-        // NOVO: TAG DE PAGAMENTO NO HISTÓRICO
         let tagPagamentoHTML = '';
         if (p.pagamento) {
             let corBadge = 'background: rgba(255,255,255,0.1); color: #fff; border: 1px solid #555;';
@@ -399,6 +401,12 @@ async function carregarHistorico(pagina = 1) {
             </div>
             <div class="acoes">
               <span class="badge-impresso">✔ Impresso</span>
+              
+              <!-- NOVO BOTÃO DE REIMPRIMIR -->
+              <button class="btn-reimprimir" onclick="acionarReimpressao('${p.id}', this)" title="Emitir Segunda Via">
+                <i class="fa-solid fa-print"></i>
+              </button>
+
               <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
                 <i class="fa-solid fa-trash"></i>
               </button>
@@ -408,6 +416,25 @@ async function carregarHistorico(pagina = 1) {
       });
   }
   renderizarPaginacao('historico', paginaAtualHistorico, totalPaginasHistorico);
+}
+
+/* ===================== REIMPRESSÃO (SEGUNDA VIA) ===================== */
+function acionarReimpressao(id, botao) {
+    // 1. Pergunta de confirmação
+    if (!confirm("Deseja mesmo re-imprimir o recibo?")) return;
+
+    // 2. Encontra o pedido na lista global
+    const pedido = pedidosArquivadosGlobais.find(p => p.id === id);
+    
+    if (pedido) {
+        // 3. Desativa o botão enquanto imprime
+        botao.disabled = true;
+        
+        // 4. Chama a função que está no impressora.js
+        reimprimirRecibo(pedido, botao);
+    } else {
+        alert("Pedido não encontrado no histórico para reimpressão.");
+    }
 }
 
 async function apagarHistorico(id) {

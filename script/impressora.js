@@ -386,6 +386,36 @@ async function imprimirEArquivar(pedido, botao) {
   }
 }
 
+/* ===================== RE-IMPRESSÃO (SEGUNDA VIA) ===================== */
+async function reimprimirRecibo(pedido, botao) {
+  // 1. Verifica se a impressora está conectada
+  if (!modoImpressao) {
+    alert('Conecte uma impressora (Bluetooth ou USB) primeiro.');
+    return;
+  }
+
+  // 2. Pergunta se o usuário realmente quer re-imprimir
+  if (!confirm("Deseja mesmo re-imprimir o recibo?")) {
+    return;
+  }
+
+  try {
+    // 3. Gera e envia o recibo
+    botao.disabled = true;
+    const bytes = gerarRecibo(pedido);
+    await enviarBytesParaImpressora(bytes);
+    
+    // Opcional: Um pequeno feedback visual de sucesso
+    console.log('Segunda via impressa com sucesso.');
+    
+  } catch (err) {
+    alert('Erro ao re-imprimir: ' + err.message);
+  } finally {
+    // Devolve o botão ao normal
+    botao.disabled = false;
+  }
+}
+
 /* ===================== GERADOR DE RECIBO (ESC/POS) ===================== */
 function normalizar(s) {
   return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -507,3 +537,4 @@ function gerarRecibo(pedido) {
   }
   return out;
 }
+
