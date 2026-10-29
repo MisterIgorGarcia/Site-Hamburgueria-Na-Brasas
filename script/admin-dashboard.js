@@ -240,7 +240,6 @@ function criarCardPedido(pedido, lista, novo) {
       `;
   }
 
-// Lógica para saber se é Mesa ou Entrega
   const isEntrega = pedido.cliente_endereco && pedido.cliente_endereco.trim() !== '';
   const isMesa = pedido.cliente_telefone === 'Pedido da Mesa' || pedido.cliente_telefone === 'Pedido Interno';
   
@@ -256,7 +255,7 @@ function criarCardPedido(pedido, lista, novo) {
       <span class="pedido-id">#${pedido.id.slice(0, 8)}</span>
       <span class="pedido-hora">${dataFormatada} às ${horaFormatada}</span>
     </div>
-    ${tagTipoHTML} <!-- TAG ADICIONADA DE TIPO DE PEDIDO AQUI -->
+    ${tagTipoHTML}
     <div class="pedido-cliente">${pedido.cliente_nome} <small>${pedido.cliente_telefone && !isMesa ? pedido.cliente_telefone : ''}</small></div>
     ${enderecoHTML}
     <ul class="pedido-itens" style="margin-top: 15px;">${itensHTML}</ul>
@@ -334,56 +333,53 @@ async function carregarHistorico(pagina = 1) {
     lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
   } else {
       data.forEach(p => {
-    const dataObj = new Date(p.created_at);
-    const dataStr = dataObj.toLocaleString('pt-BR');
-    const nomeFuncionario = p.impresso_por || 'Não registrado';
+        const dataObj = new Date(p.created_at);
+        const dataStr = dataObj.toLocaleString('pt-BR');
+        const nomeFuncionario = p.impresso_por || 'Não registrado';
 
-    // Descobre se é entrega ou mesa
-    const isEntrega = p.cliente_endereco && p.cliente_endereco.trim() !== '';
-    const isMesa = p.cliente_telefone === 'Pedido da Mesa' || p.cliente_telefone === 'Pedido Interno';
+        const isEntrega = p.cliente_endereco && p.cliente_endereco.trim() !== '';
+        const isMesa = p.cliente_telefone === 'Pedido da Mesa' || p.cliente_telefone === 'Pedido Interno';
 
-    // Cria a tag visual
-    let tagTipoHTML = '';
-    if (isEntrega) {
-        tagTipoHTML = `<span class="badge-tipo pedido-entrega" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-motorcycle"></i> Entrega</span>`;
-    } else if (isMesa) {
-        tagTipoHTML = `<span class="badge-tipo pedido-mesa" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-utensils"></i> Mesa</span>`;
-    }
+        let tagTipoHTML = '';
+        if (isEntrega) {
+            tagTipoHTML = `<span class="badge-tipo pedido-entrega" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-motorcycle"></i> Entrega</span>`;
+        } else if (isMesa) {
+            tagTipoHTML = `<span class="badge-tipo pedido-mesa" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-utensils"></i> Mesa</span>`;
+        }
 
-    // Se for entrega, mostra o endereço
-    let enderecoHTML = '';
-    if (isEntrega) {
-        enderecoHTML = `
-          <p style="font-size: 0.85rem; color: #ccc; margin-top: 8px; background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 6px; display: inline-block;">
-              <i class="fa-solid fa-location-dot" style="color:var(--cor-secundaria)"></i> ${p.cliente_endereco}
-          </p>
-        `;
-    }
+        let enderecoHTML = '';
+        if (isEntrega) {
+            enderecoHTML = `
+              <p style="font-size: 0.85rem; color: #ccc; margin-top: 8px; background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 6px; display: inline-block;">
+                  <i class="fa-solid fa-location-dot" style="color:var(--cor-secundaria)"></i> ${p.cliente_endereco}
+              </p>
+            `;
+        }
 
-    lista.innerHTML += `
-      <div class="card-historico" id="hist-${p.id}">
-        <div class="info">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap;">
-            ${tagTipoHTML}
-            <h4 style="margin: 0;">#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
+        lista.innerHTML += `
+          <div class="card-historico" id="hist-${p.id}">
+            <div class="info">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap;">
+                ${tagTipoHTML}
+                <h4 style="margin: 0;">#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
+              </div>
+              <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
+              
+              ${enderecoHTML}
+              
+              <p style="font-size: 0.8rem; color: var(--cor-secundaria); margin-top: 8px; display: flex; align-items: center; gap: 5px;">
+                <i class="fa-solid fa-user-check"></i> Impresso por: <strong>${nomeFuncionario}</strong>
+              </p>
+            </div>
+            <div class="acoes">
+              <span class="badge-impresso">✔ Impresso</span>
+              <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
           </div>
-          <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
-          
-          ${enderecoHTML}
-          
-          <p style="font-size: 0.8rem; color: var(--cor-secundaria); margin-top: 8px; display: flex; align-items: center; gap: 5px;">
-            <i class="fa-solid fa-user-check"></i> Impresso por: <strong>${nomeFuncionario}</strong>
-          </p>
-        </div>
-        <div class="acoes">
-          <span class="badge-impresso">✔ Impresso</span>
-          <button class="btn-lixeira" onclick="apagarHistorico('${p.id}')" title="Apagar este registro">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-      </div>
-    `;
-  });
+        `;
+      });
   }
   renderizarPaginacao('historico', paginaAtualHistorico, totalPaginasHistorico);
 }
@@ -427,6 +423,16 @@ async function gerarGraficos() {
   const { data: arquivados } = await supabaseClient.from('pedidos_arquivados').select('*');
   
   const todosPedidos = [...(recentes || []), ...(arquivados || [])];
+
+  // ========================================================
+  // NOVO: CÁLCULO DO FATURAMENTO TOTAL
+  // ========================================================
+  const faturamentoTotal = todosPedidos.reduce((acc, p) => acc + Number(p.total), 0);
+  const faturamentoEl = document.getElementById('faturamento-total-valor');
+  if (faturamentoEl) {
+      faturamentoEl.textContent = `R$ ${faturamentoTotal.toFixed(2).replace('.', ',')}`;
+  }
+  // ========================================================
 
   if (todosPedidos.length === 0) {
     document.getElementById('piechart').innerHTML = '<div class="vazio" style="padding-top:100px;">Sem dados.</div>';
@@ -579,10 +585,7 @@ async function apagarFuncionario(id, login) {
 async function carregarProdutosParaManual() {
     if (!document.getElementById('manual-lanche')) return; 
 
-    // Puxa os produtos
     const { data: produtos } = await supabaseClient.from('produtos').select('*').eq('ativo', true).order('nome');
-    
-    // Puxa os adicionais
     const { data: adicionais } = await supabaseClient.from('adicionais').select('*').eq('ativo', true).order('nome');
     if (adicionais) listaAdicionaisGlobal = adicionais;
 
@@ -609,7 +612,6 @@ function fecharModalPedidoManual() {
   document.getElementById('modal-pedido-manual').classList.remove('ativo');
 }
 
-// Agora o clique em "Adicionar" abre o modal de adicionais
 function adicionarItemManual() {
   const select = document.getElementById('manual-lanche');
   if (!select || !select.value) return;
@@ -750,7 +752,7 @@ async function enviarPedidoManual() {
 
   const novoPedido = {
     cliente_nome: nomeFinal,
-    cliente_telefone: 'Pedido da mesa',
+    cliente_telefone: 'Pedido da Mesa',
     cliente_endereco: null,
     itens: carrinhoManual,
     total: total
