@@ -4,50 +4,37 @@ const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let carrinho = [];
-let listaAdicionaisGlobal = []; // Armazena os adicionais do banco
-let itemAtualSelecionado = null; // Item que está aberto no modal
+let listaAdicionaisGlobal = [];
+let itemAtualSelecionado = null;
+let pedidoPendente = null;
+let metodoPagamento = "";
 
 /* ===================== NAVEGAÇÃO DE CATEGORIAS ===================== */
 function mudarCategoria(categoria) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('ativo'));
     document.querySelectorAll('.categoria-conteudo').forEach(conteudo => conteudo.classList.remove('ativo'));
-
     const botaoClicado = document.querySelector(`.tab-btn[onclick="mudarCategoria('${categoria}')"]`);
     if (botaoClicado) botaoClicado.classList.add('ativo');
-    
     const conteudoAlvo = document.getElementById(`cat-${categoria}`);
     if (conteudoAlvo) conteudoAlvo.classList.add('ativo');
 }
 
 /* ===================== CARREGAR PRODUTOS E ADICIONAIS ===================== */
 document.addEventListener('DOMContentLoaded', async () => {
-    await carregarAdicionais(); // Carrega os adicionais primeiro
+    await carregarAdicionais();
     await carregarProdutos();
     configurarMascaraTelefone();
-    configurarBuscaCEP(); // Inicia a busca de CEP
+    configurarMascaraCPF();
+    configurarBuscaCEP();
 });
 
 async function carregarAdicionais() {
-    const { data, error } = await supabaseClient
-        .from('adicionais')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome', { ascending: true });
-
-    if (error) {
-        console.error('Erro ao carregar adicionais:', error);
-        return;
-    }
-    listaAdicionaisGlobal = data;
+    const { data, error } = await supabaseClient.from('adicionais').select('*').eq('ativo', true).order('nome', { ascending: true });
+    if (!error) listaAdicionaisGlobal = data;
 }
 
 async function carregarProdutos() {
-    const { data, error } = await supabaseClient
-        .from('produtos')
-        .select('*')
-        .eq('ativo', true)
-        .order('nome', { ascending: true });
-
+    const { data, error } = await supabaseClient.from('produtos').select('*').eq('ativo', true).order('nome', { ascending: true });
     if (error) return;
 
     const catLanches = document.getElementById('cat-lanches');
@@ -61,20 +48,11 @@ async function carregarProdutos() {
     data.forEach(produto => {
         const precoFormatado = Number(produto.preco).toFixed(2).replace('.', ',');
         let descricaoTratada = produto.descricao ? produto.descricao.replace(/\\n/g, '\n') : '';
-        const listaDescricao = descricaoTratada
-            ? descricaoTratada.split('\n').filter(linha => linha.trim() !== '').map(item => `<li><i class="fa-solid fa-check"></i> ${item}</li>`).join('') 
-            : '';
-
+        const listaDescricao = descricaoTratada ? descricaoTratada.split('\n').filter(l => l.trim() !== '').map(item => `<li><i class="fa-solid fa-check"></i> ${item}</li>`).join('') : '';
         const classeCard = produto.destaque ? 'card-premium' : 'card';
         const icone = produto.destaque ? '<i class="fa-solid fa-crown"></i>' : '<i class="fa-solid fa-star"></i>';
-        const imagemHTML = produto.imagem_url 
-            ? `<img src="${produto.imagem_url}" alt="${produto.nome}" class="card-imagem" loading="lazy">`
-            : `<div class="imagem-placeholder"><i class="fa-solid fa-image"></i></div>`;
-
-        // Lógica: Se for lanche, abre o modal. Se não, adiciona direto.
-        const funcaoClique = produto.categoria === 'lanches' 
-            ? `abrirModalItem('${produto.id}')` 
-            : `adicionarAoCarrinhoDireto('${produto.nome}', ${produto.preco})`;
+        const imagemHTML = produto.imagem_url ? `<img src="${produto.imagem_url}" alt="${produto.nome}" class="card-imagem" loading="lazy">` : `<div class="imagem-placeholder"><i class="fa-solid fa-image"></i></div>`;
+        const funcaoClique = produto.categoria === 'lanches' ? `abrirModalItem('${produto.id}')` : `adicionarAoCarrinhoDireto('${produto.nome}', ${produto.preco})`;
 
         const cardHTML = `
             <div class="${classeCard}">
@@ -97,12 +75,11 @@ function abrirModalItem(id) {
     supabaseClient.from('produtos').select('*').eq('id', id).single().then(({data}) => {
         itemAtualSelecionado = data;
         document.getElementById('item-nome-titulo').textContent = data.nome;
-        
         const listaModal = document.getElementById('lista-adicionais-modal');
         listaModal.innerHTML = '';
 
         if(listaAdicionaisGlobal.length === 0) {
-            listaModal.innerHTML = '<p style="color:#999">Nenhum adicional disponível no momento.</p>';
+            listaModal.innerHTML = '<p style="color:#999">Nenhum adicional disponível.</p>';
         } else {
             listaAdicionaisGlobal.forEach(ad => {
                 listaModal.innerHTML += `
@@ -116,7 +93,6 @@ function abrirModalItem(id) {
                 `;
             });
         }
-
         calcularTotalModal(); 
         document.getElementById('modal-item').classList.add('ativo');
     });
@@ -129,20 +105,13 @@ function fecharModalItem() {
 
 function calcularTotalModal() {
     if (!itemAtualSelecionado) return;
-    
     let total = Number(itemAtualSelecionado.preco);
-    const checkboxes = document.querySelectorAll('.check-adicional:checked');
-    
-    checkboxes.forEach(cb => {
-        total += Number(cb.getAttribute('data-preco'));
-    });
-
+    document.querySelectorAll('.check-adicional:checked').forEach(cb => total += Number(cb.getAttribute('data-preco')));
     document.getElementById('total-item-valor').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
 }
 
 function confirmarAdicaoAoCarrinho() {
     if (!itemAtualSelecionado) return;
-
     const checkboxes = document.querySelectorAll('.check-adicional:checked');
     const adicionaisEscolhidos = [];
     let precoFinal = Number(itemAtualSelecionado.preco);
@@ -155,25 +124,13 @@ function confirmarAdicaoAoCarrinho() {
     });
 
     let nomeExibicao = itemAtualSelecionado.nome;
-    if (adicionaisEscolhidos.length > 0) {
-        nomeExibicao += ` (+ ${adicionaisEscolhidos.map(a => a.nome).join(', ')})`;
-    }
+    if (adicionaisEscolhidos.length > 0) nomeExibicao += ` (+ ${adicionaisEscolhidos.map(a => a.nome).join(', ')})`;
 
-    const novoItem = {
-        nome: nomeExibicao,
-        nomeBase: itemAtualSelecionado.nome,
-        preco: precoFinal,
-        adicionais: adicionaisEscolhidos,
-        qtd: 1
-    };
-
+    const novoItem = { nome: nomeExibicao, nomeBase: itemAtualSelecionado.nome, preco: precoFinal, adicionais: adicionaisEscolhidos, qtd: 1 };
     const itemExistenteIndex = carrinho.findIndex(i => i.nome === novoItem.nome);
     
-    if (itemExistenteIndex > -1) {
-        carrinho[itemExistenteIndex].qtd += 1;
-    } else {
-        carrinho.push(novoItem);
-    }
+    if (itemExistenteIndex > -1) carrinho[itemExistenteIndex].qtd += 1;
+    else carrinho.push(novoItem);
 
     atualizarCarrinhoUI();
     fecharModalItem();
@@ -183,13 +140,8 @@ function confirmarAdicaoAoCarrinho() {
 /* ===================== LÓGICA DO CARRINHO ===================== */
 function adicionarAoCarrinhoDireto(nome, preco) {
     const itemExistente = carrinho.find(i => i.nome === nome);
-    
-    if (itemExistente) {
-        itemExistente.qtd += 1;
-    } else {
-        carrinho.push({ nome, preco, adicionais: [], qtd: 1 });
-    }
-    
+    if (itemExistente) itemExistente.qtd += 1;
+    else carrinho.push({ nome, preco, adicionais: [], qtd: 1 });
     atualizarCarrinhoUI();
     animarBotaoCarrinho();
 }
@@ -198,29 +150,19 @@ function animarBotaoCarrinho() {
     const btn = document.getElementById('btn-carrinho');
     btn.style.transform = 'scale(1.2)';
     btn.style.backgroundColor = '#ffe066';
-    setTimeout(() => {
-        btn.style.transform = 'scale(1)';
-        btn.style.backgroundColor = 'var(--cor-secundaria)';
-    }, 300);
+    setTimeout(() => { btn.style.transform = 'scale(1)'; btn.style.backgroundColor = 'var(--cor-secundaria)'; }, 300);
 }
 
 function abrirCarrinho() {
-    if (carrinho.length === 0) {
-        alert("Seu carrinho está vazio! Escolha um lanche primeiro.");
-        return;
-    }
+    if (carrinho.length === 0) return alert("Seu carrinho está vazio!");
     document.getElementById('modal-carrinho').classList.add('ativo');
 }
 
-function fecharCarrinho() {
-    document.getElementById('modal-carrinho').classList.remove('ativo');
-}
+function fecharCarrinho() { document.getElementById('modal-carrinho').classList.remove('ativo'); }
 
 function alterarQtd(index, mudanca) {
     carrinho[index].qtd += mudanca;
-    if (carrinho[index].qtd <= 0) {
-        carrinho.splice(index, 1); 
-    }
+    if (carrinho[index].qtd <= 0) carrinho.splice(index, 1); 
     atualizarCarrinhoUI();
 }
 
@@ -230,18 +172,12 @@ function atualizarCarrinhoUI() {
     const totalEl = document.getElementById('total-carrinho-valor');
     
     lista.innerHTML = '';
-    let totalGeral = 0;
-    let totalItens = 0;
+    let totalGeral = 0, totalItens = 0;
 
     carrinho.forEach((item, index) => {
         totalGeral += item.preco * item.qtd;
         totalItens += item.qtd;
-
-        let adicionaisHTML = '';
-        if (item.adicionais && item.adicionais.length > 0) {
-            const nomes = item.adicionais.map(a => a.nome).join(', ');
-            adicionaisHTML = `<span class="item-adicionais-carrinho">Adicionais: ${nomes}</span>`;
-        }
+        let adicionaisHTML = item.adicionais && item.adicionais.length > 0 ? `<span class="item-adicionais-carrinho">Adicionais: ${item.adicionais.map(a => a.nome).join(', ')}</span>` : '';
 
         lista.innerHTML += `
             <div class="item-carrinho">
@@ -260,73 +196,132 @@ function atualizarCarrinhoUI() {
     });
 
     totalEl.textContent = `R$ ${totalGeral.toFixed(2).replace('.', ',')}`;
-    
-    if (totalItens > 0) {
-        badge.textContent = totalItens;
-        badge.classList.remove('escondido');
-    } else {
-        badge.classList.add('escondido');
-        fecharCarrinho(); 
-    }
+    if (totalItens > 0) { badge.textContent = totalItens; badge.classList.remove('escondido'); } 
+    else { badge.classList.add('escondido'); fecharCarrinho(); }
 }
 
-/* ===================== MÁSCARA E ENVIO ===================== */
+/* ===================== MÁSCARAS E BUSCA ===================== */
 function configurarMascaraTelefone() {
     const telInput = document.getElementById('tel-cliente');
     if(telInput) {
         telInput.addEventListener('input', function (e) {
             let valor = e.target.value.replace(/\D/g, '');
             if (valor.length > 11) valor = valor.slice(0, 11);
-            if (valor.length > 10) {
-                e.target.value = valor.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
-            } else if (valor.length > 6) {
-                e.target.value = valor.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
-            } else if (valor.length > 2) {
-                e.target.value = valor.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
-            } else if (valor.length > 0) {
-                e.target.value = valor.replace(/^(\d*)/, '($1');
-            } else {
-                e.target.value = '';
-            }
+            if (valor.length > 10) e.target.value = valor.replace(/^(\d{2})(\d{5})(\d{4}).*/, '($1) $2-$3');
+            else if (valor.length > 6) e.target.value = valor.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+            else if (valor.length > 2) e.target.value = valor.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+            else if (valor.length > 0) e.target.value = valor.replace(/^(\d*)/, '($1');
+            else e.target.value = '';
         });
     }
 }
 
-let pedidoPendente = null; // Guarda os dados temporariamente
-let metodoPagamento = ""; // Guarda a escolha do usuário
+function configurarMascaraCPF() {
+    const cpfInput = document.getElementById('cpf-cliente');
+    if(cpfInput) {
+        cpfInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/\D/g, '');
+            if (val.length > 11) val = val.slice(0, 11);
+            val = val.replace(/(\d{3})(\d)/, '$1.$2');
+            val = val.replace(/(\d{3})(\d)/, '$1.$2');
+            val = val.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            e.target.value = val;
+        });
+    }
+}
 
+function configurarBuscaCEP() {
+    const cepInput = document.getElementById('cep-cliente');
+    let ultimoCepBuscado = ""; 
+    if (cepInput) {
+        cepInput.addEventListener('blur', async (e) => {
+            let cep = e.target.value.replace(/\D/g, '');
+            if (cep.length === 0) {
+                document.getElementById('rua-cliente').value = '';
+                document.getElementById('bairro-cliente').value = '';
+                document.getElementById('cidade-cliente').value = '';
+                ultimoCepBuscado = "";
+                return;
+            }
+            if (cep.length === 8 && cep !== ultimoCepBuscado) {
+                ultimoCepBuscado = cep; 
+                try {
+                    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                    const data = await res.json();
+                    if (!data.erro) {
+                        document.getElementById('rua-cliente').value = data.logradouro;
+                        document.getElementById('bairro-cliente').value = data.bairro;
+                        document.getElementById('cidade-cliente').value = `${data.localidade} - ${data.uf}`;
+                        document.getElementById('num-cliente').focus();
+                    } else alert("CEP não encontrado.");
+                } catch (err) { console.error("Erro ao buscar CEP", err); }
+            }
+        });
+        cepInput.addEventListener('input', function(e) {
+            let val = e.target.value.replace(/\D/g, '');
+            if (val.length > 5) val = val.replace(/^(\d{5})(\d)/, '$1-$2');
+            e.target.value = val;
+            ultimoCepBuscado = "";
+        });
+    }
+}
+
+async function buscarEnderecoPorRua() {
+    const ruaInput = document.getElementById('rua-cliente');
+    const btnBusca = document.getElementById('btn-buscar-rua');
+    const rua = ruaInput.value.trim();
+    if (rua.length < 3) return alert("Digite pelo menos 3 letras da rua.");
+    
+    const iconeOriginal = btnBusca.innerHTML;
+    btnBusca.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    btnBusca.disabled = true;
+
+    try {
+        const res = await fetch(`https://viacep.com.br/ws/SP/Cruzeiro/${encodeURIComponent(rua)}/json/`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+            document.getElementById('cep-cliente').value = data[0].cep;
+            document.getElementById('rua-cliente').value = data[0].logradouro; 
+            document.getElementById('bairro-cliente').value = data[0].bairro;
+            document.getElementById('cidade-cliente').value = `${data[0].localidade} - ${data[0].uf}`;
+            document.getElementById('num-cliente').focus();
+        } else alert("Rua não encontrada em Cruzeiro - SP.");
+    } catch (err) { alert("Erro na busca. Digite o CEP."); } 
+    finally { btnBusca.innerHTML = iconeOriginal; btnBusca.disabled = false; }
+}
+
+/* ===================== ENVIO DE PEDIDO E PAGAMENTO ===================== */
 async function enviarPedido() {
     const nome = document.getElementById('nome-cliente').value.trim();
     const telefone = document.getElementById('tel-cliente').value.trim();
+    const cpf = document.getElementById('cpf-cliente').value.replace(/\D/g, '');
     const cep = document.getElementById('cep-cliente').value.trim();
     const rua = document.getElementById('rua-cliente').value.trim();
     const num = document.getElementById('num-cliente').value.trim();
     const bairro = document.getElementById('bairro-cliente').value.trim();
     const cidade = document.getElementById('cidade-cliente').value.trim();
 
-    if (nome.length < 3) { alert("Por favor, preencha seu nome completo."); return; }
-    if (cep && !num) { alert("Por favor, digite o número da sua casa."); return; }
+    if (nome.length < 3) return alert("Preencha seu nome completo.");
+    if (cep && !num) return alert("Digite o número da sua casa.");
 
     const total = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
     const itensFormatados = carrinho.map(item => ({ nome: item.nome, preco: item.preco, qtd: item.qtd }));
-    let enderecoCompleto = '';
-    if (rua && num) enderecoCompleto = `${rua}, ${num} - ${bairro}, ${cidade}`;
+    let enderecoCompleto = (rua && num) ? `${rua}, ${num} - ${bairro}, ${cidade}` : null;
 
     pedidoPendente = {
         cliente_nome: nome,
         cliente_telefone: telefone,
-        cliente_endereco: enderecoCompleto || null,
+        cliente_cpf: cpf || null,
+        cliente_endereco: enderecoCompleto,
         itens: itensFormatados,
         total: total,
-        pagamento: '' // Será preenchido agora
+        pagamento: ''
     };
 
-    // Se for entrega (tem rua), abre o modal de pagamento
     if (enderecoCompleto) {
         document.getElementById('modal-carrinho').classList.remove('ativo');
         document.getElementById('modal-pagamento').classList.add('ativo');
     } else {
-        // Se for retirada/mesa, envia direto
         pedidoPendente.pagamento = 'Retirada no Balcão (Pagar no local)';
         processarEnvioBanco(pedidoPendente);
     }
@@ -334,28 +329,14 @@ async function enviarPedido() {
 
 function fecharModalPagamento() {
     document.getElementById('modal-pagamento').classList.remove('ativo');
-    document.getElementById('modal-carrinho').classList.add('ativo'); // Volta pro carrinho
+    document.getElementById('modal-carrinho').classList.add('ativo');
 }
 
 function selecionarOpcaoPagamento(opcao, elementoBotao) {
-    if (opcao === 'antecipado') {
-        alert("Pagamento Antecipado (Em construção).\nPor favor, escolha pagar na entrega.");
-        return;
-    }
-
     metodoPagamento = opcao;
+    document.querySelectorAll('.btn-pgto-entrega').forEach(btn => btn.classList.remove('ativo'));
+    if (elementoBotao) elementoBotao.classList.add('ativo');
 
-    // Remove a classe 'ativo' de todos os botões de pagamento
-    document.querySelectorAll('.btn-pgto-entrega').forEach(btn => {
-        btn.classList.remove('ativo');
-    });
-
-    // Adiciona a classe 'ativo' apenas no botão que foi clicado
-    if (elementoBotao) {
-        elementoBotao.classList.add('ativo');
-    }
-
-    // Mostra ou esconde o campo de troco
     if (opcao === 'dinheiro') {
         document.getElementById('container-troco').style.display = 'block';
         document.getElementById('input-troco').focus();
@@ -365,176 +346,170 @@ function selecionarOpcaoPagamento(opcao, elementoBotao) {
 }
 
 async function confirmarPagamento() {
-    if (!metodoPagamento) {
-        alert("Por favor, selecione uma forma de pagamento.");
-        return;
-    }
+    if (!metodoPagamento) return alert("Selecione uma forma de pagamento.");
 
-    let infoPagamento = "";
-    if (metodoPagamento === 'dinheiro') {
-        const troco = document.getElementById('input-troco').value;
-        if (!troco) {
-            alert("Por favor, informe para quanto precisa de troco.");
-            return;
-        }
-        infoPagamento = `Pagar na Entrega (Dinheiro) - Troco para R$ ${Number(troco).toFixed(2).replace('.', ',')}`;
-    } else if (metodoPagamento === 'cartao-debito') {
-        infoPagamento = "Pagar na Entrega (Cartão de Débito) - Levar Máquina";
-    } else if (metodoPagamento === 'cartao-credito') {
-        infoPagamento = "Pagar na Entrega (Cartão de Crédito) - Levar Máquina";
-    } else if (metodoPagamento === 'pix') {
-        infoPagamento = "Pagar na Entrega (PIX) - Enviar Chave";
-    }
-
-    pedidoPendente.pagamento = infoPagamento;
-    
     const btn = document.querySelector('#modal-pagamento .btn-enviar');
     btn.disabled = true;
-    btn.innerHTML = 'Enviando...';
+    btn.innerHTML = 'Processando...';
 
-    await processarEnvioBanco(pedidoPendente);
+    try {
+        if (metodoPagamento === 'dinheiro') {
+            const troco = document.getElementById('input-troco').value;
+            if (!troco) throw new Error("Informe o troco.");
+            pedidoPendente.pagamento = `Pagar na Entrega (Dinheiro) - Troco para R$ ${Number(troco).toFixed(2).replace('.', ',')}`;
+            await processarEnvioBanco(pedidoPendente);
+        } 
+        else if (metodoPagamento.includes('online')) {
+            if (!pedidoPendente.cliente_cpf || pedidoPendente.cliente_cpf.length !== 11) {
+                throw new Error("CPF é obrigatório e deve ter 11 dígitos para pagamento online.");
+            }
 
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar Pedido';
-    document.getElementById('modal-pagamento').classList.remove('ativo');
+            if (metodoPagamento === 'pix-online') {
+                await pagarComPix(pedidoPendente);
+            } else if (metodoPagamento === 'cartao-credito-online' || metodoPagamento === 'cartao-debito-online') {
+                await pagarComCartao(pedidoPendente);
+            }
+        } 
+        else {
+            // Pagamento na entrega (Cartão/PIX)
+            if (metodoPagamento === 'cartao-debito') pedidoPendente.pagamento = "Pagar na Entrega (Cartão de Débito) - Levar Máquina";
+            if (metodoPagamento === 'cartao-credito') pedidoPendente.pagamento = "Pagar na Entrega (Cartão de Crédito) - Levar Máquina";
+            if (metodoPagamento === 'pix') pedidoPendente.pagamento = "Pagar na Entrega (PIX) - Enviar Chave";
+            await processarEnvioBanco(pedidoPendente);
+        }
+    } catch (err) {
+        alert(err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar Pedido';
+    }
 }
 
-async function processarEnvioBanco(pedidoFinal) {
+/* ===================== INTEGRAÇÃO PAGBANK ===================== */
+async function chamarApiPagBank(action, payload) {
+    const response = await fetch('/api/pagbank', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, payload })
+    });
+    return await response.json();
+}
+
+async function pagarComPix(pedido) {
+    const payload = {
+        reference_id: `pedido_${Date.now()}`,
+        customer: {
+            name: pedido.cliente_nome,
+            email: 'cliente@email.com', // PagBank exige email, você pode adicionar um campo se quiser
+            tax_id: pedido.cliente_cpf,
+            phones: [{ country: '55', area: '12', number: pedido.cliente_telefone.replace(/\D/g, '').slice(2), type: 'MOBILE' }]
+        },
+        items: pedido.itens.map(item => ({
+            reference_id: item.nome,
+            name: item.nome,
+            quantity: item.qtd,
+            unit_amount: Math.round(item.preco * 100) // Valor em centavos
+        })),
+        qr_codes: [{ amount: { value: Math.round(pedido.total * 100) } }],
+        notification_urls: [`https://${window.location.hostname}/api/webhook-pagbank`]
+    };
+
+    const result = await chamarApiPagBank('criar_pedido_pix', payload);
+    
+    if (result.qr_codes && result.qr_codes.length > 0) {
+        const qrCodeText = result.qr_codes[0].text;
+        
+        // Salva o pedido no banco com status pendente
+        pedido.pagamento = "Pagamento Antecipado (PIX) - Aguardando Pagamento";
+        pedido.pagbank_id = result.id;
+        await processarEnvioBanco(pedido, false); // false = não limpa a tela ainda
+
+        // Exibe o Modal do QR Code
+        document.getElementById('modal-pagamento').classList.remove('ativo');
+        document.getElementById('modal-pix').classList.add('ativo');
+        
+        // Gera o QR Code visual
+        document.getElementById('qrcode-container').innerHTML = '';
+        new QRCode(document.getElementById('qrcode-container'), {
+            text: qrCodeText,
+            width: 200,
+            height: 200
+        });
+        
+        document.getElementById('pix-copia-cola').value = qrCodeText;
+    } else {
+        throw new Error("Erro ao gerar PIX no PagBank.");
+    }
+}
+
+async function pagarComCartao(pedido) {
+    const payload = {
+        reference_id: `pedido_${Date.now()}`,
+        customer: {
+            name: pedido.cliente_nome,
+            email: 'cliente@email.com',
+            tax_id: pedido.cliente_cpf
+        },
+        items: pedido.itens.map(item => ({
+            reference_id: item.nome,
+            name: item.nome,
+            quantity: item.qtd,
+            unit_amount: Math.round(item.preco * 100)
+        })),
+        redirect_url: `https://${window.location.hostname}/index.html?status=sucesso`,
+        notification_urls: [`https://${window.location.hostname}/api/webhook-pagbank`]
+    };
+
+    const result = await chamarApiPagBank('criar_checkout_cartao', payload);
+    
+    if (result.links && result.links.length > 0) {
+        const linkPagamento = result.links.find(l => l.rel === 'PAY').href;
+        
+        // Salva o pedido no banco antes de sair
+        pedido.pagamento = `Pagamento Antecipado (${metodoPagamento === 'cartao-credito-online' ? 'Crédito' : 'Débito'}) - Redirecionado`;
+        pedido.pagbank_id = result.id;
+        await processarEnvioBanco(pedido, false);
+
+        window.location.href = linkPagamento; // Redireciona para o PagBank
+    } else {
+        throw new Error("Erro ao gerar link de pagamento no PagBank.");
+    }
+}
+
+function copiarPix() {
+    const textarea = document.getElementById('pix-copia-cola');
+    textarea.select();
+    document.execCommand('copy');
+    alert("Código PIX copiado!");
+}
+
+/* ===================== SALVAR NO BANCO ===================== */
+async function processarEnvioBanco(pedidoFinal, limparTela = true) {
     try {
         const { error } = await supabaseClient.from('pedidos_recentes').insert([pedidoFinal]);
         if (error) throw error;
 
-        alert("Pedido enviado com sucesso! Aguarde a impressão na cozinha.");
-        
-        carrinho = [];
-        atualizarCarrinhoUI();
-        
-        // Limpa os campos
-        document.getElementById('nome-cliente').value = '';
-        document.getElementById('tel-cliente').value = '';
-        document.getElementById('cep-cliente').value = '';
-        document.getElementById('num-cliente').value = '';
-        document.getElementById('rua-cliente').value = '';
-        document.getElementById('bairro-cliente').value = '';
-        document.getElementById('cidade-cliente').value = '';
-        document.getElementById('input-troco').value = '';
-        metodoPagamento = "";
-        
-        fecharCarrinho();
-
+        if (limparTela) {
+            alert("Pedido enviado com sucesso!");
+            carrinho = [];
+            atualizarCarrinhoUI();
+            
+            // Limpa os campos
+            document.getElementById('nome-cliente').value = '';
+            document.getElementById('tel-cliente').value = '';
+            document.getElementById('cpf-cliente').value = '';
+            document.getElementById('cep-cliente').value = '';
+            document.getElementById('num-cliente').value = '';
+            document.getElementById('rua-cliente').value = '';
+            document.getElementById('bairro-cliente').value = '';
+            document.getElementById('cidade-cliente').value = '';
+            document.getElementById('input-troco').value = '';
+            metodoPagamento = "";
+            fecharCarrinho();
+            document.getElementById('modal-pagamento').classList.remove('ativo');
+        }
     } catch (err) {
         console.error(err);
-        alert("Erro ao enviar o pedido. Tente novamente.");
-    }
-}
-
-/* ===================== BUSCA DE CEP (ViaCEP) ===================== */
-function configurarBuscaCEP() {
-    const cepInput = document.getElementById('cep-cliente');
-    
-    // Variável para evitar o loop de alertas
-    let ultimoCepBuscado = ""; 
-
-    if (cepInput) {
-        cepInput.addEventListener('blur', async (e) => {
-            let cep = e.target.value.replace(/\D/g, '');
-            
-            // Se o usuário apagou o CEP, limpa os campos
-            if (cep.length === 0) {
-                document.getElementById('rua-cliente').value = '';
-                document.getElementById('bairro-cliente').value = '';
-                document.getElementById('cidade-cliente').value = '';
-                ultimoCepBuscado = "";
-                return;
-            }
-
-            // Só busca se tiver 8 dígitos E se for um CEP diferente do último que ele tentou
-            if (cep.length === 8 && cep !== ultimoCepBuscado) {
-                ultimoCepBuscado = cep; // Marca como buscado para não repetir o alerta
-                
-                try {
-                    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-                    const data = await res.json();
-                    
-                    if (!data.erro) {
-                        document.getElementById('rua-cliente').value = data.logradouro;
-                        document.getElementById('bairro-cliente').value = data.bairro;
-                        document.getElementById('cidade-cliente').value = `${data.localidade} - ${data.uf}`;
-                        document.getElementById('num-cliente').focus();
-                    } else {
-                        alert("CEP não encontrado. Digite o endereço manualmente.");
-                        // Não resetamos a variável aqui! Isso evita que o alerta abra de novo se ele apenas clicar em OK.
-                    }
-                } catch (err) {
-                    console.error("Erro ao buscar CEP", err);
-                }
-            }
-        });
-
-        // Máscara do CEP (00000-000)
-        cepInput.addEventListener('input', function(e) {
-            let val = e.target.value.replace(/\D/g, '');
-            if (val.length > 5) val = val.replace(/^(\d{5})(\d)/, '$1-$2');
-            e.target.value = val;
-            
-            // Se o usuário digitar algo novo, liberamos a busca novamente
-            ultimoCepBuscado = "";
-        });
-    }
-}
-
-/* ===================== BUSCA DE CEP PELA RUA (REVERSO) ===================== */
-async function buscarEnderecoPorRua() {
-    const ruaInput = document.getElementById('rua-cliente');
-    const btnBusca = document.getElementById('btn-buscar-rua');
-    const rua = ruaInput.value.trim();
-
-    if (rua.length < 3) {
-        alert("Digite pelo menos 3 letras do nome da rua para buscar.");
-        ruaInput.focus();
-        return;
-    }
-
-    // Salva o ícone original e coloca o spinner
-    const iconeOriginal = btnBusca.innerHTML;
-    btnBusca.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-    btnBusca.disabled = true; // Evita cliques duplos
-
-    try {
-        // A URL exige (Estado/Cidade/Rua)
-        const url = `https://viacep.com.br/ws/SP/Cruzeiro/${encodeURIComponent(rua)}/json/`;
-        
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-            throw new Error("Erro na resposta da API");
-        }
-
-        const data = await res.json();
-
-        if (data && data.length > 0) {
-            // Pega o primeiro resultado da lista
-            const resultado = data[0];
-            
-            // Preenche os campos
-            document.getElementById('cep-cliente').value = resultado.cep;
-            // As vezes a API retorna nomes ligeiramente diferentes, usamos o oficial
-            document.getElementById('rua-cliente').value = resultado.logradouro; 
-            document.getElementById('bairro-cliente').value = resultado.bairro;
-            document.getElementById('cidade-cliente').value = `${resultado.localidade} - ${resultado.uf}`;
-            
-            // Foca no número para o cliente terminar
-            document.getElementById('num-cliente').focus();
-        } else {
-            alert("Não encontramos essa rua em Cruzeiro - SP.\nPor favor, digite o CEP ou preencha o endereço manualmente.");
-        }
-    } catch (err) {
-        console.error("Erro na busca por rua:", err);
-        alert("Não foi possível buscar o CEP agora. Verifique sua internet ou digite o CEP manualmente.");
-    } finally {
-        // O bloco finally SEMPRE roda, com erro ou sucesso.
-        // Isso garante que o botão não fique travado no spinner.
-        btnBusca.innerHTML = iconeOriginal;
-        btnBusca.disabled = false;
+        alert("Erro ao enviar o pedido: " + err.message);
     }
 }

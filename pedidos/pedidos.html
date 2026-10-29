@@ -5,18 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faça seu Pedido - Na Brasas</title>
     
-    <!-- Caminhos corrigidos com ../ -->
     <link rel="stylesheet" href="../estilos/style.css">
     <link rel="stylesheet" href="../estilos/stylepedido.css">
-    
-    <!-- Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Biblioteca para gerar o QR Code do PIX -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
     <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
-<!-- ===================== CABEÇALHO ===================== -->
 <header id="cabecalho">
     <h1>
         <span class="spann">N</span>
@@ -27,41 +26,31 @@
     </h1>
     <nav>
         <ul>
-            <!-- Caminho corrigido com ../ para voltar à raiz -->
             <li><a href="../index.html"><i class="fa-solid fa-arrow-left"></i> Voltar ao Início</a></li>
         </ul>
     </nav>
 </header>
 
-<!-- ===================== SEÇÃO DE PEDIDOS ===================== -->
 <section id="planos" class="secao">
     <h2>NOSSOS PRODUTOS</h2>
     
     <div class="menu-tabs">
-        <button class="tab-btn ativo" onclick="mudarCategoria('lanches')">
-            <i class="fa-solid fa-burger"></i> Lanches
-        </button>
-        <button class="tab-btn" onclick="mudarCategoria('bebidas')">
-            <i class="fa-solid fa-glass-water"></i> Bebidas
-        </button>
-        <button class="tab-btn" onclick="mudarCategoria('doces')">
-            <i class="fa-solid fa-ice-cream"></i> Doces e Sobremesas
-        </button>
+        <button class="tab-btn ativo" onclick="mudarCategoria('lanches')"><i class="fa-solid fa-burger"></i> Lanches</button>
+        <button class="tab-btn" onclick="mudarCategoria('bebidas')"><i class="fa-solid fa-glass-water"></i> Bebidas</button>
+        <button class="tab-btn" onclick="mudarCategoria('doces')"><i class="fa-solid fa-ice-cream"></i> Doces e Sobremesas</button>
     </div>
 
-    <!-- Contêineres dos produtos -->
     <div id="cat-lanches" class="categoria-conteudo ativo"></div>
     <div id="cat-bebidas" class="categoria-conteudo"></div>
     <div id="cat-doces" class="categoria-conteudo"></div>
 </section>
 
-<!-- ===================== BOTÃO DO CARRINHO ===================== -->
 <button id="btn-carrinho" onclick="abrirCarrinho()">
     <i class="fa-solid fa-bag-shopping"></i>
     <span id="badge-carrinho" class="escondido">0</span>
 </button>
 
-<!-- ===================== MODAL DO CARRINHO ===================== -->
+<!-- MODAL DO CARRINHO -->
 <div id="modal-carrinho" class="modal-overlay">
     <div class="modal-conteudo">
         <div class="modal-header">
@@ -77,10 +66,11 @@
                 <strong id="total-carrinho-valor">R$ 0,00</strong>
             </div>
             
-            <!-- FORMULÁRIO ATUALIZADO COM ENDEREÇO -->
             <div class="form-cliente">
                 <input type="text" id="nome-cliente" placeholder="Seu Nome (Obrigatório)" required>
                 <input type="tel" id="tel-cliente" placeholder="Seu WhatsApp (Opcional)" maxlength="15" inputmode="numeric">
+                <!-- NOVO CAMPO DE CPF -->
+                <input type="text" id="cpf-cliente" placeholder="Seu CPF (Obrigatório para Pagamento Online)" maxlength="14" inputmode="numeric">
                 
                 <div style="display: flex; gap: 10px;">
                     <input type="text" id="cep-cliente" placeholder="CEP" maxlength="9" inputmode="numeric" style="flex: 1;">
@@ -104,7 +94,7 @@
     </div>
 </div>
 
-<!-- ===================== MODAL DE ADICIONAIS ===================== -->
+<!-- MODAL DE ADICIONAIS -->
 <div id="modal-item" class="modal-overlay">
     <div class="modal-conteudo">
         <div class="modal-header">
@@ -112,13 +102,9 @@
             <button class="fechar-modal" onclick="fecharModalItem()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         
-        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">
-            Escolha seus adicionais (Opcional):
-        </p>
+        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">Escolha seus adicionais (Opcional):</p>
 
-        <div id="lista-adicionais-modal" class="lista-adicionais">
-            <!-- Os adicionais vão aparecer aqui via JS -->
-        </div>
+        <div id="lista-adicionais-modal" class="lista-adicionais"></div>
 
         <div class="modal-footer">
             <div class="total-carrinho">
@@ -141,13 +127,16 @@
             <button class="fechar-modal" onclick="fecharModalPagamento()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         
-        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">Como você deseja pagar este pedido de entrega?</p>
+        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">Como você deseja pagar?</p>
 
         <div class="opcoes-pagamento">
-            <button class="btn-opcao-pgto" onclick="selecionarOpcaoPagamento('antecipado')">
-                <i class="fa-solid fa-credit-card"></i> Pagar com Antecedência
-            </button>
-            
+            <p style="color: #fff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">Pagar com Antecedência (Online):</p>
+            <div class="grid-pgto-entrega" style="margin-bottom: 15px;">
+                <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('pix-online', this)"><i class="fa-brands fa-pix"></i> PIX</button>
+                <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('cartao-credito-online', this)"><i class="fa-solid fa-credit-card"></i> Crédito</button>
+                <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('cartao-debito-online', this)"><i class="fa-solid fa-credit-card"></i> Débito</button>
+            </div>
+
             <div style="margin: 15px 0; border-top: 1px solid #333;"></div>
             
             <p style="color: #999; font-size: 0.85rem; margin-bottom: 10px;">Pagar na Entrega:</p>
@@ -159,7 +148,6 @@
             </div>
         </div>
 
-        <!-- Campo do Troco (aparece apenas se for dinheiro) -->
         <div id="container-troco" style="display: none; margin-top: 15px; background: var(--cor-primaria); padding: 15px; border-radius: 8px;">
             <label style="color: #fff; font-size: 0.9rem; display: block; margin-bottom: 8px;">Troco para quanto?</label>
             <input type="number" id="input-troco" placeholder="Ex: 50" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #333; background: #000; color: #fff; font-size: 1rem;">
@@ -173,7 +161,26 @@
     </div>
 </div>
 
-<!-- ===================== SCRIPTS ===================== -->
+<!-- MODAL DO PIX (Para exibir o QR Code) -->
+<div id="modal-pix" class="modal-overlay">
+    <div class="modal-conteudo" style="text-align: center;">
+        <div class="modal-header">
+            <h3>Pague com PIX</h3>
+        </div>
+        <p style="color: #ccc; margin-bottom: 20px;">Escaneie o QR Code abaixo no aplicativo do seu banco:</p>
+        
+        <div id="qrcode-container" style="background: white; padding: 15px; border-radius: 8px; display: inline-block; margin-bottom: 20px;"></div>
+        
+        <p style="font-size: 0.85rem; color: #999; margin-bottom: 10px;">Ou copie o código abaixo:</p>
+        <textarea id="pix-copia-cola" readonly style="width: 100%; height: 60px; background: #000; color: #fff; border: 1px solid #333; border-radius: 6px; padding: 10px; font-size: 0.8rem; resize: none; margin-bottom: 20px;"></textarea>
+        
+        <button class="btn-amarelo btn-enviar" onclick="copiarPix()">
+            <i class="fa-solid fa-copy"></i> Copiar Código PIX
+        </button>
+        <p style="font-size: 0.8rem; color: #666; margin-top: 15px;">Após o pagamento, a cozinha liberará seu pedido automaticamente.</p>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../script/pedidos.js"></script>
 </body>
