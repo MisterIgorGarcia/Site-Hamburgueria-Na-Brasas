@@ -33,12 +33,10 @@ async function desconectarImpressoraAtual() {
 
 /* ===================== TENTATIVA DE RECONEXÃO BLUETOOTH (ANDROID) ===================== */
 async function tentarReconectarBluetoothSalvo() {
-  // Se estiver usando USB ou já tiver bluetooth conectado, não faz nada
   if (modoImpressao === 'usb' || (impressoraChar && impressoraDevice?.gatt?.connected)) return;
 
   try {
     console.log('Verificando dispositivos Bluetooth salvos...');
-    // Chama a função principal passando 'false' para não abrir o seletor
     await garantirConexaoBluetooth(false);
     console.log('Bluetooth reconectado automaticamente com sucesso!');
   } catch (err) {
@@ -46,7 +44,6 @@ async function tentarReconectarBluetoothSalvo() {
   }
 }
 
-// Tenta reconectar quando a aba volta a ficar visível (ex: desbloqueou o celular)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     tentarReconectarBluetoothSalvo();
@@ -55,10 +52,8 @@ document.addEventListener('visibilitychange', () => {
 
 /* ===================== RECONEXÃO AUTOMÁTICA USB E INICIALIZAÇÃO ===================== */
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. Tenta reconectar o Bluetooth salvo
   tentarReconectarBluetoothSalvo();
 
-  // 2. Tenta reconectar o USB salvo
   if (!navigator.usb) return;
   try {
     const devices = await navigator.usb.getDevices();
@@ -102,7 +97,6 @@ if (btnConectarUSB) {
       const device = await navigator.usb.requestDevice({ filters: [] });
       await configurarConexaoUSB(device);
     } catch (err) {
-      // IGNORA O ERRO SE O USUÁRIO CANCELAR A JANELA
       if (err.name === 'NotFoundError' || err.message.includes('cancel')) {
         console.log('Usuário cancelou a conexão USB.');
       } else {
@@ -169,7 +163,6 @@ if (btnConectar) {
       
       await garantirConexaoBluetooth(true); 
     } catch (err) {
-      // IGNORA O ERRO SE O USUÁRIO CANCELAR A JANELA
       if (err.name === 'NotFoundError' || err.message.includes('cancel')) {
         console.log('Usuário cancelou a conexão Bluetooth.');
       } else {
@@ -195,7 +188,6 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
 
   if (!device) {
     if (forcarNovo) {
-      // Se o usuário clicou no botão, abre a janelinha
       device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: [
@@ -205,12 +197,10 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
         ]
       });
     } else {
-      // Se for tentativa automática (getDevices falhou), impede a janelinha e para aqui
       throw new Error('Nenhum dispositivo Bluetooth salvo ou disponível.');
     }
   }
 
-  // Lógica de observação (Watch Advertisements)
   if (device.watchAdvertisements) {
     try {
       await device.watchAdvertisements();
@@ -280,7 +270,6 @@ function atualizarStatusImpressora() {
   let conectado = false;
   let nome = '';
 
-  // Reseta o visual dos botões para o padrão (mantendo os ícones)
   btnBT.classList.remove('btn-admin-perigo');
   btnUSB.classList.remove('btn-admin-perigo');
   txtBT.innerHTML = '<i class="fa-brands fa-bluetooth-b"></i> Bluetooth';
@@ -327,16 +316,13 @@ async function enviarBytesParaImpressora(bytes) {
 /* ===================== IMPRESSÃO E ARQUIVAMENTO ===================== */
 async function imprimirEArquivar(pedido, botao) {
   try {
-    // 1. Verifica se tem impressora conectada
     if (!modoImpressao) {
       throw new Error('Conecte uma impressora (Bluetooth ou USB) primeiro.');
     }
 
-    // 2. Gera o recibo e envia (Essa função já sabe se é USB ou Bluetooth)
     const bytes = gerarRecibo(pedido);
     await enviarBytesParaImpressora(bytes);
 
-    // 3. Descobre quem está logado
     const sessaoSalva = localStorage.getItem('nabrasas_sessao');
     let quemImprimiu = 'Admin';
     if (sessaoSalva) {
@@ -344,7 +330,6 @@ async function imprimirEArquivar(pedido, botao) {
         quemImprimiu = sessao.nome;
     }
 
-    // 4. Arquiva no banco com o nome de quem imprimiu
     const { error: errInsert } = await supabaseClient
       .from('pedidos_arquivados')
       .insert({
@@ -360,7 +345,6 @@ async function imprimirEArquivar(pedido, botao) {
       });
     if (errInsert) throw new Error('Falha ao arquivar: ' + errInsert.message);
 
-    // 5. Remove da fila de recentes
     const { error: errDelete } = await supabaseClient
       .from('pedidos_recentes')
       .delete()
@@ -370,7 +354,6 @@ async function imprimirEArquivar(pedido, botao) {
       console.warn('Pedido ficou duplicado (arquivado + recente):', pedido.id);
     }
 
-    // 6. Remove da tela
     removerPedidoDaTela(pedido.id);
     
   } catch (err) {
@@ -409,6 +392,24 @@ function gerarRecibo(pedido) {
   txt('NA BRASAS\n');
   add(CMD.normal);
   txt('Hamburgueria Artesanal\n');
+  
+  // ==========================================
+  // IMPRIMIR TIPO DE PEDIDO NO RECIBO
+  // ==========================================
+  const isEntrega = pedido.cliente_endereco && pedido.cliente_endereco.trim() !== '';
+  const isMesa = pedido.cliente_telefone === 'Pedido da Mesa' || pedido.cliente_telefone === 'Pedido Interno';
+
+  if (isEntrega) {
+      add(CMD.bold);
+      txt('\n>>> PEDIDO DE ENTREGA <<<\n');
+      add(CMD.normal);
+  } else if (isMesa) {
+      add(CMD.bold);
+      txt('\n>>> PEDIDO NA MESA <<<\n');
+      add(CMD.normal);
+  }
+  // ==========================================
+
   txt(linhaIgual);
   add(CMD.left);
 
@@ -420,7 +421,11 @@ function gerarRecibo(pedido) {
   add(CMD.bold);
   txt(`Cliente: ${pedido.cliente_nome}\n`);
   add(CMD.normal);
-  if (pedido.cliente_telefone) txt(`Tel: ${pedido.cliente_telefone}\n`);
+  
+  // Só imprime o telefone se não for um pedido de mesa (para não imprimir "Tel: Pedido da Mesa")
+  if (pedido.cliente_telefone && !isMesa) {
+      txt(`Tel: ${pedido.cliente_telefone}\n`);
+  }
   txt(linha);
 
   add(CMD.bold);

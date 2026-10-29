@@ -240,12 +240,24 @@ function criarCardPedido(pedido, lista, novo) {
       `;
   }
 
+// Lógica para saber se é Mesa ou Entrega
+  const isEntrega = pedido.cliente_endereco && pedido.cliente_endereco.trim() !== '';
+  const isMesa = pedido.cliente_telefone === 'Pedido da Mesa' || pedido.cliente_telefone === 'Pedido Interno';
+  
+  let tagTipoHTML = '';
+  if (isEntrega) {
+      tagTipoHTML = `<span class="badge-tipo pedido-entrega"><i class="fa-solid fa-motorcycle"></i> Pedido de Entrega</span>`;
+  } else if (isMesa) {
+      tagTipoHTML = `<span class="badge-tipo pedido-mesa"><i class="fa-solid fa-utensils"></i> Pedido da Mesa</span>`;
+  }
+
   card.innerHTML = `
-    <div class="pedido-header">
+    <div class="pedido-header" style="align-items: flex-start; margin-bottom: 5px;">
       <span class="pedido-id">#${pedido.id.slice(0, 8)}</span>
       <span class="pedido-hora">${dataFormatada} às ${horaFormatada}</span>
     </div>
-    <div class="pedido-cliente">${pedido.cliente_nome} <small>${pedido.cliente_telefone || ''}</small></div>
+    ${tagTipoHTML} <!-- TAG ADICIONADA DE TIPO DE PEDIDO AQUI -->
+    <div class="pedido-cliente">${pedido.cliente_nome} <small>${pedido.cliente_telefone && !isMesa ? pedido.cliente_telefone : ''}</small></div>
     ${enderecoHTML}
     <ul class="pedido-itens" style="margin-top: 15px;">${itensHTML}</ul>
     <div class="pedido-total">
@@ -712,7 +724,7 @@ async function enviarPedidoManual() {
 
   const novoPedido = {
     cliente_nome: nomeFinal,
-    cliente_telefone: 'Pedido Interno',
+    cliente_telefone: 'Pedido da mesa',
     cliente_endereco: null,
     itens: carrinhoManual,
     total: total
