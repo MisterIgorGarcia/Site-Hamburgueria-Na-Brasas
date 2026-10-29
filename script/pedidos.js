@@ -292,11 +292,12 @@ function configurarMascaraTelefone() {
     }
 }
 
+let pedidoPendente = null; // Guarda os dados temporariamente
+let metodoPagamento = ""; // Guarda a escolha do usuário
+
 async function enviarPedido() {
     const nome = document.getElementById('nome-cliente').value.trim();
     const telefone = document.getElementById('tel-cliente').value.trim();
-
-    // Captura endereço
     const cep = document.getElementById('cep-cliente').value.trim();
     const rua = document.getElementById('rua-cliente').value.trim();
     const num = document.getElementById('num-cliente').value.trim();
@@ -304,60 +305,101 @@ async function enviarPedido() {
     const cidade = document.getElementById('cidade-cliente').value.trim();
 
     if (nome.length < 3) { alert("Por favor, preencha seu nome completo."); return; }
-    if (telefone) {
-        const regexTelefone = /^\(\d{2}\) \d{4,5}-\d{4}$/;
-        if (!regexTelefone.test(telefone)) {
-            alert("Por favor, digite um número de WhatsApp válido: (DD) 99999-9999.");
-            return;
-        }
-    }
+    if (cep && !num) { alert("Por favor, digite o número da sua casa."); return; }
 
-    // Se o cliente preencheu o CEP, obriga a digitar o número da casa.
-    if (cep && !num) {
-        alert("Por favor, digite o número da sua casa para completar o endereço.");
-        document.getElementById('num-cliente').focus();
+    const total = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+    const itensFormatados = carrinho.map(item => ({ nome: item.nome, preco: item.preco, qtd: item.qtd }));
+    let enderecoCompleto = '';
+    if (rua && num) enderecoCompleto = `${rua}, ${num} - ${bairro}, ${cidade}`;
+
+    pedidoPendente = {
+        cliente_nome: nome,
+        cliente_telefone: telefone,
+        cliente_endereco: enderecoCompleto || null,
+        itens: itensFormatados,
+        total: total,
+        pagamento: '' // Será preenchido agora
+    };
+
+    // Se for entrega (tem rua), abre o modal de pagamento
+    if (enderecoCompleto) {
+        document.getElementById('modal-carrinho').classList.remove('ativo');
+        document.getElementById('modal-pagamento').classList.add('ativo');
+    } else {
+        // Se for retirada/mesa, envia direto
+        pedidoPendente.pagamento = 'Retirada no Balcão (Pagar no local)';
+        processarEnvioBanco(pedidoPendente);
+    }
+}
+
+function fecharModalPagamento() {
+    document.getElementById('modal-pagamento').classList.remove('ativo');
+    document.getElementById('modal-carrinho').classList.add('ativo'); // Volta pro carrinho
+}
+
+function selecionarOpcaoPagamento(opcao) {
+    if (opcao === 'antecipado') {
+        alert("Pagamento Antecipado (Em construção).\nPor favor, escolha pagar na entrega.");
         return;
     }
 
-    const total = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+    metodoPagamento = opcao;
 
-    // Limpa o formato do carrinho para mandar pro banco
-    const itensFormatados = carrinho.map(item => {
-        return {
-            nome: item.nome,
-            preco: item.preco,
-            qtd: item.qtd
-        };
-    });
+    // Reseta visual dos botões (você pode adicionar uma classe 'ativo' se quiser)
+    if (opcao === 'dinheiro') {
+        document.getElementById('container-troco').style.display = 'block';
+        document.getElementById('input-troco').focus();
+    } else {
+        document.getElementById('container-troco').style.display = 'none';
+    }
+}
 
-    // Monta o endereço completo
-    let enderecoCompleto = '';
-    if (rua && num) {
-        enderecoCompleto = `${rua}, ${num} - ${bairro}, ${cidade}`;
+async function confirmarPagamento() {
+    if (!metodoPagamento) {
+        alert("Por favor, selecione uma forma de pagamento.");
+        return;
     }
 
-    const novoPedido = {
-        cliente_nome: nome,
-        cliente_telefone: telefone,
-        cliente_endereco: enderecoCompleto || null, // Envia null se for retirada no balcão
-        itens: itensFormatados,
-        total: total
-    };
+    let infoPagamento = "";
+    if (metodoPagamento === 'dinheiro') {
+        const troco = document.getElementById('input-troco').value;
+        if (!troco) {
+            alert("Por favor, informe para quanto precisa de troco.");
+            return;
+        }
+        infoPagamento = `Pagar na Entrega (Dinheiro) - Troco para R$ ${Number(troco).toFixed(2).replace('.', ',')}`;
+    } else if (metodoPagamento === 'cartao-debito') {
+        infoPagamento = "Pagar na Entrega (Cartão de Débito) - Levar Máquina";
+    } else if (metodoPagamento === 'cartao-credito') {
+        infoPagamento = "Pagar na Entrega (Cartão de Crédito) - Levar Máquina";
+    } else if (metodoPagamento === 'pix') {
+        infoPagamento = "Pagar na Entrega (PIX) - Enviar Chave";
+    }
 
-    const btnEnviar = document.querySelector('.btn-enviar');
-    btnEnviar.disabled = true;
-    btnEnviar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+    pedidoPendente.pagamento = infoPagamento;
+    
+    const btn = document.querySelector('#modal-pagamento .btn-enviar');
+    btn.disabled = true;
+    btn.innerHTML = 'Enviando...';
 
+    await processarEnvioBanco(pedidoPendente);
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar Pedido';
+    document.getElementById('modal-pagamento').classList.remove('ativo');
+}
+
+async function processarEnvioBanco(pedidoFinal) {
     try {
-        const { error } = await supabaseClient.from('pedidos_recentes').insert([novoPedido]);
+        const { error } = await supabaseClient.from('pedidos_recentes').insert([pedidoFinal]);
         if (error) throw error;
 
         alert("Pedido enviado com sucesso! Aguarde a impressão na cozinha.");
         
-        // Limpa o carrinho e TODOS os campos do formulário
         carrinho = [];
         atualizarCarrinhoUI();
         
+        // Limpa os campos
         document.getElementById('nome-cliente').value = '';
         document.getElementById('tel-cliente').value = '';
         document.getElementById('cep-cliente').value = '';
@@ -365,16 +407,14 @@ async function enviarPedido() {
         document.getElementById('rua-cliente').value = '';
         document.getElementById('bairro-cliente').value = '';
         document.getElementById('cidade-cliente').value = '';
+        document.getElementById('input-troco').value = '';
+        metodoPagamento = "";
         
         fecharCarrinho();
 
     } catch (err) {
         console.error(err);
-        // Mostra o erro real no console, caso a coluna do banco não exista ainda
-        alert("Erro ao enviar o pedido. Verifique a conexão e tente novamente.");
-    } finally {
-        btnEnviar.disabled = false;
-        btnEnviar.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar Pedido';
+        alert("Erro ao enviar o pedido. Tente novamente.");
     }
 }
 

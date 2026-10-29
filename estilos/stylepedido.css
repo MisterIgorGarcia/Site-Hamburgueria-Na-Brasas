@@ -471,3 +471,12 @@
     padding-left: 5px;
     border-left: 2px solid #333;
 }
+
+/* ===================== MODAL DE PAGAMENTO ===================== */
+.opcoes-pagamento { display: flex; flex-direction: column; gap: 10px; }
+.btn-opcao-pgto { background: var(--cor-secundaria); color: var(--cor-primaria); border: none; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; transition: transform 0.2s; }
+.btn-opcao-pgto:hover { transform: scale(1.02); }
+.grid-pgto-entrega { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-pgto-entrega { background: var(--cor-primaria); color: var(--cor-texto-claro); border: 1px solid #333; padding: 12px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: border-color 0.2s; }
+.btn-pgto-entrega:hover { border-color: var(--cor-secundaria); }
+.btn-pgto-entrega i { font-size: 1.5rem; color: var(--cor-secundaria); }

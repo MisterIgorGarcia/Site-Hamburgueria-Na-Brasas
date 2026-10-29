@@ -250,12 +250,26 @@ function criarCardPedido(pedido, lista, novo) {
       tagTipoHTML = `<span class="badge-tipo pedido-mesa"><i class="fa-solid fa-utensils"></i> Pedido da Mesa</span>`;
   }
 
+  // NOVO: TAG DE PAGAMENTO NO CARD
+  let tagPagamentoHTML = '';
+  if (pedido.pagamento) {
+      let corBadge = 'background: rgba(255,255,255,0.1); color: #fff; border: 1px solid #555;';
+      if (pedido.pagamento.includes('Dinheiro')) corBadge = 'background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid #22c55e;';
+      if (pedido.pagamento.includes('Cartão') || pedido.pagamento.includes('PIX')) corBadge = 'background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid #3b82f6;';
+      if (pedido.pagamento.includes('Antecipado')) corBadge = 'background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid #a855f7;';
+      
+      tagPagamentoHTML = `<span class="badge-tipo" style="${corBadge} margin-bottom: 10px;"><i class="fa-solid fa-wallet"></i> ${pedido.pagamento}</span>`;
+  }
+
   card.innerHTML = `
     <div class="pedido-header" style="align-items: flex-start; margin-bottom: 5px;">
       <span class="pedido-id">#${pedido.id.slice(0, 8)}</span>
       <span class="pedido-hora">${dataFormatada} às ${horaFormatada}</span>
     </div>
-    ${tagTipoHTML}
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        ${tagTipoHTML}
+        ${tagPagamentoHTML}
+    </div>
     <div class="pedido-cliente">${pedido.cliente_nome} <small>${pedido.cliente_telefone && !isMesa ? pedido.cliente_telefone : ''}</small></div>
     ${enderecoHTML}
     <ul class="pedido-itens" style="margin-top: 15px;">${itensHTML}</ul>
@@ -347,6 +361,17 @@ async function carregarHistorico(pagina = 1) {
             tagTipoHTML = `<span class="badge-tipo pedido-mesa" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-utensils"></i> Mesa</span>`;
         }
 
+        // NOVO: TAG DE PAGAMENTO NO HISTÓRICO
+        let tagPagamentoHTML = '';
+        if (p.pagamento) {
+            let corBadge = 'background: rgba(255,255,255,0.1); color: #fff; border: 1px solid #555;';
+            if (p.pagamento.includes('Dinheiro')) corBadge = 'background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid #22c55e;';
+            if (p.pagamento.includes('Cartão') || p.pagamento.includes('PIX')) corBadge = 'background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid #3b82f6;';
+            if (p.pagamento.includes('Antecipado')) corBadge = 'background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid #a855f7;';
+            
+            tagPagamentoHTML = `<span class="badge-tipo" style="${corBadge} margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-wallet"></i> ${p.pagamento}</span>`;
+        }
+
         let enderecoHTML = '';
         if (isEntrega) {
             enderecoHTML = `
@@ -361,6 +386,7 @@ async function carregarHistorico(pagina = 1) {
             <div class="info">
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; flex-wrap: wrap;">
                 ${tagTipoHTML}
+                ${tagPagamentoHTML}
                 <h4 style="margin: 0;">#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
               </div>
               <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
@@ -424,15 +450,11 @@ async function gerarGraficos() {
   
   const todosPedidos = [...(recentes || []), ...(arquivados || [])];
 
-  // ========================================================
-  // NOVO: CÁLCULO DO FATURAMENTO TOTAL
-  // ========================================================
   const faturamentoTotal = todosPedidos.reduce((acc, p) => acc + Number(p.total), 0);
   const faturamentoEl = document.getElementById('faturamento-total-valor');
   if (faturamentoEl) {
       faturamentoEl.textContent = `R$ ${faturamentoTotal.toFixed(2).replace('.', ',')}`;
   }
-  // ========================================================
 
   if (todosPedidos.length === 0) {
     document.getElementById('piechart').innerHTML = '<div class="vazio" style="padding-top:100px;">Sem dados.</div>';
@@ -754,6 +776,7 @@ async function enviarPedidoManual() {
     cliente_nome: nomeFinal,
     cliente_telefone: 'Pedido da Mesa',
     cliente_endereco: null,
+    pagamento: 'Pagar no Local',
     itens: carrinhoManual,
     total: total
   };

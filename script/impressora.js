@@ -340,6 +340,7 @@ async function imprimirEArquivar(pedido, botao) {
         itens: pedido.itens,
         total: pedido.total,
         status: 'impresso',
+        pagamento: pedido.pagamento, // <-- SALVA O PAGAMENTO NO HISTÓRICO
         impresso_por: quemImprimiu,
         created_at: pedido.created_at
       });
@@ -422,7 +423,6 @@ function gerarRecibo(pedido) {
   txt(`Cliente: ${pedido.cliente_nome}\n`);
   add(CMD.normal);
   
-  // Só imprime o telefone se não for um pedido de mesa
   if (pedido.cliente_telefone && !isMesa) {
       txt(`Tel: ${pedido.cliente_telefone}\n`);
   }
@@ -436,10 +436,24 @@ function gerarRecibo(pedido) {
       txt(`ENDEREÇO DE ENTREGA:\n`);
       add(CMD.normal);
       
-      // Quebra o endereço em linhas de até 32 caracteres para não cortar no papel
       const endereco = pedido.cliente_endereco;
       for (let i = 0; i < endereco.length; i += 32) {
           txt(endereco.substring(i, i + 32) + '\n');
+      }
+      txt(linha);
+  }
+  // ==========================================
+
+  // ==========================================
+  // NOVO: IMPRIMIR PAGAMENTO
+  // ==========================================
+  if (pedido.pagamento) {
+      add(CMD.bold);
+      txt(`PAGAMENTO:\n`);
+      add(CMD.normal);
+      const pgto = pedido.pagamento;
+      for (let i = 0; i < pgto.length; i += 32) {
+          txt(pgto.substring(i, i + 32) + '\n');
       }
       txt(linha);
   }

@@ -133,6 +133,46 @@
     </div>
 </div>
 
+<!-- MODAL DE PAGAMENTO -->
+<div id="modal-pagamento" class="modal-overlay">
+    <div class="modal-conteudo">
+        <div class="modal-header">
+            <h3>Forma de Pagamento</h3>
+            <button class="fechar-modal" onclick="fecharModalPagamento()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">Como você deseja pagar este pedido de entrega?</p>
+
+        <div class="opcoes-pagamento">
+            <button class="btn-opcao-pgto" onclick="selecionarOpcaoPagamento('antecipado')">
+                <i class="fa-solid fa-credit-card"></i> Pagar com Antecedência
+            </button>
+            
+            <div style="margin: 15px 0; border-top: 1px solid #333;"></div>
+            
+            <p style="color: #999; font-size: 0.85rem; margin-bottom: 10px;">Pagar na Entrega:</p>
+            <div class="grid-pgto-entrega">
+                <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('dinheiro')"><i class="fa-solid fa-money-bill"></i> Dinheiro</button>
+                <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('cartao-debito')"><i class="fa-solid fa-credit-card"></i> Débito</button>
+                <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('cartao-credito')"><i class="fa-solid fa-credit-card"></i> Crédito</button>
+                <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('pix')"><i class="fa-brands fa-pix"></i> PIX</button>
+            </div>
+        </div>
+
+        <!-- Campo do Troco (aparece apenas se for dinheiro) -->
+        <div id="container-troco" style="display: none; margin-top: 15px; background: var(--cor-primaria); padding: 15px; border-radius: 8px;">
+            <label style="color: #fff; font-size: 0.9rem; display: block; margin-bottom: 8px;">Troco para quanto?</label>
+            <input type="number" id="input-troco" placeholder="Ex: 50" style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #333; background: #000; color: #fff; font-size: 1rem;">
+        </div>
+
+        <div class="modal-footer" style="margin-top: 20px;">
+            <button class="btn-amarelo btn-enviar" onclick="confirmarPagamento()">
+                <i class="fa-solid fa-check"></i> Confirmar Pedido
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- ===================== SCRIPTS ===================== -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../script/pedidos.js"></script>
