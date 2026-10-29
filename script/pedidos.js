@@ -431,22 +431,31 @@ async function processarEnvioBanco(pedidoFinal) {
 /* ===================== BUSCA DE CEP (ViaCEP) ===================== */
 function configurarBuscaCEP() {
     const cepInput = document.getElementById('cep-cliente');
+    
+    // Variável para evitar o loop de alertas
+    let ultimoCepBuscado = ""; 
+
     if (cepInput) {
         cepInput.addEventListener('blur', async (e) => {
             let cep = e.target.value.replace(/\D/g, '');
             
-            // Se o usuário apagou o CEP, limpa os campos para ele digitar manual
+            // Se o usuário apagou o CEP, limpa os campos
             if (cep.length === 0) {
                 document.getElementById('rua-cliente').value = '';
                 document.getElementById('bairro-cliente').value = '';
                 document.getElementById('cidade-cliente').value = '';
+                ultimoCepBuscado = "";
                 return;
             }
 
-            if (cep.length === 8) {
+            // Só busca se tiver 8 dígitos E se for um CEP diferente do último que ele tentou
+            if (cep.length === 8 && cep !== ultimoCepBuscado) {
+                ultimoCepBuscado = cep; // Marca como buscado para não repetir o alerta
+                
                 try {
                     const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
                     const data = await res.json();
+                    
                     if (!data.erro) {
                         document.getElementById('rua-cliente').value = data.logradouro;
                         document.getElementById('bairro-cliente').value = data.bairro;
@@ -454,6 +463,7 @@ function configurarBuscaCEP() {
                         document.getElementById('num-cliente').focus();
                     } else {
                         alert("CEP não encontrado. Digite o endereço manualmente.");
+                        // Não resetamos a variável aqui! Isso evita que o alerta abra de novo se ele apenas clicar em OK.
                     }
                 } catch (err) {
                     console.error("Erro ao buscar CEP", err);
@@ -466,6 +476,9 @@ function configurarBuscaCEP() {
             let val = e.target.value.replace(/\D/g, '');
             if (val.length > 5) val = val.replace(/^(\d{5})(\d)/, '$1-$2');
             e.target.value = val;
+            
+            // Se o usuário digitar algo novo, liberamos a busca novamente
+            ultimoCepBuscado = "";
         });
     }
 }
