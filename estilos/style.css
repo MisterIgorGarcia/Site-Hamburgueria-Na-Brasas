@@ -102,10 +102,10 @@ a { text-decoration: none; color: inherit; }
 .info-localizacao { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
 .bloco-info { display: flex; align-items: center; gap: 14px; background-color: #1a1a1a; border-radius: 10px; padding: 14px 18px; border: 1px solid #2a2a2a; text-decoration: none; color: var(--cor-texto-claro); transition: border-color 0.3s, transform 0.3s; }
 .bloco-info:hover { border-color: var(--cor-tercearia); transform: translateX(5px); }
-.bloco-info i { font-size: 1.6rem; color: var(--cor-tercearia); min-width: 32px; text-align: center; }
-.bloco-info div { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.bloco-info i { font-size: 1.6rem; color: var(--cor-tercearia); min-width: 32px; text-align: center; flex-shrink: 0; }
+.bloco-info div { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
 .bloco-info strong { font-size: 0.95rem; }
-.bloco-info span { font-size: 0.85rem; color: #999999; }
+.bloco-info span { font-size: 0.85rem; color: #999999; line-height: 1.4; word-wrap: break-word; }
 .mapa-container { flex: 1 1 500px; max-width: 700px; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
 .mapa-container iframe { width: 100%; height: 100%; border: 0; display: block; }
 
@@ -175,8 +175,45 @@ footer { background-color: #000; border-top: 3px solid var(--cor-secundaria); co
     .footer-conteudo { grid-template-columns: 1fr; text-align: center; gap: 35px; }
     .footer-redes, .footer-contato li { justify-content: center; }
     .footer-base { flex-direction: column; text-align: center; }
-    .mapa-texto { text-align: center; margin: 0 auto; }
-    #localizacao { flex-direction: column; align-items: center; }
+
+    /* CORREÇÃO DA LOCALIZAÇÃO */
+    #localizacao { 
+        flex-direction: column; 
+        align-items: center; 
+        padding: 50px 20px; 
+        gap: 30px; 
+    }
+    
+    .mapa-texto { 
+        text-align: center; 
+        margin: 0 auto; 
+        width: 100%; 
+        max-width: 100%; 
+    }
+
+    .mapa-texto h2 { 
+        font-size: 1.8rem; 
+    }
+
+    .info-localizacao {
+        width: 100%;
+    }
+
+    .bloco-info {
+        width: 100%; 
+        text-align: left;
+    }
+
+    .bloco-info div {
+        flex: 1; /* Ocupa o resto do espaço, evitando que o ícone esmague o texto */
+    }
+
+    .mapa-container { 
+        width: 100%; 
+        max-width: 100%; 
+        height: 300px; /* Altura fixa amigável para o mapa no celular */
+        aspect-ratio: auto; /* Desativa a proporção para priorizar a altura */
+    }
 }
 
 @media (max-width: 768px) {
@@ -188,58 +225,16 @@ footer { background-color: #000; border-top: 3px solid var(--cor-secundaria); co
     #menu-nav ul li { width: 100%; text-align: center; border-bottom: 1px solid #222; }
     #menu-nav ul li a { display: block; padding: 15px 20px; }
     
-    /* CORREÇÃO DA SEÇÃO HERO NO CELULAR */
-    .hero {
-        flex-direction: column;
-        padding: 30px 20px;
-        text-align: center;
-        gap: 20px;
-    }
+    .hero { flex-direction: column; padding: 30px 20px; text-align: center; gap: 20px; }
+    .hero-texto { max-width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .hero h2 { font-size: 1.8rem; margin-bottom: 15px; }
+    .hero p { font-size: 1rem; margin-bottom: 10px; }
+    .hero-imagem { width: 100%; display: flex; justify-content: center; }
+    .hero-imagem img { max-width: 250px; }
+    .hero-imagem::before { width: min(200px, 60vw); height: min(200px, 60vw); }
+    .hero-botoes { justify-content: center; width: 100%; margin-top: 15px; }
+    .hero-botoes .btn-amarelo { width: 100%; max-width: 300px; }
 
-    .hero-texto {
-        max-width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .hero h2 {
-        font-size: 1.8rem;
-        margin-bottom: 15px;
-    }
-
-    .hero p {
-        font-size: 1rem;
-        margin-bottom: 10px;
-    }
-
-    .hero-imagem {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }
-
-    .hero-imagem img {
-        max-width: 250px;
-    }
-
-    .hero-imagem::before {
-        width: min(200px, 60vw);
-        height: min(200px, 60vw);
-    }
-
-    .hero-botoes {
-        justify-content: center;
-        width: 100%;
-        margin-top: 15px;
-    }
-
-    .hero-botoes .btn-amarelo {
-        width: 100%;
-        max-width: 300px;
-    }
-
-    /* Outros ajustes do mobile */
     .secao { padding: 40px 20px; }
     .card, .card-premium, .card-sobre { width: 100%; max-width: 320px; }
     
