@@ -337,7 +337,7 @@ function fecharModalPagamento() {
     document.getElementById('modal-carrinho').classList.add('ativo'); // Volta pro carrinho
 }
 
-function selecionarOpcaoPagamento(opcao) {
+function selecionarOpcaoPagamento(opcao, elementoBotao) {
     if (opcao === 'antecipado') {
         alert("Pagamento Antecipado (Em construção).\nPor favor, escolha pagar na entrega.");
         return;
@@ -345,7 +345,17 @@ function selecionarOpcaoPagamento(opcao) {
 
     metodoPagamento = opcao;
 
-    // Reseta visual dos botões (você pode adicionar uma classe 'ativo' se quiser)
+    // Remove a classe 'ativo' de todos os botões de pagamento
+    document.querySelectorAll('.btn-pgto-entrega').forEach(btn => {
+        btn.classList.remove('ativo');
+    });
+
+    // Adiciona a classe 'ativo' apenas no botão que foi clicado
+    if (elementoBotao) {
+        elementoBotao.classList.add('ativo');
+    }
+
+    // Mostra ou esconde o campo de troco
     if (opcao === 'dinheiro') {
         document.getElementById('container-troco').style.display = 'block';
         document.getElementById('input-troco').focus();

@@ -480,3 +480,24 @@
 .btn-pgto-entrega { background: var(--cor-primaria); color: var(--cor-texto-claro); border: 1px solid #333; padding: 12px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: border-color 0.2s; }
 .btn-pgto-entrega:hover { border-color: var(--cor-secundaria); }
 .btn-pgto-entrega i { font-size: 1.5rem; color: var(--cor-secundaria); }
+
+/* ===================== BOTÃO DE PAGAMENTO SELECIONADO ===================== */
+.btn-pgto-entrega {
+    transition: all 0.2s ease;
+}
+
+/* Efeito ao clicar */
+.btn-pgto-entrega:active {
+    transform: scale(0.95);
+}
+
+/* Efeito quando está selecionado */
+.btn-pgto-entrega.ativo {
+    border-color: var(--cor-secundaria);
+    background: rgba(223, 141, 34, 0.15);
+    box-shadow: 0 0 10px rgba(223, 141, 34, 0.3);
+}
+
+.btn-pgto-entrega.ativo i {
+    color: var(--cor-tercearia);
+}
