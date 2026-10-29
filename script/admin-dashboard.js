@@ -13,7 +13,6 @@ const originalWarn = console.warn;
 let logsVisuais = [];
 
 function adicionarLogVisual(tipo, args) {
-  // Se não existir o terminal na tela (ex: tela do funcionário), nem tenta rodar
   if (!document.getElementById('terminal-container')) return;
 
   const msg = Array.from(args).map(arg => {
@@ -68,6 +67,8 @@ let totalPaginasHistorico = 1;
 
 let produtosGlobais = []; 
 let carrinhoManual = []; 
+let listaAdicionaisGlobal = [];
+let itemManualAtual = null;
 
 /* ===================== INICIALIZAÇÃO E LOGIN ===================== */
 document.addEventListener('DOMContentLoaded', () => {
@@ -79,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const isAdminPage = window.location.pathname.includes('administrador-dashboard.html');
   const isFuncPage = window.location.pathname.includes('funcionario-dashboard.html');
 
-  // Segurança de Rota Cruzada
   if (sessao.tipo === 'admin' && isFuncPage) { window.location.href = 'administrador-dashboard.html'; return; }
   if (sessao.tipo === 'funcionario' && isAdminPage) { window.location.href = 'funcionario-dashboard.html'; return; }
   if (!isAdminPage && !isFuncPage) { window.location.href = 'login.html'; return; }
@@ -97,9 +97,8 @@ function iniciarPainel() {
   carregarPedidos(1);
   escutarNovosPedidos();
   atualizarBadgeNotificacao();
-  carregarProdutosParaManual(); // Necessário para lançar pedidos de mesa
+  carregarProdutosParaManual(); 
   
-  // Só inicializa gráficos se a tela for de Admin
   if (document.getElementById('piechart') && typeof google !== 'undefined') {
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(() => {
@@ -126,7 +125,6 @@ function mudarAba(aba) {
     carregarPedidos(paginaAtualRecentes); 
   }
   
-  // Guards: Só carrega se os elementos existirem na tela
   if (aba === 'historico' && document.getElementById('lista-historico')) carregarHistorico(1);
   if (aba === 'graficos' && document.getElementById('piechart')) gerarGraficos();
   if (aba === 'funcionarios' && document.getElementById('lista-funcionarios')) carregarFuncionarios();
@@ -326,8 +324,6 @@ async function carregarHistorico(pagina = 1) {
     data.forEach(p => {
     const dataObj = new Date(p.created_at);
     const dataStr = dataObj.toLocaleString('pt-BR');
-
-    // Se a coluna estiver vazia (pedidos antigos), mostra 'Não registrado'
     const nomeFuncionario = p.impresso_por || 'Não registrado';
 
     lista.innerHTML += `
@@ -387,7 +383,7 @@ function mudarPagina(aba, novaPagina) {
 
 /* ===================== GRÁFICOS (SÓ RODA NO ADMIN) ===================== */
 async function gerarGraficos() {
-  if (!document.getElementById('piechart')) return; // Proteção para a tela de funcionário
+  if (!document.getElementById('piechart')) return; 
 
   const { data: recentes } = await supabaseClient.from('pedidos_recentes').select('*');
   const { data: arquivados } = await supabaseClient.from('pedidos_arquivados').select('*');
@@ -545,12 +541,18 @@ async function apagarFuncionario(id, login) {
 async function carregarProdutosParaManual() {
     if (!document.getElementById('manual-lanche')) return; 
 
-    const { data } = await supabaseClient.from('produtos').select('*').eq('ativo', true).order('nome');
-    if (data) {
-        produtosGlobais = data;
+    // Puxa os produtos
+    const { data: produtos } = await supabaseClient.from('produtos').select('*').eq('ativo', true).order('nome');
+    
+    // Puxa os adicionais
+    const { data: adicionais } = await supabaseClient.from('adicionais').select('*').eq('ativo', true).order('nome');
+    if (adicionais) listaAdicionaisGlobal = adicionais;
+
+    if (produtos) {
+        produtosGlobais = produtos;
         const select = document.getElementById('manual-lanche');
         select.innerHTML = ''; 
-        data.forEach(prod => {
+        produtos.forEach(prod => {
             select.innerHTML += `<option value="${prod.nome}|${prod.preco}">${prod.nome} - R$ ${Number(prod.preco).toFixed(2).replace('.', ',')}</option>`;
         });
     }
@@ -569,6 +571,7 @@ function fecharModalPedidoManual() {
   document.getElementById('modal-pedido-manual').classList.remove('ativo');
 }
 
+// Agora o clique em "Adicionar" abre o modal de adicionais
 function adicionarItemManual() {
   const select = document.getElementById('manual-lanche');
   if (!select || !select.value) return;
@@ -576,13 +579,87 @@ function adicionarItemManual() {
   const [nome, precoStr] = select.value.split('|');
   const preco = parseFloat(precoStr);
 
-  const itemExistente = carrinhoManual.find(i => i.nome === nome);
-  if (itemExistente) {
-    itemExistente.qtd += 1;
+  itemManualAtual = { nome, preco };
+
+  const listaModal = document.getElementById('lista-adicionais-manual');
+  listaModal.innerHTML = '';
+
+  if (listaAdicionaisGlobal.length === 0) {
+      listaModal.innerHTML = '<p style="color:#999">Nenhum adicional disponível.</p>';
   } else {
-    carrinhoManual.push({ nome, preco, qtd: 1 });
+      listaAdicionaisGlobal.forEach(ad => {
+          listaModal.innerHTML += `
+              <label class="item-adicional" onclick="this.classList.toggle('checked')">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                      <input type="checkbox" class="check-adicional-manual" data-preco="${ad.preco}" data-nome="${ad.nome}" onchange="calcularTotalAdicionaisManual()">
+                      <span>${ad.nome}</span>
+                  </div>
+                  <span class="preco-adicional">+ R$ ${Number(ad.preco).toFixed(2).replace('.', ',')}</span>
+              </label>
+          `;
+      });
   }
+
+  document.getElementById('item-manual-nome').textContent = nome;
+  calcularTotalAdicionaisManual();
+  document.getElementById('modal-adicionais-manual').classList.add('ativo');
+}
+
+function calcularTotalAdicionaisManual() {
+  if (!itemManualAtual) return;
+  let total = itemManualAtual.preco;
+  const checkboxes = document.querySelectorAll('.check-adicional-manual:checked');
+  
+  checkboxes.forEach(cb => {
+      total += Number(cb.getAttribute('data-preco'));
+  });
+  document.getElementById('total-adicionais-manual').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+}
+
+function fecharModalAdicionaisManual() {
+  document.getElementById('modal-adicionais-manual').classList.remove('ativo');
+  document.querySelectorAll('.check-adicional-manual').forEach(cb => {
+      cb.checked = false;
+      cb.closest('.item-adicional').classList.remove('checked');
+  });
+}
+
+function confirmarAdicionaisManual() {
+  if (!itemManualAtual) return;
+
+  const checkboxes = document.querySelectorAll('.check-adicional-manual:checked');
+  const adicionaisEscolhidos = [];
+  let precoFinal = itemManualAtual.preco;
+
+  checkboxes.forEach(cb => {
+      const nomeAd = cb.getAttribute('data-nome');
+      const precoAd = Number(cb.getAttribute('data-preco'));
+      adicionaisEscolhidos.push({ nome: nomeAd, preco: precoAd });
+      precoFinal += precoAd;
+  });
+
+  let nomeExibicao = itemManualAtual.nome;
+  if (adicionaisEscolhidos.length > 0) {
+      nomeExibicao += ` (+ ${adicionaisEscolhidos.map(a => a.nome).join(', ')})`;
+  }
+
+  const novoItem = {
+      nome: nomeExibicao,
+      nomeBase: itemManualAtual.nome,
+      preco: precoFinal,
+      adicionais: adicionaisEscolhidos,
+      qtd: 1
+  };
+
+  const itemExistenteIndex = carrinhoManual.findIndex(i => i.nome === novoItem.nome);
+  if (itemExistenteIndex > -1) {
+      carrinhoManual[itemExistenteIndex].qtd += 1;
+  } else {
+      carrinhoManual.push(novoItem);
+  }
+
   atualizarCarrinhoManualUI();
+  fecharModalAdicionaisManual();
 }
 
 function removerItemManual(index) {
@@ -600,9 +677,15 @@ function atualizarCarrinhoManualUI() {
 
   carrinhoManual.forEach((item, index) => {
     total += item.preco * item.qtd;
+    
+    let adicionaisHTML = '';
+    if (item.adicionais && item.adicionais.length > 0) {
+        adicionaisHTML = `<br><span style="font-size:0.75rem; color:#999;">Adic: ${item.adicionais.map(a => a.nome).join(', ')}</span>`;
+    }
+
     lista.innerHTML += `
       <div class="item-manual" style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.9rem;">
-        <span>${item.qtd}x ${item.nome}</span>
+        <span>${item.qtd}x ${item.nomeBase || item.nome} ${adicionaisHTML}</span>
         <div>
             <span style="margin-right:15px;">R$ ${(item.preco * item.qtd).toFixed(2).replace('.', ',')}</span>
             <button onclick="removerItemManual(${index})" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>

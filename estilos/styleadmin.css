@@ -236,6 +236,77 @@ button.btn-admin-perigo:hover { background: rgba(239, 68, 68, 0.1); border-color
 .pedido-endereco p { font-size: 0.85rem; color: var(--cor-texto-claro); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
 .mapa-pedido { width: 100%; height: 180px; border: 0; border-radius: 6px; }
 
+/* ===================== ADICIONAIS NO PEDIDO MANUAL ===================== */
+.lista-adicionais {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    padding-right: 5px;
+}
+
+.item-adicional {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--cor-primaria);
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.item-adicional:hover { border-color: var(--cor-secundaria); }
+.item-adicional.checked { border-color: var(--cor-secundaria); background-color: rgba(223, 141, 34, 0.1); }
+
+.item-adicional label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    width: 100%;
+    color: #fff;
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.item-adicional input[type="checkbox"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    outline: none;
+}
+
+.item-adicional input[type="checkbox"]:checked {
+    background-color: var(--cor-secundaria);
+    border-color: var(--cor-secundaria);
+}
+
+.item-adicional input[type="checkbox"]:checked::after {
+    content: '✔';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--cor-primaria);
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.preco-adicional {
+    color: var(--cor-secundaria);
+    font-weight: bold;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
 /* ===================== RESPONSIVIDADE (CELULAR) ===================== */
 @media (max-width: 768px) {
   #view-dash header { flex-direction: column; align-items: flex-start; padding: 16px; gap: 16px; }
