@@ -15,14 +15,14 @@ async function desconectarImpressoraAtual() {
   try {
     if (modoImpressao === 'bluetooth' && impressoraDevice) {
       if (impressoraDevice.gatt.connected) impressoraDevice.gatt.disconnect();
-      console.log('Bluetooth desconectado manualmente.');
+      console.log('[impressora] Bluetooth desconectado manualmente.');
     } 
     else if (modoImpressao === 'usb' && usbDevice) {
       if (usbDevice.opened) await usbDevice.close();
-      console.log('USB desconectado manualmente.');
+      console.log('[impressora] USB desconectado manualmente.');
     }
   } catch (err) {
-    console.error('Aviso: Erro ao fechar a porta física:', err);
+    console.error('[impressora] Aviso: Erro ao fechar a porta física:', err);
   } finally {
     impressoraChar = null;
     impressoraDevice = null;
@@ -38,11 +38,11 @@ async function tentarReconectarBluetoothSalvo() {
   if (modoImpressao === 'usb' || (impressoraChar && impressoraDevice?.gatt?.connected)) return;
 
   try {
-    console.log('Verificando dispositivos Bluetooth salvos...');
+    console.log('[impressora] Verificando dispositivos Bluetooth salvos...');
     await garantirConexaoBluetooth(false);
-    console.log('Bluetooth reconectado automaticamente com sucesso!');
+    console.log('[impressora] Bluetooth reconectado automaticamente com sucesso!');
   } catch (err) {
-    console.log('Sem conexão Bluetooth ativa no momento.', err.message);
+    console.log('[impressora] Sem conexão Bluetooth ativa no momento.', err.message);
   }
 }
 
@@ -99,7 +99,7 @@ if (btnConectarUSB) {
       await configurarConexaoUSB(device);
     } catch (err) {
       if (err.name === 'NotFoundError' || err.message.includes('cancel')) {
-        console.log('Usuário cancelou a conexão USB.');
+        console.log('[impressora] Usuário cancelou a conexão USB.');
       } else {
         alert('Falha ao conectar USB: ' + err.message);
       }
@@ -146,7 +146,9 @@ async function configurarConexaoUSB(device) {
   atualizarStatusImpressora();
 }
 
-/* ===================== CONEXÃO BLUETOOTH ===================== */
+/* =====================================================================
+   CONEXÃO BLUETOOTH — COM VERIFICAÇÕES E TIMEOUT (CORRIGIDO SAMSUNG)
+   ===================================================================== */
 const btnConectar = document.getElementById('btn-conectar');
 if (btnConectar) {
   btnConectar.addEventListener('click', async () => {
@@ -159,14 +161,87 @@ if (btnConectar) {
         await desconectarImpressoraAtual();
       }
 
+      /* --- 1. Verifica suporte do navegador --- */
+      if (!navigator.bluetooth) {
+        alert(
+          'Este navegador NÃO suporta Web Bluetooth.\n\n' +
+          'Use o Google Chrome ou Microsoft Edge no Android.\n' +
+          'No iPhone/iPad o Web Bluetooth não funciona.'
+        );
+        return;
+      }
+
       btnConectar.disabled = true;
       document.getElementById('txt-bt').textContent = 'Conectando...';
-      
-      await garantirConexaoBluetooth(true); 
+
+      /* --- 2. Verifica se o Bluetooth está ligado --- */
+      if (navigator.bluetooth.getAvailability) {
+        try {
+          const disponivel = await navigator.bluetooth.getAvailability();
+          if (!disponivel) {
+            throw new Error('BLUETOOTH_OFF');
+          }
+        } catch (e) {
+          if (e.message === 'BLUETOOTH_OFF') throw e;
+          /* Se getAvailability falhar por outro motivo, segue em frente */
+          console.warn('[impressora] getAvailability falhou (ignorado):', e);
+        }
+      }
+
+      /* --- 3. Verifica permissão de Localização (obrigatória Android 12+ para BLE scan) --- */
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const geoPerm = await navigator.permissions.query({ name: 'geolocation' });
+          console.log('[impressora] Permissão de localização:', geoPerm.state);
+          if (geoPerm.state === 'denied') {
+            throw new Error('LOCATION_DENIED');
+          }
+        } catch (e) {
+          if (e.message === 'LOCATION_DENIED') throw e;
+          /* Alguns navegadores não permitem query de geolocation — ignora */
+        }
+      }
+
+      /* --- 4. Executa conexão com timeout de segurança --- */
+      console.log('[impressora] Iniciando conexão Bluetooth...');
+      await garantirConexaoBluetoothComTimeout(true);
+      console.log('[impressora] Conexão Bluetooth concluída com sucesso.');
+
     } catch (err) {
-      if (err.name === 'NotFoundError' || err.message.includes('cancel')) {
-        console.log('Usuário cancelou a conexão Bluetooth.');
-      } else {
+      if (err.name === 'NotFoundError' || (err.message && err.message.includes('cancel'))) {
+        console.log('[impressora] Usuário cancelou a conexão Bluetooth.');
+      }
+      else if (err.message === 'BLUETOOTH_OFF') {
+        alert(
+          'O Bluetooth do celular parece estar DESLIGADO.\n\n' +
+          '1. Ative o Bluetooth nas configurações\n' +
+          '2. Ative também a Localização (GPS)\n' +
+          '3. Volte aqui e tente novamente'
+        );
+      }
+      else if (err.message === 'LOCATION_DENIED') {
+        alert(
+          'A permissão de LOCALIZAÇÃO está BLOQUEADA para este site.\n\n' +
+          'O Android exige essa permissão para encontrar a impressora Bluetooth.\n\n' +
+          'Como liberar:\n' +
+          '1. Toque no cadeado 🔒 ao lado do endereço do site\n' +
+          '2. Toque em "Permissões"\n' +
+          '3. Permita "Localização" e "Dispositivos próximos"\n' +
+          '4. Recarregue a página e tente novamente'
+        );
+      }
+      else if (err.message && err.message.includes('tempo limite')) {
+        alert(
+          'A conexão demorou mais que o esperado e foi cancelada.\n\n' +
+          'Verifique:\n' +
+          '• A impressora está ligada e perto do celular?\n' +
+          '• O Bluetooth e a Localização (GPS) estão ativos?\n' +
+          '• A permissão de Localização foi liberada para o site?\n\n' +
+          'Se estiver usando Samsung, tente o navegador Google Chrome.\n' +
+          'Se o problema persistir, use o cabo USB com adaptador OTG.'
+        );
+      }
+      else {
         alert('Falha ao conectar Bluetooth: ' + err.message);
       }
     } finally {
@@ -174,6 +249,26 @@ if (btnConectar) {
       atualizarStatusImpressora();
     }
   });
+}
+
+/* ---------------------------------------------------------------------
+   Wrapper com timeout para não travar a interface eternamente.
+   O requestDevice do Web Bluetooth não é cancelável, mas liberamos a UI.
+   --------------------------------------------------------------------- */
+async function garantirConexaoBluetoothComTimeout(forcarNovo = false) {
+  let timer = null;
+
+  const promessaConexao = garantirConexaoBluetooth(forcarNovo).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+
+  const promessaTimeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error('Tempo limite de conexão Bluetooth excedido.'));
+    }, 30000); // 30s — tempo generoso para o usuário escolher no pareamento
+  });
+
+  return Promise.race([promessaConexao, promessaTimeout]);
 }
 
 async function garantirConexaoBluetooth(forcarNovo = false) {
@@ -190,6 +285,7 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
 
   if (!device) {
     if (forcarNovo) {
+      console.log('[impressora] Abrindo seletor de pareamento...');
       device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: [
@@ -199,23 +295,32 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
         ]
       });
       localStorage.setItem(PRINTER_ID_KEY, device.id);
+      console.log('[impressora] Dispositivo escolhido:', device.name || device.id);
     } else {
       throw new Error('Nenhum dispositivo Bluetooth salvo ou disponível.');
     }
   }
 
+  /* watchAdvertisements — opcional, com timeout curto para não travar Samsung */
   if (device.watchAdvertisements) {
     try {
-      await device.watchAdvertisements();
+      await Promise.race([
+        device.watchAdvertisements(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('watchAdvertisements timeout')), 3000)
+        )
+      ]);
       device.addEventListener('advertisementreceived', async () => {
         if (!device.gatt.connected && modoImpressao === 'bluetooth') {
-          console.log('Anúncio detectado da impressora! Tentando reconectar...');
+          console.log('[impressora] Anúncio detectado da impressora! Tentando reconectar...');
           try {
             await garantirConexaoBluetooth(false); 
           } catch (e) {}
         }
       });
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[impressora] watchAdvertisements indisponível/expirou (ignorado).');
+    }
   }
 
   const server = await device.gatt.connect();
@@ -235,7 +340,7 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
     } catch (_) {}
   }
 
-  if (!char) throw new Error('Característica não encontrada');
+  if (!char) throw new Error('Característica de escrita não encontrada. Verifique se a impressora está no modo BLE correto.');
 
   impressoraChar = char;
   impressoraDevice = device;
@@ -245,11 +350,11 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
     impressoraChar = null;
     if (modoImpressao === 'bluetooth') {
       atualizarStatusImpressora();
-      console.log('Bluetooth caiu. Tentando reconectar em 3s...');
+      console.log('[impressora] Bluetooth caiu. Tentando reconectar em 3s...');
       setTimeout(async () => {
         try {
           await garantirConexaoBluetooth(false);
-          console.log('Bluetooth reconectado!');
+          console.log('[impressora] Bluetooth reconectado!');
         } catch (err) {}
       }, 3000);
     }
