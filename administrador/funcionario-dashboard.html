@@ -18,6 +18,14 @@
     <div class="header-brand">
       <h1>Painel Funcionário</h1>
       <div class="user-info" id="user-info">Carregando...</div>
+      
+      <!-- BOTÃO DE NOTIFICAÇÃO SONORA -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+        <button class="btn-admin" onclick="alternarSom()" id="btn-som" style="font-size: 0.75rem; padding: 4px 10px; border: 1px solid var(--cor-secundaria); color: var(--cor-secundaria);">
+          <i class="fa-solid fa-volume-high" id="icone-som"></i> Som ON
+        </button>
+      </div>
+      
     </div>
     
     <div class="botoes">
@@ -98,6 +106,7 @@
     </div>
   </div>
 </div>
+
 <!-- MODAL DE ADICIONAIS (PARA PEDIDOS MANUAIS) -->
 <div id="modal-adicionais-manual" class="modal-overlay">
   <div class="modal-conteudo">
