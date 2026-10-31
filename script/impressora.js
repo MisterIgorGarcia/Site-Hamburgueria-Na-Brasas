@@ -1,5 +1,6 @@
 /* =====================================================================
    SISTEMA DE IMPRESSÃO (WEB BLUETOOTH / WEBUSB) - COM TROCA AUTOMÁTICA
+   + DETECÇÃO DE CONEXÃO OCUPADA COM LOG E RETRY AUTOMÁTICO
    ===================================================================== */
 
 let impressoraChar = null; // Bluetooth
@@ -9,6 +10,51 @@ let usbEndpoint = null; // USB
 let modoImpressao = null; // 'bluetooth' ou 'usb'
 
 const PRINTER_ID_KEY = 'nabrasas_printer_id';
+
+/* =====================================================================
+   DETECÇÃO DE CONEXÃO OCUPADA / TRAVADA
+   ===================================================================== */
+
+/**
+ * Verifica se o erro recebido corresponde a "GATT ocupado" ou
+ * "conexão já em andamento" — problema clássico quando outro app,
+ * outra aba ou uma sessão anterior ficou "segurando" a impressora.
+ */
+function ehErroConexaoOcupada(err) {
+  if (!err) return false;
+  const nome = String(err.name || '').toLowerCase();
+  const msg = String(err.message || '').toLowerCase();
+  const tudo = nome + ' ' + msg;
+
+  const padroes = [
+    'gatt operation already in progress',
+    'gatt operation already in progress.',
+    'connection attempt failed',
+    'connection is busy',
+    'already in progress',
+    'gatt server is disconnected',
+    'gatt operation timed out',
+    'operation in progress',
+    'networkerror',
+    'network error',
+    'busy',
+    'occupied'
+  ];
+
+  return padroes.some(p => tudo.includes(p));
+}
+
+/**
+ * Registra o erro de conexão ocupada no console (capturado pelo
+ * terminal visual do painel admin via admin-dashboard.js).
+ */
+function registrarLogConexaoOcupada(err, contexto = 'desconhecido') {
+  const hora = new Date().toLocaleTimeString('pt-BR');
+  console.error(`[impressora-ocupada] ${hora} | Contexto: ${contexto}`);
+  console.error(`[impressora-ocupada] Nome do erro: ${err.name || '(sem nome)'}`);
+  console.error(`[impressora-ocupada] Mensagem: ${err.message || '(sem mensagem)'}`);
+  console.warn('[impressora-ocupada] Dica: verifique se outro app/aba está usando a impressora, ou se ela ficou "presa" de uma sessão anterior.');
+}
 
 /* ===================== DESCONECTAR ===================== */
 async function desconectarImpressoraAtual() {
@@ -42,7 +88,11 @@ async function tentarReconectarBluetoothSalvo() {
     await garantirConexaoBluetooth(false);
     console.log('[impressora] Bluetooth reconectado automaticamente com sucesso!');
   } catch (err) {
-    console.log('[impressora] Sem conexão Bluetooth ativa no momento.', err.message);
+    if (ehErroConexaoOcupada(err)) {
+      registrarLogConexaoOcupada(err, 'tentarReconectarBluetoothSalvo()');
+    } else {
+      console.log('[impressora] Sem conexão Bluetooth ativa no momento.', err.message);
+    }
   }
 }
 
@@ -147,7 +197,7 @@ async function configurarConexaoUSB(device) {
 }
 
 /* =====================================================================
-   CONEXÃO BLUETOOTH — COM VERIFICAÇÕES E TIMEOUT (CORRIGIDO SAMSUNG)
+   CONEXÃO BLUETOOTH — COM VERIFICAÇÕES, TIMEOUT E RETRY DE OCUPAÇÃO
    ===================================================================== */
 const btnConectar = document.getElementById('btn-conectar');
 if (btnConectar) {
@@ -183,7 +233,6 @@ if (btnConectar) {
           }
         } catch (e) {
           if (e.message === 'BLUETOOTH_OFF') throw e;
-          /* Se getAvailability falhar por outro motivo, segue em frente */
           console.warn('[impressora] getAvailability falhou (ignorado):', e);
         }
       }
@@ -198,7 +247,6 @@ if (btnConectar) {
           }
         } catch (e) {
           if (e.message === 'LOCATION_DENIED') throw e;
-          /* Alguns navegadores não permitem query de geolocation — ignora */
         }
       }
 
@@ -208,8 +256,25 @@ if (btnConectar) {
       console.log('[impressora] Conexão Bluetooth concluída com sucesso.');
 
     } catch (err) {
+      /* --- Tratamento contextual dos erros --- */
       if (err.name === 'NotFoundError' || (err.message && err.message.includes('cancel'))) {
         console.log('[impressora] Usuário cancelou a conexão Bluetooth.');
+      }
+      else if (err.message === 'CONEXAO_OCUPADA' || ehErroConexaoOcupada(err)) {
+        registrarLogConexaoOcupada(err, 'btnConectar.click');
+        alert(
+          '⚠ A impressora está OCUPADA ou com conexão travada.\n\n' +
+          'Isso geralmente acontece quando:\n' +
+          '• Outro app (Samsung BT, ESC/POS, PrintHand, etc.) está usando a impressora\n' +
+          '• Outra aba do painel já está conectada a ela\n' +
+          '• A impressora ficou "presa" de uma sessão anterior\n' +
+          '• O pareamento foi feito pelo Bluetooth nativo do celular\n\n' +
+          'Como resolver:\n' +
+          '1. Feche outros apps que usem Bluetooth\n' +
+          '2. Feche outras abas do painel\n' +
+          '3. Desligue e religue a impressora\n' +
+          '4. Se a impressora estiver pareada nas Configurações do Android, "despareie" e tente novamente'
+        );
       }
       else if (err.message === 'BLUETOOTH_OFF') {
         alert(
@@ -253,7 +318,6 @@ if (btnConectar) {
 
 /* ---------------------------------------------------------------------
    Wrapper com timeout para não travar a interface eternamente.
-   O requestDevice do Web Bluetooth não é cancelável, mas liberamos a UI.
    --------------------------------------------------------------------- */
 async function garantirConexaoBluetoothComTimeout(forcarNovo = false) {
   let timer = null;
@@ -265,7 +329,7 @@ async function garantirConexaoBluetoothComTimeout(forcarNovo = false) {
   const promessaTimeout = new Promise((_, reject) => {
     timer = setTimeout(() => {
       reject(new Error('Tempo limite de conexão Bluetooth excedido.'));
-    }, 30000); // 30s — tempo generoso para o usuário escolher no pareamento
+    }, 30000);
   });
 
   return Promise.race([promessaConexao, promessaTimeout]);
@@ -286,14 +350,22 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
   if (!device) {
     if (forcarNovo) {
       console.log('[impressora] Abrindo seletor de pareamento...');
-      device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: [
-          '000018f0-0000-1000-8000-00805f9b34fb',
-          '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-          'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
-        ]
-      });
+      try {
+        device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [
+            '000018f0-0000-1000-8000-00805f9b34fb',
+            '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+            'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
+          ]
+        });
+      } catch (err) {
+        if (ehErroConexaoOcupada(err)) {
+          registrarLogConexaoOcupada(err, 'requestDevice()');
+          throw new Error('CONEXAO_OCUPADA');
+        }
+        throw err;
+      }
       localStorage.setItem(PRINTER_ID_KEY, device.id);
       console.log('[impressora] Dispositivo escolhido:', device.name || device.id);
     } else {
@@ -323,7 +395,37 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
     }
   }
 
-  const server = await device.gatt.connect();
+  /* --- Conexão GATT com retry específico para ocupação --- */
+  let server;
+  try {
+    server = await device.gatt.connect();
+  } catch (err) {
+    if (ehErroConexaoOcupada(err)) {
+      registrarLogConexaoOcupada(err, 'device.gatt.connect() [1ª tentativa]');
+      console.warn('[impressora] Conexão ocupada — forçando disconnect() e tentando novamente em 1.5s...');
+
+      try {
+        if (device.gatt.connected) device.gatt.disconnect();
+      } catch (discErr) {
+        console.warn('[impressora] Falha ao forçar disconnect (ignorado):', discErr);
+      }
+
+      await new Promise(r => setTimeout(r, 1500));
+
+      try {
+        server = await device.gatt.connect();
+        console.log('[impressora] Retry bem-sucedido após liberar conexão ocupada.');
+      } catch (retryErr) {
+        if (ehErroConexaoOcupada(retryErr)) {
+          registrarLogConexaoOcupada(retryErr, 'device.gatt.connect() [retry]');
+        }
+        throw new Error('CONEXAO_OCUPADA');
+      }
+    } else {
+      throw err;
+    }
+  }
+
   let char = null;
   const servicos = [
     '000018f0-0000-1000-8000-00805f9b34fb',
@@ -337,7 +439,11 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
       const chars = await svc.getCharacteristics();
       char = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
       if (char) break;
-    } catch (_) {}
+    } catch (e) {
+      if (ehErroConexaoOcupada(e)) {
+        registrarLogConexaoOcupada(e, `getPrimaryService(${uuid})`);
+      }
+    }
   }
 
   if (!char) throw new Error('Característica de escrita não encontrada. Verifique se a impressora está no modo BLE correto.');
@@ -355,7 +461,11 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
         try {
           await garantirConexaoBluetooth(false);
           console.log('[impressora] Bluetooth reconectado!');
-        } catch (err) {}
+        } catch (err) {
+          if (ehErroConexaoOcupada(err)) {
+            registrarLogConexaoOcupada(err, 'reconexão automática pós-queda');
+          }
+        }
       }, 3000);
     }
   });
@@ -405,13 +515,21 @@ function atualizarStatusImpressora() {
   }
 }
 
-/* ===================== ENVIO DE BYTES ===================== */
+/* ===================== ENVIO DE BYTES (COM LOG DE OCUPAÇÃO) ===================== */
 async function enviarBytesParaImpressora(bytes) {
   if (modoImpressao === 'bluetooth') {
     const CHUNK = 100;
     for (let i = 0; i < bytes.length; i += CHUNK) {
       const pedaco = bytes.slice(i, i + CHUNK);
-      await impressoraChar.writeValue(pedaco);
+      try {
+        await impressoraChar.writeValue(pedaco);
+      } catch (err) {
+        if (ehErroConexaoOcupada(err)) {
+          registrarLogConexaoOcupada(err, `writeValue chunk ${i}/${bytes.length}`);
+          throw new Error('CONEXAO_OCUPADA');
+        }
+        throw err;
+      }
       await new Promise(r => setTimeout(r, 25));
     }
   } else if (modoImpressao === 'usb') {
@@ -469,7 +587,18 @@ async function imprimirEArquivar(pedido, botao) {
     removerPedidoDaTela(pedido.id);
     
   } catch (err) {
-    alert('Erro na impressão: ' + err.message);
+    if (err.message === 'CONEXAO_OCUPADA' || ehErroConexaoOcupada(err)) {
+      alert(
+        '⚠ A impressora ficou ocupada durante a impressão.\n\n' +
+        'O pedido NÃO foi arquivado. Verifique se a impressora imprimiu algo parcial.\n\n' +
+        'Tente:\n' +
+        '1. Desligar e religar a impressora\n' +
+        '2. Desconectar e reconectar no painel\n' +
+        '3. Imprimir novamente'
+      );
+    } else {
+      alert('Erro na impressão: ' + err.message);
+    }
     if (botao) {
       botao.disabled = false;
       botao.textContent = '🖨️ Imprimir e arquivar';
@@ -489,7 +618,14 @@ async function reimprimirRecibo(pedido, botao) {
 
     alert('Segunda via impressa com sucesso!');
   } catch (err) {
-    alert('Erro na reimpressão: ' + err.message);
+    if (err.message === 'CONEXAO_OCUPADA' || ehErroConexaoOcupada(err)) {
+      alert(
+        '⚠ A impressora ficou ocupada durante a reimpressão.\n\n' +
+        'Desconecte e reconecte a impressora no painel e tente novamente.'
+      );
+    } else {
+      alert('Erro na reimpressão: ' + err.message);
+    }
   } finally {
     if (botao) botao.disabled = false;
   }
@@ -604,7 +740,7 @@ function gerarRecibo(pedido) {
   txt(linha);
 
   // ======================================================
-  // NOVO: TAXA DE ENTREGA (somente se > 0)
+  // TAXA DE ENTREGA (somente se > 0)
   // ======================================================
   const taxa = Number(pedido.taxa_entrega) || 0;
   if (taxa > 0) {
