@@ -8,7 +8,7 @@ let listaAdicionaisGlobal = [];
 let itemAtualSelecionado = null;
 let pedidoPendente = null;
 let metodoPagamento = "";
-let tipoEntrega = 'delivery'; // 'delivery' ou 'pickup'
+let tipoEntrega = null; // null, 'delivery' ou 'pickup'
 
 // === TAXA DE ENTREGA POR BAIRRO ===
 let taxasEntregaCache = [];
@@ -26,35 +26,44 @@ async function carregarTaxasEntrega() {
     }
 }
 
-// Função para alternar entre Receber em Casa e Retirar
-function selecionarTipoEntrega(tipo, botao) {
+// Função para escolher Entrega ou Retirada
+function selecionarTipoEntrega(tipo) {
     tipoEntrega = tipo;
     
     // Atualiza visual dos botões
-    document.querySelectorAll('.btn-tipo-entrega').forEach(btn => {
-        btn.classList.remove('ativo');
-        btn.style.borderColor = '#333';
-        btn.style.background = 'transparent';
-        btn.style.color = '#999';
-    });
+    const btnDelivery = document.getElementById('btn-opt-delivery');
+    const btnPickup = document.getElementById('btn-opt-pickup');
     
-    if (botao) {
-        botao.classList.add('ativo');
-        botao.style.borderColor = 'var(--cor-secundaria)';
-        botao.style.background = 'rgba(223,141,34,0.1)';
-        botao.style.color = 'var(--cor-secundaria)';
-    }
+    if (tipo === 'delivery') {
+        btnDelivery.style.borderColor = 'var(--cor-secundaria)';
+        btnDelivery.style.background = 'rgba(223,141,34,0.1)';
+        btnDelivery.querySelector('i').style.color = 'var(--cor-secundaria)';
+        
+        btnPickup.style.borderColor = '#333';
+        btnPickup.style.background = '#111';
+        btnPickup.querySelector('i').style.color = '#888';
 
-    const camposEndereco = document.getElementById('campos-endereco');
-    if (tipo === 'pickup') {
-        camposEndereco.style.display = 'none';
-        taxaEntregaAtual = 0; // Zera a taxa
-        taxaEntregaEncontrada = true; // Considera "válido"
-    } else {
-        camposEndereco.style.display = 'flex';
+        document.getElementById('campos-delivery').style.display = 'flex';
+        document.getElementById('area-formulario').style.display = 'block';
         recalcularTaxaEntrega();
+    } 
+    else if (tipo === 'pickup') {
+        btnPickup.style.borderColor = 'var(--cor-secundaria)';
+        btnPickup.style.background = 'rgba(223,141,34,0.1)';
+        btnPickup.querySelector('i').style.color = 'var(--cor-secundaria)';
+        
+        btnDelivery.style.borderColor = '#333';
+        btnDelivery.style.background = '#111';
+        btnDelivery.querySelector('i').style.color = '#888';
+
+        document.getElementById('campos-delivery').style.display = 'none';
+        document.getElementById('area-formulario').style.display = 'block';
+        
+        // Zera taxa para retirada
+        taxaEntregaAtual = 0;
+        taxaEntregaEncontrada = true;
+        atualizarCarrinhoUI();
     }
-    atualizarCarrinhoUI();
 }
 
 function configurarBairroListener() {
@@ -66,7 +75,7 @@ function configurarBairroListener() {
 }
 
 function recalcularTaxaEntrega() {
-    if (tipoEntrega === 'pickup') return; // Se for retirada, ignora cálculo de frete
+    if (tipoEntrega !== 'delivery') return; // Só calcula se for entrega
 
     const bairroInput = document.getElementById('bairro-cliente');
     let bairro = bairroInput ? bairroInput.value.trim() : '';
@@ -263,6 +272,17 @@ function animarBotaoCarrinho() {
 
 function abrirCarrinho() {
     if (carrinho.length === 0) return alert("Seu carrinho está vazio!");
+    
+    // Reseta o formulário ao abrir
+    tipoEntrega = null;
+    document.getElementById('area-formulario').style.display = 'none';
+    document.getElementById('btn-opt-delivery').style.borderColor = '#333';
+    document.getElementById('btn-opt-delivery').style.background = '#111';
+    document.getElementById('btn-opt-delivery').querySelector('i').style.color = '#888';
+    document.getElementById('btn-opt-pickup').style.borderColor = '#333';
+    document.getElementById('btn-opt-pickup').style.background = '#111';
+    document.getElementById('btn-opt-pickup').querySelector('i').style.color = '#888';
+    
     document.getElementById('modal-carrinho').classList.add('ativo');
 }
 
@@ -304,7 +324,7 @@ function atualizarCarrinhoUI() {
         `;
     });
 
-    const totalFinal = subtotal + taxaEntregaAtual;
+    const totalFinal = subtotal + (tipoEntrega === 'delivery' ? taxaEntregaAtual : 0);
     if (subtotalEl) subtotalEl.textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
     totalEl.textContent = `R$ ${totalFinal.toFixed(2).replace('.', ',')}`;
 
@@ -363,6 +383,8 @@ function configurarBuscaCEP() {
     let ultimoCepBuscado = ""; 
     if (cepInput) {
         cepInput.addEventListener('blur', async (e) => {
+            if (tipoEntrega !== 'delivery') return;
+
             let cep = e.target.value.replace(/\D/g, '');
             if (cep.length === 0) {
                 document.getElementById('rua-cliente').value = '';
@@ -397,6 +419,8 @@ function configurarBuscaCEP() {
 }
 
 async function buscarEnderecoPorRua() {
+    if (tipoEntrega !== 'delivery') return;
+
     const ruaInput = document.getElementById('rua-cliente');
     const btnBusca = document.getElementById('btn-buscar-rua');
     const rua = ruaInput.value.trim();
@@ -440,19 +464,19 @@ async function buscarEnderecoPorRua() {
 
 /* ===================== ENVIO DE PEDIDO E PAGAMENTO ===================== */
 async function enviarPedido() {
+    if (!tipoEntrega) return alert("Escolha se deseja receber em casa ou retirar no local.");
+
     const nome = document.getElementById('nome-cliente').value.trim();
-    const telefone = document.getElementById('tel-cliente').value.trim();
-    
     if (nome.length < 3) return alert("Preencha seu nome completo.");
 
     const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
     const itensFormatados = carrinho.map(item => ({ nome: item.nome, preco: item.preco, qtd: item.qtd }));
 
-    // === FLUXO DE RETIRADA ===
+    // === FLUXO DE RETIRADA (Pickup) ===
     if (tipoEntrega === 'pickup') {
         pedidoPendente = {
             cliente_nome: nome,
-            cliente_telefone: telefone || '',
+            cliente_telefone: 'Retirada no Balcão',
             cliente_cpf: null,
             cliente_endereco: null,
             bairro: null,
@@ -467,7 +491,8 @@ async function enviarPedido() {
         return;
     }
 
-    // === FLUXO DE ENTREGA (Casa) ===
+    // === FLUXO DE ENTREGA (Delivery) ===
+    const telefone = document.getElementById('tel-cliente').value.trim();
     const cep = document.getElementById('cep-cliente').value.trim();
     const rua = document.getElementById('rua-cliente').value.trim();
     const num = document.getElementById('num-cliente').value.trim();
@@ -475,7 +500,6 @@ async function enviarPedido() {
     const cidade = document.getElementById('cidade-cliente').value.trim();
 
     if (cep && !num) return alert("Digite o número da sua casa.");
-
     if (bairro && !taxaEntregaEncontrada) {
         return alert(
             'Não conseguimos calcular a taxa de entrega para o bairro "' + bairro + '".\n\n' +
@@ -721,9 +745,7 @@ async function processarEnvioBanco(pedidoFinal, limparTela = true) {
 
         // Limpa carrinho e formulário
         carrinho = [];
-        tipoEntrega = 'delivery'; // Reseta para o padrão
-        document.getElementById('btn-delivery').click(); // Reseta os botões visuais
-        
+        tipoEntrega = null;
         taxaEntregaAtual = 0;
         taxaEntregaEncontrada = false;
         bairroAtual = '';
@@ -760,9 +782,8 @@ async function processarEnvioBanco(pedidoFinal, limparTela = true) {
     }
 }
 
-// Função para fechar o modal de sucesso
+// Função para fechar o modal de sucesso e limpar tudo
 function fecharModalSucesso() {
     document.getElementById('modal-sucesso').classList.remove('ativo');
-    // Opcional: recarregar a página para limpar tudo
-    // window.location.reload(); 
+    window.location.reload(); // Recarrega a página para limpar o estado
 }

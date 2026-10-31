@@ -77,41 +77,50 @@
 
             <div id="aviso-taxa-entrega" style="display:none; color:#ff6b6b; font-size:14px; margin-top:8px; text-align:center;"></div>
             
-            <!-- NOVO: SELEÇÃO DE ENTREGA OU RETIRADA -->
-            <div style="display: flex; gap: 10px; margin: 15px 0;">
-                <button class="btn-tipo-entrega ativo" id="btn-delivery" onclick="selecionarTipoEntrega('delivery', this)" style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--cor-secundaria); background:rgba(223,141,34,0.1); color:var(--cor-secundaria); font-weight:bold; cursor:pointer; transition: all 0.3s;">
-                    <i class="fa-solid fa-motorcycle"></i> Receber em Casa
-                </button>
-                <button class="btn-tipo-entrega" id="btn-pickup" onclick="selecionarTipoEntrega('pickup', this)" style="flex:1; padding:12px; border-radius:8px; border:1px solid #333; background:transparent; color:#999; font-weight:bold; cursor:pointer; transition: all 0.3s;">
-                    <i class="fa-solid fa-store"></i> Retirar no Local
-                </button>
-            </div>
-
-            <div class="form-cliente">
-                <input type="text" id="nome-cliente" placeholder="Seu Nome (Obrigatório)" required>
-                <input type="tel" id="tel-cliente" placeholder="Seu WhatsApp (Opcional)" maxlength="15" inputmode="numeric">
-                
-                <!-- CAMPO DE ENDEREÇO (SOME SE FOR RETIRADA) -->
-                <div id="campos-endereco" style="display: flex; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="cep-cliente" placeholder="CEP" maxlength="9" inputmode="numeric" style="flex: 1;">
-                        <input type="text" id="num-cliente" placeholder="Número" style="width: 80px;">
-                    </div>
-
-                    <div style="display: flex; gap: 5px;">
-                        <input type="text" id="rua-cliente" placeholder="Rua / Avenida (ex: Rua Francisco)" style="flex: 1;">
-                        <button type="button" id="btn-buscar-rua" onclick="buscarEnderecoPorRua()" style="background: var(--cor-secundaria); color: var(--cor-primaria); border: none; padding: 0 15px; border-radius: 8px; cursor: pointer;" title="Buscar CEP pela Rua">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                        </button>
-                    </div>
-                    <input type="text" id="bairro-cliente" placeholder="Bairro">
-                    <input type="text" id="cidade-cliente" placeholder="Cidade">
+            <!-- NOVO: TELA DE ESCOLHA (Entrega ou Retirada) -->
+            <div id="area-escolha" style="margin: 20px 0;">
+                <p style="color: #fff; font-weight: bold; margin-bottom: 10px; text-align: center;">Como deseja receber seu pedido?</p>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-opt-delivery" onclick="selecionarTipoEntrega('delivery')" style="flex:1; padding: 15px; border-radius: 8px; border: 2px solid #333; background: #111; color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: 0.2s;">
+                        <i class="fa-solid fa-motorcycle" style="font-size: 2rem; color: #888;"></i>
+                        <strong style="font-size: 0.9rem;">Receber em Casa</strong>
+                        <span style="font-size: 0.75rem; color: #999;">+ Taxa de entrega</span>
+                    </button>
+                    <button id="btn-opt-pickup" onclick="selecionarTipoEntrega('pickup')" style="flex:1; padding: 15px; border-radius: 8px; border: 2px solid #333; background: #111; color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: 0.2s;">
+                        <i class="fa-solid fa-store" style="font-size: 2rem; color: #888;"></i>
+                        <strong style="font-size: 0.9rem;">Retirar no Local</strong>
+                        <span style="font-size: 0.75rem; color: #999;">Sem taxa</span>
+                    </button>
                 </div>
             </div>
 
-            <button class="btn-amarelo btn-enviar" onclick="enviarPedido()">
-                <i class="fa-solid fa-paper-plane"></i> Enviar Pedido
-            </button>
+            <!-- FORMULÁRIO (Só aparece depois de escolher) -->
+            <div id="area-formulario" style="display: none;">
+                <div class="form-cliente">
+                    <input type="text" id="nome-cliente" placeholder="Seu Nome (Obrigatório)" required>
+                    
+                    <!-- CAMPOS DE ENTREGA (Somem se for retirada) -->
+                    <div id="campos-delivery" style="display: flex; flex-direction: column; gap: 10px;">
+                        <input type="tel" id="tel-cliente" placeholder="Seu WhatsApp (Opcional)" maxlength="15" inputmode="numeric">
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="cep-cliente" placeholder="CEP" maxlength="9" inputmode="numeric" style="flex: 1;">
+                            <input type="text" id="num-cliente" placeholder="Número" style="width: 80px;">
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="rua-cliente" placeholder="Rua / Avenida (ex: Rua Francisco)" style="flex: 1;">
+                            <button type="button" id="btn-buscar-rua" onclick="buscarEnderecoPorRua()" style="background: var(--cor-secundaria); color: var(--cor-primaria); border: none; padding: 0 15px; border-radius: 8px; cursor: pointer;" title="Buscar CEP pela Rua">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </button>
+                        </div>
+                        <input type="text" id="bairro-cliente" placeholder="Bairro">
+                        <input type="text" id="cidade-cliente" placeholder="Cidade">
+                    </div>
+                </div>
+
+                <button class="btn-amarelo btn-enviar" onclick="enviarPedido()">
+                    <i class="fa-solid fa-paper-plane"></i> Enviar Pedido
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -153,8 +162,6 @@
             <span style="color:#ccc;">Total do Pedido:</span>
             <strong id="total-pagamento-valor" style="color:var(--cor-secundaria); font-size:1.2rem;">R$ 0,00</strong>
         </div>
-
-        <!-- A OPÇÃO DE RETIRADA FOI REMOVIDA DAQUI -->
 
         <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">Escolha como pagar:</p>
 
@@ -210,7 +217,7 @@
     </div>
 </div>
 
-<!-- NOVO: MODAL DE SUCESSO (CÓDIGO DO PEDIDO) -->
+<!-- MODAL DE SUCESSO (CÓDIGO DO PEDIDO) -->
 <div id="modal-sucesso" class="modal-overlay">
     <div class="modal-conteudo" style="text-align: center; padding: 40px 20px;">
         <i class="fa-solid fa-circle-check" style="font-size: 4rem; color: #22c55e; margin-bottom: 20px;"></i>
