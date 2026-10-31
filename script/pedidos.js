@@ -35,7 +35,15 @@ function configurarBairroListener() {
 
 function recalcularTaxaEntrega() {
     const bairroInput = document.getElementById('bairro-cliente');
-    const bairro = bairroInput ? bairroInput.value.trim() : '';
+    let bairro = bairroInput ? bairroInput.value.trim() : '';
+    const cidade = document.getElementById('cidade-cliente')?.value || '';
+
+    // Se a cidade for Lavrinhas, adapta o nome do bairro para buscar no banco
+    if (cidade.toLowerCase().includes('lavrinhas') && bairro) {
+        if (!bairro.toLowerCase().startsWith('lavrinhas -')) {
+            bairro = `Lavrinhas - ${bairro}`;
+        }
+    }
 
     const linha   = document.getElementById('linha-taxa-entrega');
     const valorEl = document.getElementById('valor-taxa-entrega');
@@ -367,18 +375,38 @@ async function buscarEnderecoPorRua() {
     btnBusca.disabled = true;
 
     try {
-        const res = await fetch(`https://viacep.com.br/ws/SP/Cruzeiro/${encodeURIComponent(rua)}/json/`);
-        const data = await res.json();
-        if (data && data.length > 0) {
-            document.getElementById('cep-cliente').value = data[0].cep;
-            document.getElementById('rua-cliente').value = data[0].logradouro; 
-            document.getElementById('bairro-cliente').value = data[0].bairro;
-            document.getElementById('cidade-cliente').value = `${data[0].localidade} - ${data[0].uf}`;
+        // Busca simultânea em Cruzeiro e Lavrinhas
+        const [resCruzeiro, resLavrinhas] = await Promise.all([
+            fetch(`https://viacep.com.br/ws/SP/Cruzeiro/${encodeURIComponent(rua)}/json/`),
+            fetch(`https://viacep.com.br/ws/SP/Lavrinhas/${encodeURIComponent(rua)}/json/`)
+        ]);
+
+        const dataCruzeiro = await resCruzeiro.json();
+        const dataLavrinhas = await resLavrinhas.json();
+
+        let resultados = [];
+        if (Array.isArray(dataCruzeiro)) resultados = resultados.concat(dataCruzeiro);
+        if (Array.isArray(dataLavrinhas)) resultados = resultados.concat(dataLavrinhas);
+
+        if (resultados.length > 0) {
+            // Pega o primeiro resultado encontrado
+            const data = resultados[0];
+            document.getElementById('cep-cliente').value = data.cep;
+            document.getElementById('rua-cliente').value = data.logradouro; 
+            document.getElementById('bairro-cliente').value = data.bairro;
+            document.getElementById('cidade-cliente').value = `${data.localidade} - ${data.uf}`;
             document.getElementById('num-cliente').focus();
+            
             recalcularTaxaEntrega();
-        } else alert("Rua não encontrada em Cruzeiro - SP.");
-    } catch (err) { alert("Erro na busca. Digite o CEP."); } 
-    finally { btnBusca.innerHTML = iconeOriginal; btnBusca.disabled = false; }
+        } else {
+            alert("Rua não encontrada em Cruzeiro ou Lavrinhas - SP.");
+        }
+    } catch (err) { 
+        alert("Erro na busca. Digite o CEP."); 
+    } finally { 
+        btnBusca.innerHTML = iconeOriginal; 
+        btnBusca.disabled = false; 
+    }
 }
 
 /* ===================== ENVIO DE PEDIDO E PAGAMENTO ===================== */
