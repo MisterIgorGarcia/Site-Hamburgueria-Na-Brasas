@@ -16,6 +16,38 @@ let taxaEntregaAtual = 0;
 let taxaEntregaEncontrada = false;
 let bairroAtual = '';
 
+/* ===================== MODAL DE AVISO GENÉRICO ===================== */
+function mostrarAviso(titulo, texto, tipo = 'erro') {
+    const tituloEl = document.getElementById('aviso-titulo');
+    const textoEl  = document.getElementById('aviso-texto');
+    const modal    = document.getElementById('modal-aviso');
+    if (!tituloEl || !textoEl || !modal) return;
+
+    tituloEl.textContent = titulo;
+    textoEl.innerHTML = texto;
+
+    const icone = modal.querySelector('.modal-conteudo > i');
+    if (icone) {
+        const config = {
+            erro:    { classe: 'fa-circle-xmark',         cor: '#ef4444' },
+            atencao: { classe: 'fa-triangle-exclamation', cor: '#f59e0b' },
+            sucesso: { classe: 'fa-circle-check',         cor: '#22c55e' },
+            info:    { classe: 'fa-circle-info',          cor: '#3b82f6' }
+        }[tipo] || { classe: 'fa-triangle-exclamation', cor: '#ef4444' };
+
+        icone.className = `fa-solid ${config.classe}`;
+        icone.style.color = config.cor;
+    }
+
+    modal.classList.add('ativo');
+}
+
+function fecharModalAviso() {
+    const modal = document.getElementById('modal-aviso');
+    if (modal) modal.classList.remove('ativo');
+}
+
+/* ===================== TAXA DE ENTREGA ===================== */
 async function carregarTaxasEntrega() {
     try {
         taxasEntregaCache = await TaxaEntrega.buscarTaxas(supabaseClient);
@@ -271,7 +303,10 @@ function animarBotaoCarrinho() {
 }
 
 function abrirCarrinho() {
-    if (carrinho.length === 0) return alert("Seu carrinho está vazio!");
+    if (carrinho.length === 0) {
+        mostrarAviso('Carrinho vazio', 'Adicione pelo menos um item antes de abrir o carrinho.', 'atencao');
+        return;
+    }
     
     // Reseta o formulário ao abrir
     tipoEntrega = null;
@@ -405,7 +440,9 @@ function configurarBuscaCEP() {
                         document.getElementById('cidade-cliente').value = `${data.localidade} - ${data.uf}`;
                         document.getElementById('num-cliente').focus();
                         recalcularTaxaEntrega();
-                    } else alert("CEP não encontrado.");
+                    } else {
+                        mostrarAviso('CEP não encontrado', 'O CEP digitado não foi localizado. Confira e tente novamente, ou digite o endereço manualmente.', 'erro');
+                    }
                 } catch (err) { console.error("Erro ao buscar CEP", err); }
             }
         });
@@ -424,7 +461,10 @@ async function buscarEnderecoPorRua() {
     const ruaInput = document.getElementById('rua-cliente');
     const btnBusca = document.getElementById('btn-buscar-rua');
     const rua = ruaInput.value.trim();
-    if (rua.length < 3) return alert("Digite pelo menos 3 letras da rua.");
+    if (rua.length < 3) {
+        mostrarAviso('Busca muito curta', 'Digite pelo menos 3 letras do nome da rua para buscar.', 'atencao');
+        return;
+    }
     
     const iconeOriginal = btnBusca.innerHTML;
     btnBusca.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
@@ -452,10 +492,10 @@ async function buscarEnderecoPorRua() {
             document.getElementById('num-cliente').focus();
             recalcularTaxaEntrega();
         } else {
-            alert("Rua não encontrada em Cruzeiro ou Lavrinhas - SP.");
+            mostrarAviso('Rua não encontrada', 'Não encontramos essa rua em Cruzeiro ou Lavrinhas - SP. Tente digitar o CEP diretamente.', 'erro');
         }
     } catch (err) { 
-        alert("Erro na busca. Digite o CEP."); 
+        mostrarAviso('Erro na busca', 'Não foi possível buscar o endereço agora. Digite o CEP manualmente.', 'erro');
     } finally { 
         btnBusca.innerHTML = iconeOriginal; 
         btnBusca.disabled = false; 
@@ -464,10 +504,16 @@ async function buscarEnderecoPorRua() {
 
 /* ===================== ENVIO DE PEDIDO E PAGAMENTO ===================== */
 async function enviarPedido() {
-    if (!tipoEntrega) return alert("Escolha se deseja receber em casa ou retirar no local.");
+    if (!tipoEntrega) {
+        mostrarAviso('Escolha o tipo de entrega', 'Você precisa escolher entre "Receber em Casa" ou "Retirar no Local" antes de continuar.', 'atencao');
+        return;
+    }
 
     const nome = document.getElementById('nome-cliente').value.trim();
-    if (nome.length < 3) return alert("Preencha seu nome completo.");
+    if (nome.length < 3) {
+        mostrarAviso('Nome incompleto', 'Por favor, preencha seu nome completo para continuarmos.', 'atencao');
+        return;
+    }
 
     const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
     const itensFormatados = carrinho.map(item => ({ nome: item.nome, preco: item.preco, qtd: item.qtd }));
@@ -499,12 +545,17 @@ async function enviarPedido() {
     const bairro = document.getElementById('bairro-cliente').value.trim();
     const cidade = document.getElementById('cidade-cliente').value.trim();
 
-    if (cep && !num) return alert("Digite o número da sua casa.");
+    if (cep && !num) {
+        mostrarAviso('Falta o número', 'Digite o número da sua casa para completar o endereço.', 'atencao');
+        return;
+    }
     if (bairro && !taxaEntregaEncontrada) {
-        return alert(
-            'Não conseguimos calcular a taxa de entrega para o bairro "' + bairro + '".\n\n' +
-            'Fale com a gente pelo WhatsApp ou escolha "Retirar no Local".'
+        mostrarAviso(
+            'Bairro não atendido',
+            'Não conseguimos calcular a taxa de entrega para o bairro <strong>"' + bairro + '"</strong>.<br><br>Fale com a gente pelo WhatsApp ou escolha <strong>"Retirar no Local"</strong>.',
+            'erro'
         );
+        return;
     }
 
     const total = subtotal + (bairro ? taxaEntregaAtual : 0);
@@ -569,13 +620,18 @@ function selecionarOpcaoPagamento(opcao, elementoBotao) {
 }
 
 async function confirmarPagamento() {
-    if (!metodoPagamento) return alert("Selecione uma forma de pagamento.");
+    if (!metodoPagamento) {
+        mostrarAviso('Forma de pagamento', 'Selecione como você pretende pagar antes de confirmar o pedido.', 'atencao');
+        return;
+    }
 
     if (!pedidoPendente.cliente_endereco) {
-        return alert("Preencha o endereço completo para entrega.");
+        mostrarAviso('Endereço incompleto', 'Preencha o endereço completo (rua, número, bairro) para entrega.', 'atencao');
+        return;
     }
     if (taxaEntregaAtual === 0 && !taxaEntregaEncontrada) {
-        return alert("Não foi possível calcular a taxa de entrega. Fale com a gente pelo WhatsApp.");
+        mostrarAviso('Taxa não calculada', 'Não foi possível calcular a taxa de entrega. Fale com a gente pelo WhatsApp ou escolha retirar no local.', 'erro');
+        return;
     }
 
     const btn = document.querySelector('#modal-pagamento .btn-enviar');
@@ -585,7 +641,7 @@ async function confirmarPagamento() {
     try {
         if (metodoPagamento === 'dinheiro') {
             const troco = document.getElementById('input-troco').value;
-            if (!troco) throw new Error("Informe o troco.");
+            if (!troco) throw new Error("Informe o valor do troco.");
             pedidoPendente.pagamento = `Pagar na Entrega (Dinheiro) - Troco para R$ ${Number(troco).toFixed(2).replace('.', ',')}`;
             await processarEnvioBanco(pedidoPendente);
         } 
@@ -611,7 +667,7 @@ async function confirmarPagamento() {
             await processarEnvioBanco(pedidoPendente);
         }
     } catch (err) {
-        alert(err.message);
+        mostrarAviso('Erro no pagamento', err.message, 'erro');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar Pedido';
@@ -730,7 +786,7 @@ function copiarPix() {
     const textarea = document.getElementById('pix-copia-cola');
     textarea.select();
     document.execCommand('copy');
-    alert("Código PIX copiado!");
+    mostrarAviso('PIX copiado!', 'O código PIX foi copiado. Cole no aplicativo do seu banco para finalizar o pagamento.', 'sucesso');
 }
 
 /* ===================== SALVAR NO BANCO ===================== */
@@ -778,7 +834,7 @@ async function processarEnvioBanco(pedidoFinal, limparTela = true) {
         }
     } catch (err) {
         console.error(err);
-        alert("Erro ao enviar o pedido: " + err.message);
+        mostrarAviso('Erro ao enviar', 'Não foi possível enviar seu pedido: ' + err.message, 'erro');
     }
 }
 

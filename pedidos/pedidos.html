@@ -236,6 +236,19 @@
     </div>
 </div>
 
+<!-- MODAL DE AVISO (CARRINHO VAZIO E ERROS) -->
+<div id="modal-aviso" class="modal-overlay">
+    <div class="modal-conteudo" style="text-align: center; padding: 30px 20px;">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size: 3.5rem; color: #ef4444; margin-bottom: 15px;"></i>
+        <h3 id="aviso-titulo" style="color: var(--cor-secundaria); font-size: 1.5rem; margin-bottom: 10px;">Aviso</h3>
+        <p id="aviso-texto" style="color: #ccc; font-size: 1rem; margin-bottom: 25px;">Mensagem de aviso.</p>
+        
+        <button class="btn-amarelo btn-enviar" onclick="fecharModalAviso()">
+            <i class="fa-solid fa-check"></i> OK, entendi
+        </button>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../script/taxa-entrega.js"></script>
 <script src="../script/pedidos.js"></script>
