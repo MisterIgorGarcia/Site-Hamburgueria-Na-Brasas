@@ -707,7 +707,7 @@ function montarItensPagBank(pedido) {
     if (Number(pedido.taxa_entrega) > 0) {
         items.push({
             reference_id: 'taxa-entrega',
-            name: 'Taxa de Entrega',
+            name: 'Taxa de Entrega ',
             quantity: 1,
             unit_amount: Math.round(Number(pedido.taxa_entrega) * 100)
         });
