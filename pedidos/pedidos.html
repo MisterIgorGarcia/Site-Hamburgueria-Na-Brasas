@@ -77,23 +77,36 @@
 
             <div id="aviso-taxa-entrega" style="display:none; color:#ff6b6b; font-size:14px; margin-top:8px; text-align:center;"></div>
             
+            <!-- NOVO: SELEÇÃO DE ENTREGA OU RETIRADA -->
+            <div style="display: flex; gap: 10px; margin: 15px 0;">
+                <button class="btn-tipo-entrega ativo" id="btn-delivery" onclick="selecionarTipoEntrega('delivery', this)" style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--cor-secundaria); background:rgba(223,141,34,0.1); color:var(--cor-secundaria); font-weight:bold; cursor:pointer; transition: all 0.3s;">
+                    <i class="fa-solid fa-motorcycle"></i> Receber em Casa
+                </button>
+                <button class="btn-tipo-entrega" id="btn-pickup" onclick="selecionarTipoEntrega('pickup', this)" style="flex:1; padding:12px; border-radius:8px; border:1px solid #333; background:transparent; color:#999; font-weight:bold; cursor:pointer; transition: all 0.3s;">
+                    <i class="fa-solid fa-store"></i> Retirar no Local
+                </button>
+            </div>
+
             <div class="form-cliente">
                 <input type="text" id="nome-cliente" placeholder="Seu Nome (Obrigatório)" required>
                 <input type="tel" id="tel-cliente" placeholder="Seu WhatsApp (Opcional)" maxlength="15" inputmode="numeric">
                 
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="cep-cliente" placeholder="CEP" maxlength="9" inputmode="numeric" style="flex: 1;">
-                    <input type="text" id="num-cliente" placeholder="Número" style="width: 80px;">
-                </div>
+                <!-- CAMPO DE ENDEREÇO (SOME SE FOR RETIRADA) -->
+                <div id="campos-endereco" style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="cep-cliente" placeholder="CEP" maxlength="9" inputmode="numeric" style="flex: 1;">
+                        <input type="text" id="num-cliente" placeholder="Número" style="width: 80px;">
+                    </div>
 
-                <div style="display: flex; gap: 5px;">
-                    <input type="text" id="rua-cliente" placeholder="Rua / Avenida (ex: Rua Francisco)" style="flex: 1;">
-                    <button type="button" id="btn-buscar-rua" onclick="buscarEnderecoPorRua()" style="background: var(--cor-secundaria); color: var(--cor-primaria); border: none; padding: 0 15px; border-radius: 8px; cursor: pointer;" title="Buscar CEP pela Rua">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                    </button>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" id="rua-cliente" placeholder="Rua / Avenida (ex: Rua Francisco)" style="flex: 1;">
+                        <button type="button" id="btn-buscar-rua" onclick="buscarEnderecoPorRua()" style="background: var(--cor-secundaria); color: var(--cor-primaria); border: none; padding: 0 15px; border-radius: 8px; cursor: pointer;" title="Buscar CEP pela Rua">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+                    <input type="text" id="bairro-cliente" placeholder="Bairro">
+                    <input type="text" id="cidade-cliente" placeholder="Cidade">
                 </div>
-                <input type="text" id="bairro-cliente" placeholder="Bairro">
-                <input type="text" id="cidade-cliente" placeholder="Cidade">
             </div>
 
             <button class="btn-amarelo btn-enviar" onclick="enviarPedido()">
@@ -141,16 +154,9 @@
             <strong id="total-pagamento-valor" style="color:var(--cor-secundaria); font-size:1.2rem;">R$ 0,00</strong>
         </div>
 
-        <!-- ÁREA DE RETIRADA -->
-        <div style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;">
-            <p style="color: #fff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">Prefere retirar no local?</p>
-            <!-- Agora chama selecionarOpcaoPagamento em vez de processarRetirada -->
-            <button class="btn-opcao-pgto" onclick="selecionarOpcaoPagamento('retirada', this)" style="background: transparent; border: 2px dashed var(--cor-secundaria); color: var(--cor-secundaria); width: 100%;">
-                <i class="fa-solid fa-store"></i> Retirar na Hamburgueria (Pagar no Balcão)
-            </button>
-        </div>
+        <!-- A OPÇÃO DE RETIRADA FOI REMOVIDA DAQUI -->
 
-        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">Ou receba em casa:</p>
+        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">Escolha como pagar:</p>
 
         <div class="opcoes-pagamento">
             <p style="color: #fff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">Pagar com Antecedência Online (EM BREVE):</p>
@@ -201,6 +207,24 @@
         <textarea id="pix-copia-cola" readonly style="width: 100%; height: 60px; background: #000; color: #fff; border: 1px solid #333; border-radius: 6px; padding: 10px; font-size: 0.8rem; resize: none; margin-bottom: 20px;"></textarea>
         <button class="btn-amarelo btn-enviar" onclick="copiarPix()"><i class="fa-solid fa-copy"></i> Copiar Código PIX</button>
         <p style="font-size: 0.8rem; color: #666; margin-top: 15px;">Após o pagamento, a cozinha liberará seu pedido automaticamente.</p>
+    </div>
+</div>
+
+<!-- NOVO: MODAL DE SUCESSO (CÓDIGO DO PEDIDO) -->
+<div id="modal-sucesso" class="modal-overlay">
+    <div class="modal-conteudo" style="text-align: center; padding: 40px 20px;">
+        <i class="fa-solid fa-circle-check" style="font-size: 4rem; color: #22c55e; margin-bottom: 20px;"></i>
+        <h3 style="color: var(--cor-secundaria); font-size: 1.8rem; margin-bottom: 10px;">Pedido Enviado!</h3>
+        <p style="color: #ccc; font-size: 1.1rem; margin-bottom: 20px;">Guarde esse registro, ele é o código do seu pedido:</p>
+        
+        <div style="background: var(--cor-primaria); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px dashed var(--cor-secundaria);">
+            <h2 id="sucesso-pedido-id" style="color: var(--cor-secundaria); font-size: 2.5rem; margin: 0; font-family: monospace;">#00000000</h2>
+        </div>
+
+        <p style="color: #999; font-size: 0.9rem; margin-bottom: 25px;">Você também pode acompanhar o status no WhatsApp.</p>
+        <button class="btn-amarelo btn-enviar" onclick="fecharModalSucesso()">
+            <i class="fa-solid fa-check"></i> Entendi
+        </button>
     </div>
 </div>
 

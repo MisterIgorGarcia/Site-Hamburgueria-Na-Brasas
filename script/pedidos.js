@@ -8,6 +8,7 @@ let listaAdicionaisGlobal = [];
 let itemAtualSelecionado = null;
 let pedidoPendente = null;
 let metodoPagamento = "";
+let tipoEntrega = 'delivery'; // 'delivery' ou 'pickup'
 
 // === TAXA DE ENTREGA POR BAIRRO ===
 let taxasEntregaCache = [];
@@ -25,6 +26,37 @@ async function carregarTaxasEntrega() {
     }
 }
 
+// Função para alternar entre Receber em Casa e Retirar
+function selecionarTipoEntrega(tipo, botao) {
+    tipoEntrega = tipo;
+    
+    // Atualiza visual dos botões
+    document.querySelectorAll('.btn-tipo-entrega').forEach(btn => {
+        btn.classList.remove('ativo');
+        btn.style.borderColor = '#333';
+        btn.style.background = 'transparent';
+        btn.style.color = '#999';
+    });
+    
+    if (botao) {
+        botao.classList.add('ativo');
+        botao.style.borderColor = 'var(--cor-secundaria)';
+        botao.style.background = 'rgba(223,141,34,0.1)';
+        botao.style.color = 'var(--cor-secundaria)';
+    }
+
+    const camposEndereco = document.getElementById('campos-endereco');
+    if (tipo === 'pickup') {
+        camposEndereco.style.display = 'none';
+        taxaEntregaAtual = 0; // Zera a taxa
+        taxaEntregaEncontrada = true; // Considera "válido"
+    } else {
+        camposEndereco.style.display = 'flex';
+        recalcularTaxaEntrega();
+    }
+    atualizarCarrinhoUI();
+}
+
 function configurarBairroListener() {
     const bairroInput = document.getElementById('bairro-cliente');
     if (bairroInput) {
@@ -34,11 +66,12 @@ function configurarBairroListener() {
 }
 
 function recalcularTaxaEntrega() {
+    if (tipoEntrega === 'pickup') return; // Se for retirada, ignora cálculo de frete
+
     const bairroInput = document.getElementById('bairro-cliente');
     let bairro = bairroInput ? bairroInput.value.trim() : '';
     const cidade = document.getElementById('cidade-cliente')?.value || '';
 
-    // Se a cidade for Lavrinhas, adapta o nome do bairro para buscar no banco
     if (cidade.toLowerCase().includes('lavrinhas') && bairro) {
         if (!bairro.toLowerCase().startsWith('lavrinhas -')) {
             bairro = `Lavrinhas - ${bairro}`;
@@ -75,8 +108,7 @@ function recalcularTaxaEntrega() {
         if (linha) linha.style.display = 'none';
         if (aviso) {
             aviso.style.display = 'block';
-            aviso.textContent =
-                'Ainda não entregamos nesse bairro. Escolha "Retirar na hamburgueria" ou fale com a gente pelo WhatsApp.';
+            aviso.textContent = 'Ainda não entregamos nesse bairro. Escolha "Retirar no Local" ou fale com a gente.';
         }
     }
 
@@ -410,25 +442,48 @@ async function buscarEnderecoPorRua() {
 async function enviarPedido() {
     const nome = document.getElementById('nome-cliente').value.trim();
     const telefone = document.getElementById('tel-cliente').value.trim();
+    
+    if (nome.length < 3) return alert("Preencha seu nome completo.");
+
+    const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+    const itensFormatados = carrinho.map(item => ({ nome: item.nome, preco: item.preco, qtd: item.qtd }));
+
+    // === FLUXO DE RETIRADA ===
+    if (tipoEntrega === 'pickup') {
+        pedidoPendente = {
+            cliente_nome: nome,
+            cliente_telefone: telefone || '',
+            cliente_cpf: null,
+            cliente_endereco: null,
+            bairro: null,
+            taxa_entrega: 0,
+            itens: itensFormatados,
+            total: subtotal,
+            pagamento: 'Retirada no Balcão (Pagar no Local)'
+        };
+        
+        // Envia direto (Pula o modal de pagamento)
+        await processarEnvioBanco(pedidoPendente);
+        return;
+    }
+
+    // === FLUXO DE ENTREGA (Casa) ===
     const cep = document.getElementById('cep-cliente').value.trim();
     const rua = document.getElementById('rua-cliente').value.trim();
     const num = document.getElementById('num-cliente').value.trim();
     const bairro = document.getElementById('bairro-cliente').value.trim();
     const cidade = document.getElementById('cidade-cliente').value.trim();
 
-    if (nome.length < 3) return alert("Preencha seu nome completo.");
     if (cep && !num) return alert("Digite o número da sua casa.");
 
     if (bairro && !taxaEntregaEncontrada) {
         return alert(
             'Não conseguimos calcular a taxa de entrega para o bairro "' + bairro + '".\n\n' +
-            'Fale com a gente pelo WhatsApp ou escolha "Retirar na hamburgueria".'
+            'Fale com a gente pelo WhatsApp ou escolha "Retirar no Local".'
         );
     }
 
-    const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
     const total = subtotal + (bairro ? taxaEntregaAtual : 0);
-    const itensFormatados = carrinho.map(item => ({ nome: item.nome, preco: item.preco, qtd: item.qtd }));
     let enderecoCompleto = (rua && num) ? `${rua}, ${num} - ${bairro}, ${cidade}` : null;
 
     pedidoPendente = {
@@ -443,13 +498,12 @@ async function enviarPedido() {
         pagamento: ''
     };
 
-    // Mostra o total no topo do modal de pagamento
     const totalPgtoEl = document.getElementById('total-pagamento-valor');
     if (totalPgtoEl) totalPgtoEl.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
 
-    // --- NOVO: Reseta o modal de pagamento ao abrir ---
+    // Reseta modal de pagamento ao abrir
     metodoPagamento = "";
-    document.querySelectorAll('.btn-pgto-entrega, .btn-opcao-pgto').forEach(btn => btn.classList.remove('ativo'));
+    document.querySelectorAll('.btn-pgto-entrega').forEach(btn => btn.classList.remove('ativo'));
     
     const containerCpf = document.getElementById('container-cpf-online');
     const containerTroco = document.getElementById('container-troco');
@@ -457,7 +511,6 @@ async function enviarPedido() {
     if (containerTroco) containerTroco.style.display = 'none';
     if (document.getElementById('cpf-online')) document.getElementById('cpf-online').value = '';
     if (document.getElementById('input-troco')) document.getElementById('input-troco').value = '';
-    // ---------------------------------------------------
 
     document.getElementById('modal-carrinho').classList.remove('ativo');
     document.getElementById('modal-pagamento').classList.add('ativo');
@@ -470,17 +523,13 @@ function fecharModalPagamento() {
 
 function selecionarOpcaoPagamento(opcao, elementoBotao) {
     metodoPagamento = opcao;
-    document.querySelectorAll('.btn-pgto-entrega, .btn-opcao-pgto').forEach(btn => btn.classList.remove('ativo'));
+    document.querySelectorAll('.btn-pgto-entrega').forEach(btn => btn.classList.remove('ativo'));
     if (elementoBotao) elementoBotao.classList.add('ativo');
 
     const containerCpf = document.getElementById('container-cpf-online');
     const containerTroco = document.getElementById('container-troco');
 
-    if (opcao === 'retirada') {
-        containerCpf.style.display = 'none';
-        containerTroco.style.display = 'none';
-    } 
-    else if (opcao.includes('online')) {
+    if (opcao.includes('online')) {
         containerCpf.style.display = 'block';
         containerTroco.style.display = 'none';
     } 
@@ -496,35 +545,20 @@ function selecionarOpcaoPagamento(opcao, elementoBotao) {
 }
 
 async function confirmarPagamento() {
-    if (!metodoPagamento) return alert("Selecione uma forma de pagamento ou retirada.");
+    if (!metodoPagamento) return alert("Selecione uma forma de pagamento.");
+
+    if (!pedidoPendente.cliente_endereco) {
+        return alert("Preencha o endereço completo para entrega.");
+    }
+    if (taxaEntregaAtual === 0 && !taxaEntregaEncontrada) {
+        return alert("Não foi possível calcular a taxa de entrega. Fale com a gente pelo WhatsApp.");
+    }
 
     const btn = document.querySelector('#modal-pagamento .btn-enviar');
     btn.disabled = true;
     btn.innerHTML = 'Processando...';
 
     try {
-        // --- NOVO: Tratamento para Retirada ---
-        if (metodoPagamento === 'retirada') {
-            pedidoPendente.cliente_endereco = null;
-            pedidoPendente.bairro = null;
-            pedidoPendente.taxa_entrega = 0;
-            const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
-            pedidoPendente.total = subtotal;
-            pedidoPendente.pagamento = 'Retirada no Balcão (Pagar no Local)';
-            
-            await processarEnvioBanco(pedidoPendente);
-            return; // Para a execução aqui
-        }
-        // --------------------------------------
-
-        // Toda opção abaixo é para ENTREGA
-        if (!pedidoPendente.cliente_endereco) {
-            throw new Error("Preencha o endereço completo para entrega ou escolha retirar na hamburgueria.");
-        }
-        if (taxaEntregaAtual === 0 && !taxaEntregaEncontrada) {
-            throw new Error("Não foi possível calcular a taxa de entrega. Fale com a gente pelo WhatsApp.");
-        }
-
         if (metodoPagamento === 'dinheiro') {
             const troco = document.getElementById('input-troco').value;
             if (!troco) throw new Error("Informe o troco.");
@@ -678,10 +712,18 @@ function copiarPix() {
 /* ===================== SALVAR NO BANCO ===================== */
 async function processarEnvioBanco(pedidoFinal, limparTela = true) {
     try {
-        const { error } = await supabaseClient.from('pedidos_recentes').insert([pedidoFinal]);
+        // O .select() é necessário para pegarmos o ID gerado pelo banco
+        const { data, error } = await supabaseClient.from('pedidos_recentes').insert([pedidoFinal]).select();
         if (error) throw error;
 
+        // Pega o ID gerado (primeiros 8 caracteres para ficar igual ao painel)
+        const novoPedidoId = data[0].id.substring(0, 8).toUpperCase();
+
+        // Limpa carrinho e formulário
         carrinho = [];
+        tipoEntrega = 'delivery'; // Reseta para o padrão
+        document.getElementById('btn-delivery').click(); // Reseta os botões visuais
+        
         taxaEntregaAtual = 0;
         taxaEntregaEncontrada = false;
         bairroAtual = '';
@@ -698,14 +740,17 @@ async function processarEnvioBanco(pedidoFinal, limparTela = true) {
         document.getElementById('cpf-online').value = ''; 
         metodoPagamento = "";
 
-        // Esconde linha de taxa e aviso
         const linha = document.getElementById('linha-taxa-entrega');
         const aviso = document.getElementById('aviso-taxa-entrega');
         if (linha) linha.style.display = 'none';
         if (aviso) aviso.style.display = 'none';
 
         if (limparTela) {
-            alert("Pedido enviado com sucesso!");
+            // Mostra o Modal de Sucesso com o ID
+            document.getElementById('sucesso-pedido-id').textContent = `#${novoPedidoId}`;
+            document.getElementById('modal-sucesso').classList.add('ativo');
+            
+            // Fecha os outros modais
             fecharCarrinho();
             document.getElementById('modal-pagamento').classList.remove('ativo');
         }
@@ -713,4 +758,11 @@ async function processarEnvioBanco(pedidoFinal, limparTela = true) {
         console.error(err);
         alert("Erro ao enviar o pedido: " + err.message);
     }
+}
+
+// Função para fechar o modal de sucesso
+function fecharModalSucesso() {
+    document.getElementById('modal-sucesso').classList.remove('ativo');
+    // Opcional: recarregar a página para limpar tudo
+    // window.location.reload(); 
 }
