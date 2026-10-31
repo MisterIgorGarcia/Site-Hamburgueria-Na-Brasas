@@ -56,6 +56,7 @@ console.warn = function(...args) { originalWarn.apply(console, args); adicionarL
 
 /* ===================== ESTADO GLOBAL ===================== */
 let subscriptionPedidos = null;
+let intervaloPolling = null; // Verificação de segurança
 const pedidosNaTela = new Map();
 let abaAtiva = 'recentes'; 
 let novasNotificacoes = 0; 
@@ -155,6 +156,11 @@ function atualizarBadgeNotificacao() {
 function escutarNovosPedidos() {
   console.log("⏳ Tentando conectar ao Realtime...");
 
+  // Remove conexão antiga se existir para não duplicar
+  if (subscriptionPedidos) {
+    supabaseClient.removeChannel(subscriptionPedidos);
+  }
+
   subscriptionPedidos = supabaseClient
     .channel('mudancas-gerais')
     .on('system', {}, (payload) => console.log("🟢 Status do Canal:", payload.status))
@@ -182,6 +188,35 @@ function escutarNovosPedidos() {
       console.log("🚀 Status final da conexão:", status);
       if (err) console.error("❌ Erro no Realtime:", err);
     });
+
+  // INICIA O POLLING DE SEGURANÇA (Caso o WebSocket falhe na Vercel)
+  iniciarPollingFallback();
+}
+
+/* ===================== POLLING DE SEGURANÇA (FALLBACK) ===================== */
+// Se a rede bloquear o WebSocket, isso busca o último pedido a cada 15 segundos
+function iniciarPollingFallback() {
+  if (intervaloPolling) clearInterval(intervaloPolling);
+  
+  intervaloPolling = setInterval(async () => {
+    // Só roda o polling se a aba ativa for a de pedidos recentes
+    if (abaAtiva === 'recentes') {
+      const { data, error } = await supabaseClient
+        .from('pedidos_recentes')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        const ultimoId = data[0].id;
+        // Se o pedido mais recente no banco não estiver na tela, recarrega!
+        if (!pedidosNaTela.has(ultimoId)) {
+          console.log("🔄 [Polling] Novo pedido detectado via REST (fallback)!");
+          carregarPedidos(1);
+        }
+      }
+    }
+  }, 15000); // 15 segundos
 }
 
 /* ===================== LISTA DE PEDIDOS (RECENTES) ===================== */
