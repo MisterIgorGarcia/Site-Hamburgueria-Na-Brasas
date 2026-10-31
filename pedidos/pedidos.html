@@ -144,7 +144,8 @@
         <!-- ÁREA DE RETIRADA -->
         <div style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;">
             <p style="color: #fff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">Prefere retirar no local?</p>
-            <button class="btn-opcao-pgto" onclick="processarRetirada()" style="background: transparent; border: 2px dashed var(--cor-secundaria); color: var(--cor-secundaria); width: 100%;">
+            <!-- Agora chama selecionarOpcaoPagamento em vez de processarRetirada -->
+            <button class="btn-opcao-pgto" onclick="selecionarOpcaoPagamento('retirada', this)" style="background: transparent; border: 2px dashed var(--cor-secundaria); color: var(--cor-secundaria); width: 100%;">
                 <i class="fa-solid fa-store"></i> Retirar na Hamburgueria (Pagar no Balcão)
             </button>
         </div>
