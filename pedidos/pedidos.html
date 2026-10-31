@@ -77,7 +77,7 @@
 
             <div id="aviso-taxa-entrega" style="display:none; color:#ff6b6b; font-size:14px; margin-top:8px; text-align:center;"></div>
             
-            <!-- NOVO: TELA DE ESCOLHA (Entrega ou Retirada) -->
+            <!-- TELA DE ESCOLHA -->
             <div id="area-escolha" style="margin: 20px 0;">
                 <p style="color: #fff; font-weight: bold; margin-bottom: 10px; text-align: center;">Como deseja receber seu pedido?</p>
                 <div style="display: flex; gap: 10px;">
@@ -98,10 +98,11 @@
             <div id="area-formulario" style="display: none;">
                 <div class="form-cliente">
                     <input type="text" id="nome-cliente" placeholder="Seu Nome (Obrigatório)" required>
+                    <!-- Campo de WhatsApp movido para cá (aparece nos dois fluxos) -->
+                    <input type="tel" id="tel-cliente" placeholder="Seu WhatsApp (Opcional)" maxlength="15" inputmode="numeric">
                     
                     <!-- CAMPOS DE ENTREGA (Somem se for retirada) -->
                     <div id="campos-delivery" style="display: flex; flex-direction: column; gap: 10px;">
-                        <input type="tel" id="tel-cliente" placeholder="Seu WhatsApp (Opcional)" maxlength="15" inputmode="numeric">
                         <div style="display: flex; gap: 10px;">
                             <input type="text" id="cep-cliente" placeholder="CEP" maxlength="9" inputmode="numeric" style="flex: 1;">
                             <input type="text" id="num-cliente" placeholder="Número" style="width: 80px;">
