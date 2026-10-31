@@ -217,7 +217,6 @@ function configurarMascaraTelefone() {
 }
 
 function configurarMascaraCPF() {
-    // Agora aponta para o campo dentro do modal de pagamento
     const cpfInput = document.getElementById('cpf-online');
     if(cpfInput) {
         cpfInput.addEventListener('input', function(e) {
@@ -327,20 +326,17 @@ async function enviarPedido() {
     pedidoPendente = {
         cliente_nome: nome,
         cliente_telefone: telefone,
-        cliente_cpf: null, // Será preenchido se for online
+        cliente_cpf: null,
         cliente_endereco: enderecoCompleto,
         itens: itensFormatados,
         total: total,
         pagamento: ''
     };
 
-    if (enderecoCompleto) {
-        document.getElementById('modal-carrinho').classList.remove('ativo');
-        document.getElementById('modal-pagamento').classList.add('ativo');
-    } else {
-        pedidoPendente.pagamento = 'Retirada no Balcão (Pagar no local)';
-        processarEnvioBanco(pedidoPendente);
-    }
+    // Se o cliente preencheu o endereço, abre o modal para escolher (incluindo retirada)
+    // Se não preencheu, já assume que é retirada, mas ainda abre o modal para escolher a forma de pagamento
+    document.getElementById('modal-carrinho').classList.remove('ativo');
+    document.getElementById('modal-pagamento').classList.add('ativo');
 }
 
 function fecharModalPagamento() {
@@ -356,22 +352,33 @@ function selecionarOpcaoPagamento(opcao, elementoBotao) {
     const containerCpf = document.getElementById('container-cpf-online');
     const containerTroco = document.getElementById('container-troco');
 
-    // Se for online, mostra o CPF e esconde o troco
     if (opcao.includes('online')) {
         containerCpf.style.display = 'block';
         containerTroco.style.display = 'none';
     } 
-    // Se for dinheiro, mostra o troco e esconde o CPF
     else if (opcao === 'dinheiro') {
         containerCpf.style.display = 'none';
         containerTroco.style.display = 'block';
         document.getElementById('input-troco').focus();
     } 
-    // Outros (cartão/pix na entrega), esconde os dois
     else {
         containerCpf.style.display = 'none';
         containerTroco.style.display = 'none';
     }
+}
+
+// Processa a Retirada no Local
+async function processarRetirada() {
+    // Remove o endereço do pedido pendente
+    pedidoPendente.cliente_endereco = null;
+    pedidoPendente.pagamento = 'Retirada no Balcão (Pagar no Local)';
+    
+    // Desabilita o botão para não enviar duas vezes
+    const btn = document.querySelector('.btn-opcao-pgto[onclick="processarRetirada()"]');
+    if(btn) btn.disabled = true;
+
+    await processarEnvioBanco(pedidoPendente);
+    document.getElementById('modal-pagamento').classList.remove('ativo');
 }
 
 async function confirmarPagamento() {
@@ -389,11 +396,9 @@ async function confirmarPagamento() {
             await processarEnvioBanco(pedidoPendente);
         } 
         else if (metodoPagamento.includes('online')) {
-            // Pega o CPF do campo novo no modal de pagamento
             const cpfInput = document.getElementById('cpf-online').value;
             const cpfLimpo = cpfInput.replace(/\D/g, '');
             
-            // Validação matemática
             if (!validarCPF(cpfLimpo)) {
                 throw new Error("CPF inválido. Por favor, digite um CPF real.");
             }
@@ -429,7 +434,6 @@ async function chamarApiPagBank(action, payload) {
     
     const data = await response.json();
     
-    // Tratamento de erro melhorado: pega a mensagem exata do PagBank
     if (!response.ok) {
         let msgErro = 'Erro desconhecido no PagBank.';
         if (data.error_messages && data.error_messages.length > 0) {
@@ -448,7 +452,7 @@ async function pagarComPix(pedido) {
         reference_id: `pedido_${Date.now()}`,
         customer: {
             name: pedido.cliente_nome,
-            email: 'cliente@email.com', // Troque por um e-mail válido se o PagBank reclamar
+            email: 'cliente@email.com', 
             tax_id: pedido.cliente_cpf,
             phones: [{ country: '55', area: '12', number: pedido.cliente_telefone.replace(/\D/g, '').slice(2), type: 'MOBILE' }]
         },
@@ -544,7 +548,7 @@ async function processarEnvioBanco(pedidoFinal, limparTela = true) {
         document.getElementById('bairro-cliente').value = '';
         document.getElementById('cidade-cliente').value = '';
         document.getElementById('input-troco').value = '';
-        document.getElementById('cpf-online').value = ''; // Limpa o CPF novo
+        document.getElementById('cpf-online').value = ''; 
         metodoPagamento = "";
 
         if (limparTela) {

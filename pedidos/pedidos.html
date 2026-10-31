@@ -9,9 +9,7 @@
     <link rel="stylesheet" href="../estilos/stylepedido.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
-    <!-- Biblioteca para gerar o QR Code do PIX -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-
     <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
@@ -125,15 +123,23 @@
             <button class="fechar-modal" onclick="fecharModalPagamento()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         
-        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">Como você deseja pagar?</p>
+        <!-- NOVO: ÁREA DE RETIRADA -->
+        <div style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;">
+            <p style="color: #fff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">Prefere retirar no local?</p>
+            <button class="btn-opcao-pgto" onclick="processarRetirada()" style="background: transparent; border: 2px dashed var(--cor-secundaria); color: var(--cor-secundaria); width: 100%;">
+                <i class="fa-solid fa-store"></i> Retirar na Hamburgueria (Pagar no Balcão)
+            </button>
+        </div>
+
+        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">Ou receba em casa:</p>
 
         <div class="opcoes-pagamento">
-            <p style="color: #fff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">Pagar com Antecedencia Online (EM BREVE):</p>
-            <!--<div class="grid-pgto-entrega" style="margin-bottom: 15px;">
+            <p style="color: #fff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">Pagar com Antecedência Online (EM BREVE):</p>
+            <div class="grid-pgto-entrega" style="margin-bottom: 15px;">
                 <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('pix-online', this)"><i class="fa-brands fa-pix"></i> PIX</button>
                 <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('cartao-credito-online', this)"><i class="fa-solid fa-credit-card"></i> Crédito</button>
                 <button class="btn-pgto-entrega" onclick="selecionarOpcaoPagamento('cartao-debito-online', this)"><i class="fa-solid fa-credit-card"></i> Débito</button>
-            </div>-->
+            </div>
 
             <div style="margin: 15px 0; border-top: 1px solid #333;"></div>
             
@@ -164,22 +170,17 @@
     </div>
 </div>
 
-<!-- MODAL DO PIX (Para exibir o QR Code) -->
+<!-- MODAL DO PIX -->
 <div id="modal-pix" class="modal-overlay">
     <div class="modal-conteudo" style="text-align: center;">
         <div class="modal-header">
             <h3>Pague com PIX</h3>
         </div>
         <p style="color: #ccc; margin-bottom: 20px;">Escaneie o QR Code abaixo no aplicativo do seu banco:</p>
-        
         <div id="qrcode-container" style="background: white; padding: 15px; border-radius: 8px; display: inline-block; margin-bottom: 20px;"></div>
-        
         <p style="font-size: 0.85rem; color: #999; margin-bottom: 10px;">Ou copie o código abaixo:</p>
         <textarea id="pix-copia-cola" readonly style="width: 100%; height: 60px; background: #000; color: #fff; border: 1px solid #333; border-radius: 6px; padding: 10px; font-size: 0.8rem; resize: none; margin-bottom: 20px;"></textarea>
-        
-        <button class="btn-amarelo btn-enviar" onclick="copiarPix()">
-            <i class="fa-solid fa-copy"></i> Copiar Código PIX
-        </button>
+        <button class="btn-amarelo btn-enviar" onclick="copiarPix()"><i class="fa-solid fa-copy"></i> Copiar Código PIX</button>
         <p style="font-size: 0.8rem; color: #666; margin-top: 15px;">Após o pagamento, a cozinha liberará seu pedido automaticamente.</p>
     </div>
 </div>

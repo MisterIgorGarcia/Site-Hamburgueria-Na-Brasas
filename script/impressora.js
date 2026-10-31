@@ -8,7 +8,6 @@ let usbDevice = null; // USB
 let usbEndpoint = null; // USB
 let modoImpressao = null; // 'bluetooth' ou 'usb'
 
-// Chave para salvar o endereço da impressora no navegador
 const PRINTER_ID_KEY = 'nabrasas_printer_id';
 
 /* ===================== DESCONECTAR ===================== */
@@ -36,12 +35,10 @@ async function desconectarImpressoraAtual() {
 
 /* ===================== RECONEXÃO AUTOMÁTICA ===================== */
 async function tentarReconectarBluetoothSalvo() {
-  // Se estiver usando USB ou já tiver uma conexão ativa, não faz nada
   if (modoImpressao === 'usb' || (impressoraChar && impressoraDevice?.gatt?.connected)) return;
 
   try {
     console.log('Verificando dispositivos Bluetooth salvos...');
-    // Tenta conectar silenciosamente (forcarNovo = false)
     await garantirConexaoBluetooth(false);
     console.log('Bluetooth reconectado automaticamente com sucesso!');
   } catch (err) {
@@ -49,18 +46,15 @@ async function tentarReconectarBluetoothSalvo() {
   }
 }
 
-// Tenta reconectar quando a aba volta a ficar visível (ex: desbloqueou o celular)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     tentarReconectarBluetoothSalvo();
   }
 });
 
-// Tenta reconectar quando a página termina de carregar (F5, login, etc.)
 document.addEventListener('DOMContentLoaded', async () => {
   tentarReconectarBluetoothSalvo();
 
-  // Reconexão automática do USB
   if (!navigator.usb) return;
   try {
     const devices = await navigator.usb.getDevices();
@@ -168,7 +162,6 @@ if (btnConectar) {
       btnConectar.disabled = true;
       document.getElementById('txt-bt').textContent = 'Conectando...';
       
-      // Força a abertura da janelinha do Chrome (true)
       await garantirConexaoBluetooth(true); 
     } catch (err) {
       if (err.name === 'NotFoundError' || err.message.includes('cancel')) {
@@ -187,21 +180,14 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
   if (!forcarNovo && impressoraChar && impressoraDevice?.gatt?.connected) return impressoraChar;
 
   let device;
-  
-  // Tenta buscar no cache do navegador APENAS se não for uma conexão manual
   if (!forcarNovo && navigator.bluetooth.getDevices) {
     try {
       const devices = await navigator.bluetooth.getDevices();
       const savedId = localStorage.getItem(PRINTER_ID_KEY);
-      
-      // Procura a impressora exata que foi salva. Se não achar, tenta a primeira da lista.
       device = devices.find(d => d.id === savedId) || devices[0];
-    } catch (e) {
-      console.log('Erro ao buscar cache de dispositivos.');
-    }
+    } catch (e) {}
   }
 
-  // Se não achou no cache (ou se o usuário clicou no botão), abre a janelinha
   if (!device) {
     if (forcarNovo) {
       device = await navigator.bluetooth.requestDevice({
@@ -212,16 +198,12 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
           'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
         ]
       });
-      
-      // SALVA O ID DA IMPRESSORA NO NAVEGADOR PARA RECONEXÕES FUTURAS
       localStorage.setItem(PRINTER_ID_KEY, device.id);
-      
     } else {
       throw new Error('Nenhum dispositivo Bluetooth salvo ou disponível.');
     }
   }
 
-  // Lógica de observação (Watch Advertisements) para tentar acordar o Android
   if (device.watchAdvertisements) {
     try {
       await device.watchAdvertisements();
@@ -259,7 +241,6 @@ async function garantirConexaoBluetooth(forcarNovo = false) {
   impressoraDevice = device;
   modoImpressao = 'bluetooth';
 
-  // Se a conexão cair do nada, tenta reconectar em 3 segundos
   device.addEventListener('gattserverdisconnected', async () => {
     impressoraChar = null;
     if (modoImpressao === 'bluetooth') {
@@ -386,36 +367,6 @@ async function imprimirEArquivar(pedido, botao) {
   }
 }
 
-/* ===================== RE-IMPRESSÃO (SEGUNDA VIA) ===================== */
-async function reimprimirRecibo(pedido, botao) {
-  // 1. Verifica se a impressora está conectada
-  if (!modoImpressao) {
-    alert('Conecte uma impressora (Bluetooth ou USB) primeiro.');
-    return;
-  }
-
-  // 2. Pergunta se o usuário realmente quer re-imprimir
-  if (!confirm("Deseja mesmo re-imprimir o recibo?")) {
-    return;
-  }
-
-  try {
-    // 3. Gera e envia o recibo
-    botao.disabled = true;
-    const bytes = gerarRecibo(pedido);
-    await enviarBytesParaImpressora(bytes);
-    
-    // Opcional: Um pequeno feedback visual de sucesso
-    console.log('Segunda via impressa com sucesso.');
-    
-  } catch (err) {
-    alert('Erro ao re-imprimir: ' + err.message);
-  } finally {
-    // Devolve o botão ao normal
-    botao.disabled = false;
-  }
-}
-
 /* ===================== GERADOR DE RECIBO (ESC/POS) ===================== */
 function normalizar(s) {
   return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -446,8 +397,12 @@ function gerarRecibo(pedido) {
   add(CMD.normal);
   txt('Hamburgueria Artesanal\n');
   
+  // ==========================================
+  // IMPRIMIR TIPO DE PEDIDO NO RECIBO
+  // ==========================================
   const isEntrega = pedido.cliente_endereco && pedido.cliente_endereco.trim() !== '';
   const isMesa = pedido.cliente_telefone === 'Pedido da Mesa' || pedido.cliente_telefone === 'Pedido Interno';
+  const isRetirada = !isEntrega && !isMesa; // Se não é entrega e não é mesa, é retirada
 
   if (isEntrega) {
       add(CMD.bold);
@@ -457,7 +412,12 @@ function gerarRecibo(pedido) {
       add(CMD.bold);
       txt('\n>>> PEDIDO NA MESA <<<\n');
       add(CMD.normal);
+  } else if (isRetirada) {
+      add(CMD.bold);
+      txt('\n>>> RETIRAR NA HAMBURGUERIA <<<\n');
+      add(CMD.normal);
   }
+  // ==========================================
 
   txt(linhaIgual);
   add(CMD.left);
@@ -476,6 +436,9 @@ function gerarRecibo(pedido) {
   }
   txt(linha);
 
+  // ==========================================
+  // IMPRIMIR ENDEREÇO SE FOR ENTREGA
+  // ==========================================
   if (isEntrega && pedido.cliente_endereco) {
       add(CMD.bold);
       txt(`ENDEREÇO DE ENTREGA:\n`);
@@ -487,7 +450,11 @@ function gerarRecibo(pedido) {
       }
       txt(linha);
   }
+  // ==========================================
 
+  // ==========================================
+  // NOVO: IMPRIMIR PAGAMENTO
+  // ==========================================
   if (pedido.pagamento) {
       add(CMD.bold);
       txt(`PAGAMENTO:\n`);
@@ -498,6 +465,7 @@ function gerarRecibo(pedido) {
       }
       txt(linha);
   }
+  // ==========================================
 
   add(CMD.bold);
   txt('ITENS:\n');
@@ -537,4 +505,3 @@ function gerarRecibo(pedido) {
   }
   return out;
 }
-
