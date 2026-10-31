@@ -5,6 +5,89 @@ const SUPABASE_URL = 'https://xzaqqzlfwkjtksjlcbgx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_hoYHM3UKlvTDMCaadvI1kQ_gcn9-pqq'; 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* ===================== SISTEMA DE ÁUDIO (NOTIFICAÇÃO) ===================== */
+let somAtivado = localStorage.getItem('nabrasas_som_ativo') !== 'false'; // Padrão: true
+let audioCtx = null;
+
+// Função para destravar o áudio no navegador (especialmente no Android)
+function iniciarAudioContext() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+// Desbloqueia o áudio no primeiro clique/toque na tela
+document.addEventListener('click', iniciarAudioContext, { once: true });
+document.addEventListener('touchstart', iniciarAudioContext, { once: true });
+
+function atualizarBotaoSom() {
+    const btn = document.getElementById('btn-som');
+    if (!btn) return;
+    
+    if (somAtivado) {
+        btn.innerHTML = '<i class="fa-solid fa-volume-high"></i> Som ON';
+        btn.style.borderColor = 'var(--cor-secundaria)';
+        btn.style.color = 'var(--cor-secundaria)';
+    } else {
+        btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i> Som OFF';
+        btn.style.borderColor = '#555';
+        btn.style.color = '#999';
+    }
+}
+
+function alternarSom() {
+    somAtivado = !somAtivado;
+    localStorage.setItem('nabrasas_som_ativo', somAtivado);
+    atualizarBotaoSom();
+
+    if (somAtivado) {
+        iniciarAudioContext(); // Garante que o áudio está destravado
+        tocarSomNotificacao(); // Toca um teste para confirmar
+    }
+}
+
+function tocarSomNotificacao() {
+    if (!somAtivado) return;
+    
+    try {
+        iniciarAudioContext();
+        if (!audioCtx) return;
+
+        const agora = audioCtx.currentTime;
+        
+        // Criação do som (Ding-Dong agradável)
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        osc.type = 'sine';
+        // Primeira nota (Ding - Mais aguda)
+        osc.frequency.setValueAtTime(880, agora); // Frequência
+        gainNode.gain.setValueAtTime(0.3, agora);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, agora + 0.3);
+
+        // Segunda nota (Dong - Mais grave, 0.3s depois)
+        osc.frequency.setValueAtTime(660, agora + 0.3); 
+        gainNode.gain.setValueAtTime(0.3, agora + 0.3);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, agora + 0.8);
+
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        osc.start(agora);
+        osc.stop(agora + 1);
+
+        // Vibração (Se o celular suportar)
+        if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+        }
+    } catch (e) {
+        console.warn("Erro ao tocar som:", e);
+    }
+}
+
 /* ===================== TERMINAL VISUAL DE LOGS ===================== */
 const originalLog = console.log;
 const originalError = console.error;
@@ -56,7 +139,7 @@ console.warn = function(...args) { originalWarn.apply(console, args); adicionarL
 
 /* ===================== ESTADO GLOBAL ===================== */
 let subscriptionPedidos = null;
-let intervaloPolling = null; // Verificação de segurança
+let intervaloPolling = null;
 const pedidosNaTela = new Map();
 let abaAtiva = 'recentes'; 
 let novasNotificacoes = 0; 
@@ -90,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!isAdminPage && !isFuncPage) { window.location.href = 'login.html'; return; }
 
   document.getElementById('user-info').textContent = `Logado como: ${sessao.nome} (${sessao.tipo === 'admin' ? 'Admin' : 'Funcionário'})`;
+  atualizarBotaoSom(); // Atualiza o botão com o estado salvo
   iniciarPainel();
 });
 
@@ -156,7 +240,6 @@ function atualizarBadgeNotificacao() {
 function escutarNovosPedidos() {
   console.log("⏳ Tentando conectar ao Realtime...");
 
-  // Remove conexão antiga se existir para não duplicar
   if (subscriptionPedidos) {
     supabaseClient.removeChannel(subscriptionPedidos);
   }
@@ -166,6 +249,10 @@ function escutarNovosPedidos() {
     .on('system', {}, (payload) => console.log("🟢 Status do Canal:", payload.status))
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_recentes' }, (payload) => {
       console.log("📦 Novo pedido recebido via WebSocket!");
+      
+      // TOCA O SOM E VIBRA
+      tocarSomNotificacao();
+
       if (abaAtiva === 'recentes' && paginaAtualRecentes === 1) {
         adicionarPedidoNoTopo(payload.new);
       } else {
@@ -189,17 +276,14 @@ function escutarNovosPedidos() {
       if (err) console.error("❌ Erro no Realtime:", err);
     });
 
-  // INICIA O POLLING DE SEGURANÇA (Caso o WebSocket falhe na Vercel)
   iniciarPollingFallback();
 }
 
 /* ===================== POLLING DE SEGURANÇA (FALLBACK) ===================== */
-// Se a rede bloquear o WebSocket, isso busca o último pedido a cada 15 segundos
 function iniciarPollingFallback() {
   if (intervaloPolling) clearInterval(intervaloPolling);
   
   intervaloPolling = setInterval(async () => {
-    // Só roda o polling se a aba ativa for a de pedidos recentes
     if (abaAtiva === 'recentes') {
       const { data, error } = await supabaseClient
         .from('pedidos_recentes')
@@ -209,14 +293,17 @@ function iniciarPollingFallback() {
 
       if (!error && data && data.length > 0) {
         const ultimoId = data[0].id;
-        // Se o pedido mais recente no banco não estiver na tela, recarrega!
         if (!pedidosNaTela.has(ultimoId)) {
           console.log("🔄 [Polling] Novo pedido detectado via REST (fallback)!");
+          
+          // TOCA O SOM E VIBRA
+          tocarSomNotificacao();
+          
           carregarPedidos(1);
         }
       }
     }
-  }, 15000); // 15 segundos
+  }, 15000);
 }
 
 /* ===================== LISTA DE PEDIDOS (RECENTES) ===================== */
@@ -272,14 +359,12 @@ function criarCardPedido(pedido, lista, novo) {
   const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
   const itensHTML = itens.map(i => `<li><span>${i.qtd || 1}x ${i.nome}</span><span>R$ ${Number(i.preco).toFixed(2).replace('.', ',')}</span></li>`).join('');
 
-  // === NOVOS CÁLCULOS — TAXA DE ENTREGA ===
   const taxaEntrega = Number(pedido.taxa_entrega) || 0;
   const totalNum = Number(pedido.total) || 0;
   const subtotalNum = totalNum - taxaEntrega;
   const subtotalFmt = subtotalNum.toFixed(2).replace('.', ',');
   const taxaFmt = taxaEntrega.toFixed(2).replace('.', ',');
   const totalFmt = totalNum.toFixed(2).replace('.', ',');
-  // ========================================
 
   let enderecoHTML = '';
   if (pedido.cliente_endereco) {
@@ -313,7 +398,6 @@ function criarCardPedido(pedido, lista, novo) {
       tagPagamentoHTML = `<span class="badge-tipo" style="${corBadge} margin-bottom: 10px;"><i class="fa-solid fa-wallet"></i> ${pedido.pagamento}</span>`;
   }
 
-  // Bloco do total com subtotal + taxa + total
   const taxaHTML = taxaEntrega > 0
     ? `<div style="display:flex; justify-content:space-between; font-size:0.88rem; color:var(--cor-secundaria);">
          <span><i class="fa-solid fa-motorcycle"></i> Taxa de Entrega</span>
@@ -424,7 +508,6 @@ async function carregarHistorico(pagina = 1) {
         const isEntrega = p.cliente_endereco && p.cliente_endereco.trim() !== '';
         const isMesa = p.cliente_telefone === 'Pedido da Mesa' || p.cliente_telefone === 'Pedido Interno';
 
-        // Cálculo da taxa no histórico
         const taxaHist = Number(p.taxa_entrega) || 0;
         const totalHist = Number(p.total) || 0;
         const subtotalHist = totalHist - taxaHist;
