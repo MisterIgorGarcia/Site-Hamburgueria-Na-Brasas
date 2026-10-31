@@ -1,11 +1,10 @@
 // script/taxa-entrega.js
 // Módulo compartilhado de cálculo de taxa de entrega por bairro.
-// Carregar ANTES de pedidos.js e admin-dashboard.js.
 (function (global) {
   'use strict';
 
-  const CACHE_KEY = 'na_brasas_taxas_entrega_v1';
-  const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
+  // Cache apenas em memória (reseta ao recarregar a página)
+  let cacheMemoria = null;
 
   function normalizarBairro(texto) {
     if (texto == null) return '';
@@ -19,16 +18,9 @@
   }
 
   async function buscarTaxas(supabase, { force = false } = {}) {
-    if (!force) {
-      try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && Date.now() - parsed.ts < CACHE_TTL_MS) {
-            return parsed.data;
-          }
-        }
-      } catch (_) { /* ignore */ }
+    // Se já buscou nesta sessão e não pediu para forçar, retorna o da memória
+    if (!force && cacheMemoria) {
+      return cacheMemoria;
     }
 
     const { data, error } = await supabase
@@ -37,16 +29,9 @@
       .eq('ativo', true);
 
     if (error) throw error;
-    const lista = data || [];
-
-    try {
-      localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({ ts: Date.now(), data: lista })
-      );
-    } catch (_) { /* ignore */ }
-
-    return lista;
+    
+    cacheMemoria = data || [];
+    return cacheMemoria;
   }
 
   function encontrarTaxa(bairroDigitado, taxas) {
@@ -58,7 +43,7 @@
       if (t.bairro_normalizado === alvo) return t;
     }
 
-    // 2) Match parcial (contém um ao outro) — ajuda quando ViaCEP retorna "Jardim América" e a tabela tem "Jd América"
+    // 2) Match parcial (contém um ao outro)
     for (const t of taxas) {
       const n = t.bairro_normalizado;
       if (!n) continue;
@@ -76,7 +61,7 @@
   }
 
   function limparCache() {
-    try { localStorage.removeItem(CACHE_KEY); } catch (_) {}
+    cacheMemoria = null;
   }
 
   global.TaxaEntrega = {
