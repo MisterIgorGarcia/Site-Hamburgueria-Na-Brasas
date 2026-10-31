@@ -9,6 +9,72 @@ let itemAtualSelecionado = null;
 let pedidoPendente = null;
 let metodoPagamento = "";
 
+// === TAXA DE ENTREGA POR BAIRRO ===
+let taxasEntregaCache = [];
+let taxaEntregaAtual = 0;
+let taxaEntregaEncontrada = false;
+let bairroAtual = '';
+
+async function carregarTaxasEntrega() {
+    try {
+        taxasEntregaCache = await TaxaEntrega.buscarTaxas(supabaseClient);
+        console.log('[taxa-entrega] taxas carregadas:', taxasEntregaCache.length);
+    } catch (e) {
+        console.error('[taxa-entrega] falha ao carregar taxas', e);
+        taxasEntregaCache = [];
+    }
+}
+
+function configurarBairroListener() {
+    const bairroInput = document.getElementById('bairro-cliente');
+    if (bairroInput) {
+        bairroInput.addEventListener('input', recalcularTaxaEntrega);
+        bairroInput.addEventListener('change', recalcularTaxaEntrega);
+    }
+}
+
+function recalcularTaxaEntrega() {
+    const bairroInput = document.getElementById('bairro-cliente');
+    const bairro = bairroInput ? bairroInput.value.trim() : '';
+
+    const linha   = document.getElementById('linha-taxa-entrega');
+    const valorEl = document.getElementById('valor-taxa-entrega');
+    const aviso   = document.getElementById('aviso-taxa-entrega');
+
+    if (!bairro) {
+        taxaEntregaAtual = 0;
+        taxaEntregaEncontrada = false;
+        bairroAtual = '';
+        if (linha) linha.style.display = 'none';
+        if (aviso) aviso.style.display = 'none';
+        atualizarCarrinhoUI();
+        return;
+    }
+
+    const match = TaxaEntrega.encontrarTaxa(bairro, taxasEntregaCache);
+
+    if (match) {
+        taxaEntregaEncontrada = true;
+        taxaEntregaAtual = Number(match.taxa) || 0;
+        bairroAtual = match.bairro;
+        if (linha)   linha.style.display = 'flex';
+        if (valorEl) valorEl.textContent = TaxaEntrega.formatarBRL(taxaEntregaAtual);
+        if (aviso)   aviso.style.display = 'none';
+    } else {
+        taxaEntregaEncontrada = false;
+        taxaEntregaAtual = 0;
+        bairroAtual = bairro;
+        if (linha) linha.style.display = 'none';
+        if (aviso) {
+            aviso.style.display = 'block';
+            aviso.textContent =
+                'Ainda não entregamos nesse bairro. Escolha "Retirar na hamburgueria" ou fale com a gente pelo WhatsApp.';
+        }
+    }
+
+    atualizarCarrinhoUI();
+}
+
 /* ===================== NAVEGAÇÃO DE CATEGORIAS ===================== */
 function mudarCategoria(categoria) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('ativo'));
@@ -21,11 +87,13 @@ function mudarCategoria(categoria) {
 
 /* ===================== CARREGAR PRODUTOS E ADICIONAIS ===================== */
 document.addEventListener('DOMContentLoaded', async () => {
+    await carregarTaxasEntrega();
     await carregarAdicionais();
     await carregarProdutos();
     configurarMascaraTelefone();
     configurarMascaraCPF();
     configurarBuscaCEP();
+    configurarBairroListener();
 });
 
 async function carregarAdicionais() {
@@ -169,13 +237,14 @@ function alterarQtd(index, mudanca) {
 function atualizarCarrinhoUI() {
     const lista = document.getElementById('lista-carrinho');
     const badge = document.getElementById('badge-carrinho');
+    const subtotalEl = document.getElementById('subtotal-carrinho-valor');
     const totalEl = document.getElementById('total-carrinho-valor');
     
     lista.innerHTML = '';
-    let totalGeral = 0, totalItens = 0;
+    let subtotal = 0, totalItens = 0;
 
     carrinho.forEach((item, index) => {
-        totalGeral += item.preco * item.qtd;
+        subtotal += item.preco * item.qtd;
         totalItens += item.qtd;
         let adicionaisHTML = item.adicionais && item.adicionais.length > 0 ? `<span class="item-adicionais-carrinho">Adicionais: ${item.adicionais.map(a => a.nome).join(', ')}</span>` : '';
 
@@ -195,7 +264,10 @@ function atualizarCarrinhoUI() {
         `;
     });
 
-    totalEl.textContent = `R$ ${totalGeral.toFixed(2).replace('.', ',')}`;
+    const totalFinal = subtotal + taxaEntregaAtual;
+    if (subtotalEl) subtotalEl.textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+    totalEl.textContent = `R$ ${totalFinal.toFixed(2).replace('.', ',')}`;
+
     if (totalItens > 0) { badge.textContent = totalItens; badge.classList.remove('escondido'); } 
     else { badge.classList.add('escondido'); fecharCarrinho(); }
 }
@@ -257,6 +329,7 @@ function configurarBuscaCEP() {
                 document.getElementById('bairro-cliente').value = '';
                 document.getElementById('cidade-cliente').value = '';
                 ultimoCepBuscado = "";
+                recalcularTaxaEntrega();
                 return;
             }
             if (cep.length === 8 && cep !== ultimoCepBuscado) {
@@ -269,6 +342,7 @@ function configurarBuscaCEP() {
                         document.getElementById('bairro-cliente').value = data.bairro;
                         document.getElementById('cidade-cliente').value = `${data.localidade} - ${data.uf}`;
                         document.getElementById('num-cliente').focus();
+                        recalcularTaxaEntrega();
                     } else alert("CEP não encontrado.");
                 } catch (err) { console.error("Erro ao buscar CEP", err); }
             }
@@ -301,6 +375,7 @@ async function buscarEnderecoPorRua() {
             document.getElementById('bairro-cliente').value = data[0].bairro;
             document.getElementById('cidade-cliente').value = `${data[0].localidade} - ${data[0].uf}`;
             document.getElementById('num-cliente').focus();
+            recalcularTaxaEntrega();
         } else alert("Rua não encontrada em Cruzeiro - SP.");
     } catch (err) { alert("Erro na busca. Digite o CEP."); } 
     finally { btnBusca.innerHTML = iconeOriginal; btnBusca.disabled = false; }
@@ -319,7 +394,16 @@ async function enviarPedido() {
     if (nome.length < 3) return alert("Preencha seu nome completo.");
     if (cep && !num) return alert("Digite o número da sua casa.");
 
-    const total = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+    // Se o bairro foi preenchido mas não temos taxa, bloqueia (usuário pode limpar p/ retirada)
+    if (bairro && !taxaEntregaEncontrada) {
+        return alert(
+            'Não conseguimos calcular a taxa de entrega para o bairro "' + bairro + '".\n\n' +
+            'Fale com a gente pelo WhatsApp ou escolha "Retirar na hamburgueria".'
+        );
+    }
+
+    const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+    const total = subtotal + (bairro ? taxaEntregaAtual : 0);
     const itensFormatados = carrinho.map(item => ({ nome: item.nome, preco: item.preco, qtd: item.qtd }));
     let enderecoCompleto = (rua && num) ? `${rua}, ${num} - ${bairro}, ${cidade}` : null;
 
@@ -328,13 +412,17 @@ async function enviarPedido() {
         cliente_telefone: telefone,
         cliente_cpf: null,
         cliente_endereco: enderecoCompleto,
+        bairro: bairro || null,
+        taxa_entrega: bairro ? taxaEntregaAtual : 0,
         itens: itensFormatados,
         total: total,
         pagamento: ''
     };
 
-    // Se o cliente preencheu o endereço, abre o modal para escolher (incluindo retirada)
-    // Se não preencheu, já assume que é retirada, mas ainda abre o modal para escolher a forma de pagamento
+    // Mostra o total no topo do modal de pagamento
+    const totalPgtoEl = document.getElementById('total-pagamento-valor');
+    if (totalPgtoEl) totalPgtoEl.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+
     document.getElementById('modal-carrinho').classList.remove('ativo');
     document.getElementById('modal-pagamento').classList.add('ativo');
 }
@@ -369,11 +457,15 @@ function selecionarOpcaoPagamento(opcao, elementoBotao) {
 
 // Processa a Retirada no Local
 async function processarRetirada() {
-    // Remove o endereço do pedido pendente
+    // Remove endereço e taxa do pedido pendente
     pedidoPendente.cliente_endereco = null;
+    pedidoPendente.bairro = null;
+    pedidoPendente.taxa_entrega = 0;
+    // Recalcula o total sem taxa
+    const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+    pedidoPendente.total = subtotal;
     pedidoPendente.pagamento = 'Retirada no Balcão (Pagar no Local)';
     
-    // Desabilita o botão para não enviar duas vezes
     const btn = document.querySelector('.btn-opcao-pgto[onclick="processarRetirada()"]');
     if(btn) btn.disabled = true;
 
@@ -383,6 +475,15 @@ async function processarRetirada() {
 
 async function confirmarPagamento() {
     if (!metodoPagamento) return alert("Selecione uma forma de pagamento.");
+
+    // Toda opção aqui é para ENTREGA (retirada é o outro botão).
+    // Portanto exige endereço e taxa válida.
+    if (!pedidoPendente.cliente_endereco) {
+        return alert("Preencha o endereço completo para entrega ou escolha retirar na hamburgueria.");
+    }
+    if (taxaEntregaAtual === 0 && !taxaEntregaEncontrada) {
+        return alert("Não foi possível calcular a taxa de entrega. Fale com a gente pelo WhatsApp.");
+    }
 
     const btn = document.querySelector('#modal-pagamento .btn-enviar');
     btn.disabled = true;
@@ -447,6 +548,26 @@ async function chamarApiPagBank(action, payload) {
     return data;
 }
 
+// Helper: monta items do PagBank incluindo taxa de entrega como linha separada
+// (garante que soma dos itens == total cobrado)
+function montarItensPagBank(pedido) {
+    const items = pedido.itens.map(item => ({
+        reference_id: item.nome,
+        name: item.nome,
+        quantity: item.qtd,
+        unit_amount: Math.round(item.preco * 100)
+    }));
+    if (Number(pedido.taxa_entrega) > 0) {
+        items.push({
+            reference_id: 'taxa-entrega',
+            name: 'Taxa de Entrega',
+            quantity: 1,
+            unit_amount: Math.round(Number(pedido.taxa_entrega) * 100)
+        });
+    }
+    return items;
+}
+
 async function pagarComPix(pedido) {
     const payload = {
         reference_id: `pedido_${Date.now()}`,
@@ -456,12 +577,7 @@ async function pagarComPix(pedido) {
             tax_id: pedido.cliente_cpf,
             phones: [{ country: '55', area: '12', number: pedido.cliente_telefone.replace(/\D/g, '').slice(2), type: 'MOBILE' }]
         },
-        items: pedido.itens.map(item => ({
-            reference_id: item.nome,
-            name: item.nome,
-            quantity: item.qtd,
-            unit_amount: Math.round(item.preco * 100) 
-        })),
+        items: montarItensPagBank(pedido),
         qr_codes: [{ amount: { value: Math.round(pedido.total * 100) } }],
         notification_urls: [`https://${window.location.hostname}/api/webhook-pagbank`]
     };
@@ -499,12 +615,7 @@ async function pagarComCartao(pedido) {
             email: 'cliente@email.com',
             tax_id: pedido.cliente_cpf
         },
-        items: pedido.itens.map(item => ({
-            reference_id: item.nome,
-            name: item.nome,
-            quantity: item.qtd,
-            unit_amount: Math.round(item.preco * 100)
-        })),
+        items: montarItensPagBank(pedido),
         redirect_url: `https://${window.location.hostname}/index.html?status=sucesso`,
         notification_urls: [`https://${window.location.hostname}/api/webhook-pagbank`]
     };
@@ -538,6 +649,9 @@ async function processarEnvioBanco(pedidoFinal, limparTela = true) {
         if (error) throw error;
 
         carrinho = [];
+        taxaEntregaAtual = 0;
+        taxaEntregaEncontrada = false;
+        bairroAtual = '';
         atualizarCarrinhoUI();
         
         document.getElementById('nome-cliente').value = '';
@@ -550,6 +664,12 @@ async function processarEnvioBanco(pedidoFinal, limparTela = true) {
         document.getElementById('input-troco').value = '';
         document.getElementById('cpf-online').value = ''; 
         metodoPagamento = "";
+
+        // Esconde linha de taxa e aviso
+        const linha = document.getElementById('linha-taxa-entrega');
+        const aviso = document.getElementById('aviso-taxa-entrega');
+        if (linha) linha.style.display = 'none';
+        if (aviso) aviso.style.display = 'none';
 
         if (limparTela) {
             alert("Pedido enviado com sucesso!");

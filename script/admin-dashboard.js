@@ -11,7 +11,7 @@ const originalError = console.error;
 const originalWarn = console.warn;
 
 let logsVisuais = [];
-let pedidosArquivadosGlobais = []; // Guarda os pedidos do histórico para a reimpressão
+let pedidosArquivadosGlobais = [];
 
 function adicionarLogVisual(tipo, args) {
   if (!document.getElementById('terminal-container')) return;
@@ -71,6 +71,9 @@ let carrinhoManual = [];
 let listaAdicionaisGlobal = [];
 let itemManualAtual = null;
 
+/* ===================== TAXAS DE ENTREGA (GLOBAIS) ===================== */
+let taxasGlobais = [];
+
 /* ===================== INICIALIZAÇÃO E LOGIN ===================== */
 document.addEventListener('DOMContentLoaded', () => {
   const sessaoSalva = localStorage.getItem('nabrasas_sessao');
@@ -129,6 +132,7 @@ function mudarAba(aba) {
   if (aba === 'historico' && document.getElementById('lista-historico')) carregarHistorico(1);
   if (aba === 'graficos' && document.getElementById('piechart')) gerarGraficos();
   if (aba === 'funcionarios' && document.getElementById('lista-funcionarios')) carregarFuncionarios();
+  if (aba === 'taxas' && document.getElementById('lista-taxas')) carregarTaxasAdmin();
 }
 
 /* ===================== NOTIFICAÇÕES ===================== */
@@ -170,6 +174,9 @@ function escutarNovosPedidos() {
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos_arquivados' }, (payload) => {
       if (abaAtiva === 'historico' && document.getElementById('lista-historico')) carregarHistorico(paginaAtualHistorico);
       if (abaAtiva === 'graficos' && document.getElementById('piechart')) gerarGraficos();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'taxas_entrega' }, (payload) => {
+      if (abaAtiva === 'taxas' && document.getElementById('lista-taxas')) carregarTaxasAdmin();
     })
     .subscribe((status, err) => {
       console.log("🚀 Status final da conexão:", status);
@@ -230,6 +237,15 @@ function criarCardPedido(pedido, lista, novo) {
   const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
   const itensHTML = itens.map(i => `<li><span>${i.qtd || 1}x ${i.nome}</span><span>R$ ${Number(i.preco).toFixed(2).replace('.', ',')}</span></li>`).join('');
 
+  // === NOVOS CÁLCULOS — TAXA DE ENTREGA ===
+  const taxaEntrega = Number(pedido.taxa_entrega) || 0;
+  const totalNum = Number(pedido.total) || 0;
+  const subtotalNum = totalNum - taxaEntrega;
+  const subtotalFmt = subtotalNum.toFixed(2).replace('.', ',');
+  const taxaFmt = taxaEntrega.toFixed(2).replace('.', ',');
+  const totalFmt = totalNum.toFixed(2).replace('.', ',');
+  // ========================================
+
   let enderecoHTML = '';
   if (pedido.cliente_endereco) {
       const enderecoMapa = encodeURIComponent(pedido.cliente_endereco);
@@ -246,7 +262,8 @@ function criarCardPedido(pedido, lista, novo) {
   
   let tagTipoHTML = '';
   if (isEntrega) {
-      tagTipoHTML = `<span class="badge-tipo pedido-entrega"><i class="fa-solid fa-motorcycle"></i> Pedido de Entrega</span>`;
+      const bairroInfo = pedido.bairro ? ` • ${pedido.bairro}` : '';
+      tagTipoHTML = `<span class="badge-tipo pedido-entrega"><i class="fa-solid fa-motorcycle"></i> Pedido de Entrega${bairroInfo}</span>`;
   } else if (isMesa) {
       tagTipoHTML = `<span class="badge-tipo pedido-mesa"><i class="fa-solid fa-utensils"></i> Pedido da Mesa</span>`;
   }
@@ -261,6 +278,14 @@ function criarCardPedido(pedido, lista, novo) {
       tagPagamentoHTML = `<span class="badge-tipo" style="${corBadge} margin-bottom: 10px;"><i class="fa-solid fa-wallet"></i> ${pedido.pagamento}</span>`;
   }
 
+  // Bloco do total com subtotal + taxa + total
+  const taxaHTML = taxaEntrega > 0
+    ? `<div style="display:flex; justify-content:space-between; font-size:0.88rem; color:var(--cor-secundaria);">
+         <span><i class="fa-solid fa-motorcycle"></i> Taxa de Entrega</span>
+         <span>R$ ${taxaFmt}</span>
+       </div>`
+    : '';
+
   card.innerHTML = `
     <div class="pedido-header" style="align-items: flex-start; margin-bottom: 5px;">
       <span class="pedido-id">#${pedido.id.slice(0, 8)}</span>
@@ -273,9 +298,17 @@ function criarCardPedido(pedido, lista, novo) {
     <div class="pedido-cliente">${pedido.cliente_nome} <small>${pedido.cliente_telefone && !isMesa ? pedido.cliente_telefone : ''}</small></div>
     ${enderecoHTML}
     <ul class="pedido-itens" style="margin-top: 15px;">${itensHTML}</ul>
-    <div class="pedido-total">
-      <span>Total</span><span class="valor">R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}</span>
+
+    <div class="pedido-total" style="display:flex; flex-direction:column; gap:4px;">
+      <div style="display:flex; justify-content:space-between; font-size:0.88rem; color:#aaa;">
+        <span>Subtotal</span><span>R$ ${subtotalFmt}</span>
+      </div>
+      ${taxaHTML}
+      <div style="display:flex; justify-content:space-between; border-top:1px solid #333; padding-top:6px; margin-top:2px; font-weight:bold;">
+        <span>Total</span><span class="valor">R$ ${totalFmt}</span>
+      </div>
     </div>
+
     <div class="pedido-acoes">
       <button class="btn-lixeira" onclick="apagarPedidoRecente('${pedido.id}')" title="Apagar este pedido">
         <i class="fa-solid fa-trash"></i>
@@ -346,7 +379,6 @@ async function carregarHistorico(pagina = 1) {
   if (data.length === 0) {
     lista.innerHTML = '<div class="vazio">Nenhum pedido no histórico.</div>';
   } else {
-      // SALVA OS PEDIDOS NA VARIÁVEL GLOBAL PARA PERMITIR A REIMPRESSÃO
       pedidosArquivadosGlobais = data;
 
       data.forEach(p => {
@@ -357,9 +389,22 @@ async function carregarHistorico(pagina = 1) {
         const isEntrega = p.cliente_endereco && p.cliente_endereco.trim() !== '';
         const isMesa = p.cliente_telefone === 'Pedido da Mesa' || p.cliente_telefone === 'Pedido Interno';
 
+        // Cálculo da taxa no histórico
+        const taxaHist = Number(p.taxa_entrega) || 0;
+        const totalHist = Number(p.total) || 0;
+        const subtotalHist = totalHist - taxaHist;
+        const subtotalHistFmt = subtotalHist.toFixed(2).replace('.', ',');
+        const taxaHistFmt = taxaHist.toFixed(2).replace('.', ',');
+        const totalHistFmt = totalHist.toFixed(2).replace('.', ',');
+
+        const infoFinanceira = taxaHist > 0
+          ? `<span style="color:#aaa;">Subtotal: R$ ${subtotalHistFmt}</span> <span style="color:var(--cor-secundaria);">+ Taxa: R$ ${taxaHistFmt}</span> = <strong style="color:#fff;">Total: R$ ${totalHistFmt}</strong>`
+          : `<strong style="color:#fff;">Total: R$ ${totalHistFmt}</strong>`;
+
         let tagTipoHTML = '';
         if (isEntrega) {
-            tagTipoHTML = `<span class="badge-tipo pedido-entrega" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-motorcycle"></i> Entrega</span>`;
+            const bairroInfo = p.bairro ? ` • ${p.bairro}` : '';
+            tagTipoHTML = `<span class="badge-tipo pedido-entrega" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-motorcycle"></i> Entrega${bairroInfo}</span>`;
         } else if (isMesa) {
             tagTipoHTML = `<span class="badge-tipo pedido-mesa" style="margin-bottom:0; padding:2px 8px; font-size:0.65rem;"><i class="fa-solid fa-utensils"></i> Mesa</span>`;
         }
@@ -391,7 +436,7 @@ async function carregarHistorico(pagina = 1) {
                 ${tagPagamentoHTML}
                 <h4 style="margin: 0;">#${p.id.slice(0, 8)} - ${p.cliente_nome}</h4>
               </div>
-              <p>${dataStr} | Total: R$ ${Number(p.total).toFixed(2).replace('.', ',')}</p>
+              <p>${dataStr} | ${infoFinanceira}</p>
               
               ${enderecoHTML}
               
@@ -402,7 +447,6 @@ async function carregarHistorico(pagina = 1) {
             <div class="acoes">
               <span class="badge-impresso">✔ Impresso</span>
               
-              <!-- NOVO BOTÃO DE REIMPRIMIR -->
               <button class="btn-reimprimir" onclick="acionarReimpressao('${p.id}', this)" title="Emitir Segunda Via">
                 <i class="fa-solid fa-print"></i>
               </button>
@@ -420,17 +464,12 @@ async function carregarHistorico(pagina = 1) {
 
 /* ===================== REIMPRESSÃO (SEGUNDA VIA) ===================== */
 function acionarReimpressao(id, botao) {
-    // 1. Pergunta de confirmação
     if (!confirm("Deseja mesmo re-imprimir o recibo?")) return;
 
-    // 2. Encontra o pedido na lista global
     const pedido = pedidosArquivadosGlobais.find(p => p.id === id);
     
     if (pedido) {
-        // 3. Desativa o botão enquanto imprime
         botao.disabled = true;
-        
-        // 4. Chama a função que está no impressora.js
         reimprimirRecibo(pedido, botao);
     } else {
         alert("Pedido não encontrado no histórico para reimpressão.");
@@ -468,7 +507,7 @@ function mudarPagina(aba, novaPagina) {
   if (aba === 'historico') carregarHistorico(novaPagina);
 }
 
-/* ===================== GRÁFICOS (SÓ RODA NO ADMIN) ===================== */
+/* ===================== GRÁFICOS ===================== */
 async function gerarGraficos() {
   if (!document.getElementById('piechart')) return; 
 
@@ -532,7 +571,7 @@ async function gerarGraficos() {
   });
 }
 
-/* ===================== FUNCIONÁRIOS (SÓ RODA NO ADMIN) ===================== */
+/* ===================== FUNCIONÁRIOS ===================== */
 async function carregarFuncionarios() {
   const lista = document.getElementById('lista-funcionarios');
   if (!lista) return;
@@ -627,6 +666,137 @@ async function apagarFuncionario(id, login) {
     if (el) el.style.opacity = '1';
   } else {
     carregarFuncionarios();
+  }
+}
+
+/* ===================== TAXAS DE ENTREGA (CRUD) ===================== */
+function limparCacheTaxasFrontend() {
+  try { localStorage.removeItem('na_brasas_taxas_entrega_v1'); } catch (_) {}
+}
+
+async function carregarTaxasAdmin() {
+  const lista = document.getElementById('lista-taxas');
+  if (!lista) return;
+
+  lista.innerHTML = '<div class="vazio">Carregando taxas...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('taxas_entrega')
+    .select('*')
+    .order('bairro', { ascending: true });
+
+  if (error) { lista.innerHTML = '<div class="vazio">Erro ao carregar taxas.</div>'; return; }
+  if (!data || data.length === 0) { lista.innerHTML = '<div class="vazio">Nenhuma taxa cadastrada.</div>'; return; }
+
+  taxasGlobais = data;
+  lista.innerHTML = '';
+
+  data.forEach(t => {
+    const valorFmt = Number(t.taxa).toFixed(2).replace('.', ',');
+    const badgeAtivo = t.ativo
+      ? '<span class="badge-impresso" style="margin-right:8px;">Ativo</span>'
+      : '<span class="badge-impresso" style="margin-right:8px; background:#333; color:#999;">Inativo</span>';
+
+    lista.innerHTML += `
+      <div class="card-funcionario" id="taxa-${t.id}">
+        <div class="info">
+          <h4>${t.bairro}</h4>
+          <p>Taxa: R$ ${valorFmt}</p>
+        </div>
+        <div class="acoes">
+          ${badgeAtivo}
+          <button class="btn-editar" onclick="abrirModalTaxa('${t.id}')" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn-lixeira" onclick="apagarTaxa('${t.id}')" title="Apagar">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function abrirModalTaxa(id = null) {
+  document.getElementById('modal-taxa').classList.add('ativo');
+
+  if (id) {
+    const t = taxasGlobais.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('taxa-id').value = t.id;
+    document.getElementById('taxa-bairro').value = t.bairro;
+    document.getElementById('taxa-valor').value = t.taxa;
+    document.getElementById('titulo-modal-taxa').textContent = 'Editar Taxa';
+  } else {
+    document.getElementById('taxa-id').value = '';
+    document.getElementById('taxa-bairro').value = '';
+    document.getElementById('taxa-valor').value = '';
+    document.getElementById('titulo-modal-taxa').textContent = 'Nova Taxa';
+  }
+}
+
+function fecharModalTaxa() {
+  document.getElementById('modal-taxa').classList.remove('ativo');
+}
+
+async function salvarTaxa() {
+  const id = document.getElementById('taxa-id').value;
+  const bairro = document.getElementById('taxa-bairro').value.trim();
+  const valorStr = document.getElementById('taxa-valor').value;
+  const valor = parseFloat(valorStr);
+
+  if (!bairro) { alert("Preencha o nome do bairro."); return; }
+  if (isNaN(valor) || valor < 0) { alert("Preencha um valor válido (>= 0)."); return; }
+
+  const btn = document.querySelector('#modal-taxa .btn-enviar-manual');
+  btn.disabled = true;
+  btn.innerHTML = 'Salvando...';
+
+  try {
+    if (id) {
+      const { error } = await supabaseClient
+        .from('taxas_entrega')
+        .update({ bairro, taxa: valor })
+        .eq('id', id);
+      if (error) throw error;
+      alert("Taxa atualizada!");
+    } else {
+      const { error } = await supabaseClient
+        .from('taxas_entrega')
+        .insert([{ bairro, taxa: valor, ativo: true }]);
+      if (error) {
+        if (error.code === '23505') throw new Error("Este bairro já está cadastrado.");
+        throw error;
+      }
+      alert("Taxa criada!");
+    }
+    limparCacheTaxasFrontend();
+    fecharModalTaxa();
+    carregarTaxasAdmin();
+  } catch (err) {
+    alert("Erro ao salvar: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salvar';
+  }
+}
+
+async function apagarTaxa(id) {
+  const t = taxasGlobais.find(x => x.id === id);
+  if (!t) return;
+  if (!confirm(`Apagar a taxa do bairro "${t.bairro}"?`)) return;
+
+  const el = document.getElementById(`taxa-${id}`);
+  if (el) el.style.opacity = '0.5';
+
+  const { error } = await supabaseClient.from('taxas_entrega').delete().eq('id', id);
+
+  if (error) {
+    alert("Erro ao apagar: " + error.message);
+    if (el) el.style.opacity = '1';
+  } else {
+    limparCacheTaxasFrontend();
+    carregarTaxasAdmin();
   }
 }
 
@@ -803,6 +973,8 @@ async function enviarPedidoManual() {
     cliente_nome: nomeFinal,
     cliente_telefone: 'Pedido da Mesa',
     cliente_endereco: null,
+    bairro: null,
+    taxa_entrega: 0,
     pagamento: 'Pagar no Local',
     itens: carrinhoManual,
     total: total

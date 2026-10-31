@@ -59,10 +59,23 @@
         <div id="lista-carrinho"></div>
 
         <div class="modal-footer">
-            <div class="total-carrinho">
-                <span>Total:</span>
-                <strong id="total-carrinho-valor">R$ 0,00</strong>
+            <!-- RESUMO: subtotal + taxa + total -->
+            <div class="total-carrinho" style="display:flex; flex-direction:column; align-items:stretch; gap:4px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.95rem; color:#bbb;">
+                    <span>Subtotal:</span>
+                    <span id="subtotal-carrinho-valor">R$ 0,00</span>
+                </div>
+                <div id="linha-taxa-entrega" style="display:none; justify-content:space-between; font-size:0.95rem; color:var(--cor-secundaria);">
+                    <span>Taxa de Entrega:</span>
+                    <span id="valor-taxa-entrega">R$ 0,00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; border-top:1px solid #333; padding-top:8px; margin-top:4px;">
+                    <span>Total:</span>
+                    <strong id="total-carrinho-valor">R$ 0,00</strong>
+                </div>
             </div>
+
+            <div id="aviso-taxa-entrega" style="display:none; color:#ff6b6b; font-size:14px; margin-top:8px; text-align:center;"></div>
             
             <div class="form-cliente">
                 <input type="text" id="nome-cliente" placeholder="Seu Nome (Obrigatório)" required>
@@ -123,7 +136,12 @@
             <button class="fechar-modal" onclick="fecharModalPagamento()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         
-        <!-- NOVO: ÁREA DE RETIRADA -->
+        <div id="resumo-total-pagamento" style="background:var(--cor-primaria); padding:12px; border-radius:8px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#ccc;">Total do Pedido:</span>
+            <strong id="total-pagamento-valor" style="color:var(--cor-secundaria); font-size:1.2rem;">R$ 0,00</strong>
+        </div>
+
+        <!-- ÁREA DE RETIRADA -->
         <div style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;">
             <p style="color: #fff; font-size: 0.9rem; margin-bottom: 10px; font-weight: bold;">Prefere retirar no local?</p>
             <button class="btn-opcao-pgto" onclick="processarRetirada()" style="background: transparent; border: 2px dashed var(--cor-secundaria); color: var(--cor-secundaria); width: 100%;">
@@ -186,6 +204,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../script/taxa-entrega.js"></script>
 <script src="../script/pedidos.js"></script>
 </body>
 </html>

@@ -268,7 +268,7 @@ function atualizarStatusImpressora() {
   const txtBT = document.getElementById('txt-bt');
   const txtUSB = document.getElementById('txt-usb');
 
-  if (!wrap || !txt) return;
+  if (!wrap || !txt || !btnBT || !btnUSB) return;
 
   let conectado = false;
   let nome = '';
@@ -316,7 +316,7 @@ async function enviarBytesParaImpressora(bytes) {
   }
 }
 
-/* ===================== IMPRESSÃO E ARQUIVAMENTO ===================== */
+/* ===================== IMPRESSÃO + ARQUIVAMENTO ===================== */
 async function imprimirEArquivar(pedido, botao) {
   try {
     if (!modoImpressao) {
@@ -345,7 +345,10 @@ async function imprimirEArquivar(pedido, botao) {
         status: 'impresso',
         pagamento: pedido.pagamento,
         impresso_por: quemImprimiu,
-        created_at: pedido.created_at
+        created_at: pedido.created_at,
+        // NOVOS CAMPOS — TAXA DE ENTREGA
+        bairro: pedido.bairro || null,
+        taxa_entrega: Number(pedido.taxa_entrega) || 0
       });
     if (errInsert) throw new Error('Falha ao arquivar: ' + errInsert.message);
 
@@ -362,8 +365,28 @@ async function imprimirEArquivar(pedido, botao) {
     
   } catch (err) {
     alert('Erro na impressão: ' + err.message);
-    botao.disabled = false;
-    botao.textContent = '🖨️ Imprimir e arquivar';
+    if (botao) {
+      botao.disabled = false;
+      botao.textContent = '🖨️ Imprimir e arquivar';
+    }
+  }
+}
+
+/* ===================== REIMPRESSÃO (SEGUNDA VIA) ===================== */
+async function reimprimirRecibo(pedido, botao) {
+  try {
+    if (!modoImpressao) {
+      throw new Error('Conecte uma impressora (Bluetooth ou USB) primeiro.');
+    }
+
+    const bytes = gerarRecibo(pedido);
+    await enviarBytesParaImpressora(bytes);
+
+    alert('Segunda via impressa com sucesso!');
+  } catch (err) {
+    alert('Erro na reimpressão: ' + err.message);
+  } finally {
+    if (botao) botao.disabled = false;
   }
 }
 
@@ -397,12 +420,10 @@ function gerarRecibo(pedido) {
   add(CMD.normal);
   txt('Hamburgueria Artesanal\n');
   
-  // ==========================================
-  // IMPRIMIR TIPO DE PEDIDO NO RECIBO
-  // ==========================================
+  // TIPO DE PEDIDO
   const isEntrega = pedido.cliente_endereco && pedido.cliente_endereco.trim() !== '';
   const isMesa = pedido.cliente_telefone === 'Pedido da Mesa' || pedido.cliente_telefone === 'Pedido Interno';
-  const isRetirada = !isEntrega && !isMesa; // Se não é entrega e não é mesa, é retirada
+  const isRetirada = !isEntrega && !isMesa;
 
   if (isEntrega) {
       add(CMD.bold);
@@ -417,7 +438,6 @@ function gerarRecibo(pedido) {
       txt('\n>>> RETIRAR NA HAMBURGUERIA <<<\n');
       add(CMD.normal);
   }
-  // ==========================================
 
   txt(linhaIgual);
   add(CMD.left);
@@ -436,12 +456,10 @@ function gerarRecibo(pedido) {
   }
   txt(linha);
 
-  // ==========================================
-  // IMPRIMIR ENDEREÇO SE FOR ENTREGA
-  // ==========================================
+  // ENDEREÇO SE FOR ENTREGA (já inclui bairro)
   if (isEntrega && pedido.cliente_endereco) {
       add(CMD.bold);
-      txt(`ENDEREÇO DE ENTREGA:\n`);
+      txt(`ENDERECO DE ENTREGA:\n`);
       add(CMD.normal);
       
       const endereco = pedido.cliente_endereco;
@@ -450,11 +468,8 @@ function gerarRecibo(pedido) {
       }
       txt(linha);
   }
-  // ==========================================
 
-  // ==========================================
-  // NOVO: IMPRIMIR PAGAMENTO
-  // ==========================================
+  // PAGAMENTO
   if (pedido.pagamento) {
       add(CMD.bold);
       txt(`PAGAMENTO:\n`);
@@ -465,7 +480,6 @@ function gerarRecibo(pedido) {
       }
       txt(linha);
   }
-  // ==========================================
 
   add(CMD.bold);
   txt('ITENS:\n');
@@ -483,6 +497,20 @@ function gerarRecibo(pedido) {
   }
 
   txt(linha);
+
+  // ======================================================
+  // NOVO: TAXA DE ENTREGA (somente se > 0)
+  // ======================================================
+  const taxa = Number(pedido.taxa_entrega) || 0;
+  if (taxa > 0) {
+      const taxaLabel = 'Taxa de Entrega:';
+      const taxaVal   = `R$ ${taxa.toFixed(2).replace('.', ',')}`;
+      const espTaxa   = Math.max(1, 32 - taxaLabel.length - taxaVal.length);
+      txt(taxaLabel + ' '.repeat(espTaxa) + taxaVal + '\n');
+      txt(linha);
+  }
+  // ======================================================
+
   add(CMD.bold);
   const totLabel = 'TOTAL:';
   const totVal   = `R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}`;
